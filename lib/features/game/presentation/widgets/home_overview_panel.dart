@@ -19,52 +19,63 @@ class HomeOverviewPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card(
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  child: const Icon(
-                    Icons.timer_outlined,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'STOPWATCH',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Stop at the perfect time',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  height: GameConstants.minTouchTargetSize + 6,
-                  child: ElevatedButton.icon(
-                    onPressed: onPlayPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: AppColors.onAccent,
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.98, end: 1),
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          builder: (context, scale, child) {
+            return Transform.scale(scale: scale, child: child);
+          },
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              child: Column(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(32),
                     ),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('PLAY'),
+                    child: const Icon(
+                      Icons.timer_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Stopwatch Challenge',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Stop at the perfect time',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    height: GameConstants.minTouchTargetSize + 6,
+                    child: ElevatedButton.icon(
+                      onPressed: onPlayPressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: AppColors.onAccent,
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('Play'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -140,9 +151,11 @@ class _QuickCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
+        splashColor: AppColors.secondary.withValues(alpha: 0.14),
+        highlightColor: AppColors.secondary.withValues(alpha: 0.08),
         child: Card(
           margin: EdgeInsets.zero,
-          color: AppColors.secondary.withValues(alpha: 0.12),
+          color: const Color(0xFFF8FAFC),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(

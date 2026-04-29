@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/constants/app_colors.dart';
 
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
@@ -48,12 +49,20 @@ class _SettingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      value: true,
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD6DFEA)),
+      ),
+      child: SwitchListTile(
+        value: true,
       onChanged: (_) {},
       title: Text(title),
       subtitle: Text(subtitle),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      activeColor: AppColors.primary,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      ),
     );
   }
 }

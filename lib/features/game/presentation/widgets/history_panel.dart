@@ -59,32 +59,68 @@ class _HistoryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.2)),
+        border: Border.all(color: const Color(0xFFD6DFEA)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              _formatDate(item.timestamp),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-          Text(
-            item.timeLabel,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(width: 14),
-          Text(
-            item.outcome,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: outcomeColor,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 460;
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatDate(item.timestamp),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      item.timeLabel,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      item.outcome,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: outcomeColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _formatDate(item.timestamp),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              Text(
+                item.timeLabel,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(width: 14),
+              Text(
+                item.outcome,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: outcomeColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

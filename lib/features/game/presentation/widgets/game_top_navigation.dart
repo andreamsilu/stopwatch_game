@@ -19,7 +19,7 @@ class GameTopNavigation extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(8),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -59,22 +59,40 @@ class _TabButton extends StatelessWidget {
       selected: isActive,
       child: SizedBox(
         height: GameConstants.minTouchTargetSize,
-        child: TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            backgroundColor: isActive ? AppColors.accent : Colors.transparent,
-            foregroundColor: AppColors.onBackground,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            minimumSize: const Size(86, GameConstants.minTouchTargetSize),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: isActive
+                ? const [
+                    BoxShadow(
+                      color: Color(0x26A88300),
+                      blurRadius: 14,
+                      offset: Offset(0, 5),
+                    ),
+                  ]
+                : null,
           ),
-          child: Text(
-            _labelForTab(tab),
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          child: TextButton(
+            onPressed: onPressed,
+            style: TextButton.styleFrom(
+              foregroundColor: isActive
+                  ? AppColors.onAccent
+                  : AppColors.onBackground.withValues(alpha: 0.82),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              minimumSize: const Size(86, GameConstants.minTouchTargetSize),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+            ),
+            child: Text(
+              _labelForTab(tab),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
         ),
       ),

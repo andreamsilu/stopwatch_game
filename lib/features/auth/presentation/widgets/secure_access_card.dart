@@ -8,12 +8,12 @@ class SecureAccessCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE7F7)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Row(
           children: [
             Container(
@@ -22,6 +22,7 @@ class SecureAccessCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD6DFEA)),
               ),
               child: const Icon(
                 Icons.shield_outlined,
@@ -34,10 +35,10 @@ class SecureAccessCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'SECURE ACCESS',
+                    'Secure access',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.7,
+                      letterSpacing: 0.2,
                     ),
                   ),
                   const SizedBox(height: 2),

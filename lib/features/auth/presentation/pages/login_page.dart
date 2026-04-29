@@ -17,106 +17,117 @@ class LoginPage extends ConsumerWidget {
     final loginNotifier = ref.read(loginProvider.notifier);
 
     return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 700;
-            final contentWidth = isMobile ? constraints.maxWidth : 540.0;
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFEAF2FF), Color(0xFFFFFFFF), Color(0xFFF5F8FD)],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 700;
+              final contentWidth = isMobile ? constraints.maxWidth : 560.0;
 
-            return Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : 24,
-                  vertical: isMobile ? 16 : 12,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: contentWidth,
-                    minHeight: constraints.maxHeight - (isMobile ? 32 : 24),
+              return Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 24,
+                    vertical: isMobile ? 16 : 14,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const LoginBrandHeader(),
-                      SizedBox(height: isMobile ? 36 : 88),
-                      Align(
-                        child: Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x2900377D),
-                                blurRadius: 16,
-                                offset: Offset(0, 6),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: contentWidth,
+                      minHeight: constraints.maxHeight - (isMobile ? 32 : 28),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const LoginBrandHeader(),
+                        SizedBox(height: isMobile ? 28 : 56),
+                        Align(
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.primary, Color(0xFF174EA3)],
                               ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.timer,
-                            color: AppColors.accent,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Welcome Back',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              fontSize: isMobile ? 42 : 46,
-                              height: 1.08,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Precision is everything. Enter your details to continue.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.onBackground.withValues(alpha: 0.84),
-                          fontSize: isMobile ? 16 : 18,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Align(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 430),
-                          child: LoginFormCard(
-                            phoneValue: loginState.phoneNumber,
-                            isSubmitting: loginState.isSubmitting,
-                            canContinue: loginState.canContinue,
-                            onPhoneChanged: loginNotifier.updatePhoneNumber,
-                            onContinue: () async {
-                              final isSuccess = await loginNotifier
-                                  .submitLogin();
-                              if (!context.mounted || !isSuccess) return;
-                              await Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const GamePage(),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x2600377D),
+                                  blurRadius: 20,
+                                  offset: Offset(0, 8),
                                 ),
-                              );
-                            },
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.timer,
+                              color: AppColors.accent,
+                              size: 30,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      Align(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 430),
-                          child: const SecureAccessCard(),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Welcome Back',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontSize: isMobile ? 34 : 38,
+                                height: 1.1,
+                              ),
                         ),
-                      ),
-                      SizedBox(height: isMobile ? 40 : 70),
-                      const LoginFooter(),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          'Precision is everything. Enter your details to continue.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppColors.onBackground.withValues(alpha: 0.74),
+                            fontSize: isMobile ? 15 : 17,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Align(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 430),
+                            child: LoginFormCard(
+                              phoneValue: loginState.phoneNumber,
+                              isSubmitting: loginState.isSubmitting,
+                              canContinue: loginState.canContinue,
+                              onPhoneChanged: loginNotifier.updatePhoneNumber,
+                              onContinue: () async {
+                                final isSuccess = await loginNotifier
+                                    .submitLogin();
+                                if (!context.mounted || !isSuccess) return;
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const GamePage(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Align(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 430),
+                            child: const SecureAccessCard(),
+                          ),
+                        ),
+                        SizedBox(height: isMobile ? 36 : 56),
+                        const LoginFooter(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

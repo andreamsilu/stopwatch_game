@@ -12,7 +12,8 @@ class LoginBrandHeader extends StatelessWidget {
           'ChronoPrecision',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
-            fontSize: 34,
+            fontSize: 30,
+            letterSpacing: 0.2,
           ),
         ),
         const Spacer(),
@@ -20,11 +21,12 @@ class LoginBrandHeader extends StatelessWidget {
           label: 'Help information',
           button: true,
           child: Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(18),
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFD6DFEA)),
             ),
             child: IconButton(
               onPressed: () {},

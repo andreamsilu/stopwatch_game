@@ -20,29 +20,36 @@ class LoginFormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.98, end: 1),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD6DFEA), width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 24,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text(
-              'PHONE NUMBER',
+              'Phone number',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
+                letterSpacing: 0.2,
               ),
             ),
             const SizedBox(height: 10),
@@ -71,72 +78,53 @@ class LoginFormCard extends StatelessWidget {
                     ),
                   ),
                   hintText: '555 000 0000',
-                  filled: true,
-                  fillColor: AppColors.secondary.withValues(alpha: 0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+              SizedBox(
+                height: GameConstants.minTouchTargetSize + 6,
+                child: Semantics(
+                  label: 'Continue with phone number',
+                  button: true,
+                  enabled: canContinue,
+                  child: ElevatedButton.icon(
+                    onPressed: canContinue
+                        ? () async {
+                            await onContinue();
+                          }
+                        : null,
+                    iconAlignment: IconAlignment.end,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.onAccent,
+                      textStyle: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                      elevation: canContinue ? 2 : 0,
                     ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 16,
+                    icon: isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('Continue'),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: GameConstants.minTouchTargetSize + 6,
-              child: Semantics(
-                label: 'Continue with phone number',
-                button: true,
-                enabled: canContinue,
-                child: ElevatedButton.icon(
-                  onPressed: canContinue
-                      ? () async {
-                          await onContinue();
-                        }
-                      : null,
-                  iconAlignment: IconAlignment.end,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.onAccent,
-                    textStyle: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  icon: isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.arrow_forward_rounded),
-                  label: const Text('Continue'),
+              const SizedBox(height: 20),
+              Divider(color: const Color(0xFFE5E7EB), height: 1),
+              const SizedBox(height: 14),
+              Text(
+                'By continuing, you agree to our Terms of Service and Privacy Policy.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.onBackground.withValues(alpha: 0.72),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Divider(color: const Color(0xFFE5E7EB), height: 1),
-            const SizedBox(height: 14),
-            Text(
-              'By continuing, you agree to our Terms of Service and Privacy Policy.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onBackground.withValues(alpha: 0.72),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

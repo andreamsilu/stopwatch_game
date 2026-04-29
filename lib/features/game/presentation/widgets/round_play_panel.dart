@@ -35,28 +35,65 @@ class RoundPlayPanel extends StatelessWidget {
                   horizontal: 18,
                   vertical: 14,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      'TARGET TIME',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        letterSpacing: 0.6,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      targetTimeLabel,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.volume_up_outlined),
-                      tooltip: 'Sound settings',
-                    ),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompactHeader = constraints.maxWidth < 380;
+                    if (isCompactHeader) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Target time',
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      letterSpacing: 0.2,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                onPressed: () {},
+                                icon: const Icon(Icons.volume_up_outlined),
+                                tooltip: 'Sound settings',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            targetTimeLabel,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Text(
+                          'Target time',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                letterSpacing: 0.2,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          targetTimeLabel,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.volume_up_outlined),
+                          tooltip: 'Sound settings',
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               const Divider(height: 1),
@@ -65,44 +102,97 @@ class RoundPlayPanel extends StatelessWidget {
                   horizontal: 20,
                   vertical: 18,
                 ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 196,
-                      height: 196,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.secondary.withValues(alpha: 0.36),
-                          width: 6,
-                        ),
-                        borderRadius: BorderRadius.circular(98),
-                      ),
-                      child: Center(
-                        child: TimerDisplay(
-                          timeText: currentTimeLabel,
-                          fontSize: 44,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxWidth = constraints.maxWidth;
+                    final preferredDiameter = maxWidth < 600
+                        ? GameConstants.stopwatchCircleMobileDiameter
+                        : GameConstants.stopwatchCircleDesktopDiameter;
+                    final maxAllowedDiameter = maxWidth > 220
+                        ? maxWidth - 24
+                        : GameConstants.stopwatchCircleMobileDiameter;
+                    final circleDiameter = preferredDiameter
+                        .clamp(180.0, maxAllowedDiameter)
+                        .toDouble();
+                    final circleRadius = circleDiameter / 2;
+                    final timerFontSize = (circleDiameter * 0.22)
+                        .clamp(38.0, 52.0)
+                        .toDouble();
+
+                    return Column(
                       children: [
-                        Expanded(
-                          child: _RoundStatCard(
-                            label: 'Start Time',
-                            value: '00:00.000',
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          width: circleDiameter,
+                          height: circleDiameter,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            border: Border.all(
+                              color: isRunning
+                                  ? AppColors.accent.withValues(alpha: 0.72)
+                                  : AppColors.secondary.withValues(alpha: 0.32),
+                              width: isRunning ? 6 : 5,
+                            ),
+                            borderRadius: BorderRadius.circular(circleRadius),
+                            boxShadow: isRunning
+                                ? const [
+                                    BoxShadow(
+                                      color: Color(0x2EFFD100),
+                                      blurRadius: 24,
+                                      offset: Offset(0, 8),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: TimerDisplay(
+                              timeText: currentTimeLabel,
+                              fontSize: timerFontSize,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _RoundStatCard(
-                            label: 'Your Target',
-                            value: targetTimeLabel,
-                          ),
+                        const SizedBox(height: 18),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final compactStats = constraints.maxWidth < 420;
+                            if (compactStats) {
+                              return Column(
+                                children: [
+                                  _RoundStatCard(
+                                    label: 'Start Time',
+                                    value: '00:00.000',
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _RoundStatCard(
+                                    label: 'Your Target',
+                                    value: targetTimeLabel,
+                                  ),
+                                ],
+                              );
+                            }
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: _RoundStatCard(
+                                    label: 'Start Time',
+                                    value: '00:00.000',
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _RoundStatCard(
+                                    label: 'Your Target',
+                                    value: targetTimeLabel,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ],
@@ -131,6 +221,7 @@ class RoundPlayPanel extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
                   foregroundColor: AppColors.onAccent,
+                  elevation: isRunning ? 3 : 1,
                 ),
                 icon: isBusy
                     ? const SizedBox(
@@ -143,7 +234,7 @@ class RoundPlayPanel extends StatelessWidget {
                             ? Icons.stop_rounded
                             : Icons.play_arrow_rounded,
                       ),
-                label: Text(isRunning ? 'STOP ROUND' : 'START ROUND'),
+                label: Text(isRunning ? 'Stop round' : 'Start round'),
               ),
             );
 
@@ -181,8 +272,9 @@ class _RoundStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.24)),
+        border: Border.all(color: const Color(0xFFD6DFEA)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
