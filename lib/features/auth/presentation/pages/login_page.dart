@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_brand_header.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_footer.dart';
@@ -17,14 +18,7 @@ class LoginPage extends ConsumerWidget {
     final loginNotifier = ref.read(loginProvider.notifier);
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFEAF2FF), Color(0xFFFFFFFF), Color(0xFFF5F8FD)],
-          ),
-        ),
+      body: ExperienceBackground(
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {

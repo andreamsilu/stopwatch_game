@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
@@ -8,6 +9,7 @@ class GameController extends StateNotifier<GameState> {
   GameController() : super(const GameState.initial());
 
   final Stopwatch _stopwatch = Stopwatch();
+  final Random _random = Random();
   Timer? _ticker;
 
   void selectTab(GameTab tab) {
@@ -18,6 +20,7 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(
       selectedTab: GameTab.home,
       showRoundBoard: true,
+      targetTime: _generateRandomTargetTime(),
       clearLatestResult: true,
     );
   }
@@ -47,10 +50,14 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(isSubmitting: true);
     _stopwatch.stop();
     _ticker?.cancel();
+    final stoppedElapsed = _stopwatch.elapsed;
 
     await stopGame();
 
-    final backendResult = await fetchRoundResultFromBackend();
+    final backendResult = await fetchRoundResultFromBackend(
+      actualElapsed: stoppedElapsed,
+      targetTime: state.targetTime,
+    );
     final nextHistory = [
       HistoryEntry(
         timestamp: DateTime.now(),
@@ -63,7 +70,7 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(
       isRunning: false,
       isSubmitting: false,
-      elapsed: _stopwatch.elapsed,
+      elapsed: stoppedElapsed,
       latestResult: backendResult,
       history: nextHistory,
     );
@@ -76,7 +83,11 @@ class GameController extends StateNotifier<GameState> {
     _stopwatch.reset();
     _ticker?.cancel();
 
-    state = state.copyWith(isRunning: false, elapsed: Duration.zero);
+    state = state.copyWith(
+      isRunning: false,
+      elapsed: Duration.zero,
+      targetTime: _generateRandomTargetTime(),
+    );
   }
 
   void dismissResultDialog() {
@@ -95,15 +106,50 @@ class GameController extends StateNotifier<GameState> {
     // remains server-owned, not frontend-owned.
   }
 
-  Future<RoundResultData> fetchRoundResultFromBackend() async {
-    // TODO: Replace with backend response payload.
-    // Do not derive official result on frontend. Backend should own scoring.
-    return const RoundResultData(
-      outcomeLabel: 'LOSE',
-      deltaLabel: 'Early by 3958 ms',
-      finalTimeLabel: '00:04.375',
-      differenceMs: -3958,
+  Future<RoundResultData> fetchRoundResultFromBackend({
+    required Duration actualElapsed,
+    required Duration targetTime,
+  }) async {
+    // TODO: Replace with backend response payload when endpoint is available.
+    // For now, derive result from local stopwatch and target.
+    final differenceMs =
+        actualElapsed.inMilliseconds - targetTime.inMilliseconds;
+    const winToleranceMs = 50;
+    final isWin = differenceMs.abs() <= winToleranceMs;
+    final absDifferenceMs = differenceMs.abs();
+    final timingDirection = differenceMs < 0 ? 'Early' : 'Late';
+    final deltaLabel = isWin
+        ? 'Perfect stop on target'
+        : '$timingDirection by $absDifferenceMs ms';
+
+    return RoundResultData(
+      outcomeLabel: isWin ? 'WIN' : 'LOSE',
+      deltaLabel: deltaLabel,
+      finalTimeLabel: _formatDurationWithMilliseconds(actualElapsed),
+      differenceMs: differenceMs,
     );
+  }
+
+  Duration _generateRandomTargetTime() {
+    const minMilliseconds = 3000;
+    const maxMilliseconds = 12000;
+    final randomMilliseconds =
+        minMilliseconds +
+        _random.nextInt(maxMilliseconds - minMilliseconds + 1);
+
+    // Keep values on 10ms steps so stopwatch precision remains readable.
+    final snappedToTenMs = (randomMilliseconds ~/ 10) * 10;
+    return Duration(milliseconds: snappedToTenMs);
+  }
+
+  String _formatDurationWithMilliseconds(Duration value) {
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final milliseconds = value.inMilliseconds.remainder(1000).toString().padLeft(
+      3,
+      '0',
+    );
+    return '$minutes:$seconds.$milliseconds';
   }
 
   @override
