@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
@@ -45,9 +46,12 @@ class GamePage extends ConsumerWidget {
                   width >= GameConstants.mobileBreakpoint &&
                   width < GameConstants.tabletBreakpoint;
               final isLargeDesktop = width >= 1400;
+              final isWindows = defaultTargetPlatform == TargetPlatform.windows;
               final horizontalPadding = isMobile
                   ? 14.0
-                  : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0));
+                  : (isWindows
+                        ? 12.0
+                        : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0)));
               final verticalPadding = isMobile ? 16.0 : 24.0;
               final maxContentWidth = isMobile
                   ? width
