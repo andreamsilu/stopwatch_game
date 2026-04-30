@@ -12,7 +12,6 @@ void main() {
   runApp(const StopwatchChallengeApp());
 }
 
-
 class StopwatchChallengeApp extends StatelessWidget {
   const StopwatchChallengeApp({super.key});
 
