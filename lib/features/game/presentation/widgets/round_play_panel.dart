@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flame/game.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
-class RoundPlayPanel extends StatelessWidget {
+class RoundPlayPanel extends StatefulWidget {
   const RoundPlayPanel({
     required this.targetTimeLabel,
     required this.currentTimeLabel,
@@ -20,6 +22,33 @@ class RoundPlayPanel extends StatelessWidget {
   final bool isBusy;
   final VoidCallback onReset;
   final Future<void> Function() onStartOrStopRound;
+
+  @override
+  State<RoundPlayPanel> createState() => _RoundPlayPanelState();
+}
+
+class _RoundPlayPanelState extends State<RoundPlayPanel> {
+  late final StopwatchFlameGame _stopwatchGame;
+
+  @override
+  void initState() {
+    super.initState();
+    _stopwatchGame = StopwatchFlameGame(
+      isRunning: widget.isRunning,
+      diameter: GameConstants.stopwatchCircleDesktopDiameter,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant RoundPlayPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isRunning != widget.isRunning) {
+      _stopwatchGame.updateState(
+        isRunning: widget.isRunning,
+        diameter: _stopwatchGame.diameter,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +91,7 @@ class RoundPlayPanel extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            targetTimeLabel,
+                            widget.targetTimeLabel,
                             style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(fontWeight: FontWeight.w800),
                           ),
@@ -81,7 +110,7 @@ class RoundPlayPanel extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          targetTimeLabel,
+                          widget.targetTimeLabel,
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
@@ -118,6 +147,10 @@ class RoundPlayPanel extends StatelessWidget {
                     final timerFontSize = (circleDiameter * 0.22)
                         .clamp(38.0, 52.0)
                         .toDouble();
+                    _stopwatchGame.updateState(
+                      isRunning: widget.isRunning,
+                      diameter: circleDiameter,
+                    );
 
                     return Column(
                       children: [
@@ -129,13 +162,13 @@ class RoundPlayPanel extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
                             border: Border.all(
-                              color: isRunning
+                              color: widget.isRunning
                                   ? AppColors.accent.withValues(alpha: 0.72)
                                   : AppColors.secondary.withValues(alpha: 0.32),
-                              width: isRunning ? 6 : 5,
+                              width: widget.isRunning ? 6 : 5,
                             ),
                             borderRadius: BorderRadius.circular(circleRadius),
-                            boxShadow: isRunning
+                            boxShadow: widget.isRunning
                                 ? const [
                                     BoxShadow(
                                       color: Color(0x2EFFD100),
@@ -146,9 +179,28 @@ class RoundPlayPanel extends StatelessWidget {
                                 : null,
                           ),
                           child: Center(
-                            child: TimerDisplay(
-                              timeText: currentTimeLabel,
-                              fontSize: timerFontSize,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    circleRadius,
+                                  ),
+                                  child: SizedBox(
+                                    width: circleDiameter,
+                                    height: circleDiameter,
+                                    child: GameWidget(
+                                      game: _stopwatchGame,
+                                      backgroundBuilder: (context) =>
+                                          const SizedBox.shrink(),
+                                    ),
+                                  ),
+                                ),
+                                TimerDisplay(
+                                  timeText: widget.currentTimeLabel,
+                                  fontSize: timerFontSize,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -166,7 +218,7 @@ class RoundPlayPanel extends StatelessWidget {
                                   const SizedBox(height: 10),
                                   _RoundStatCard(
                                     label: 'Your Target',
-                                    value: targetTimeLabel,
+                                    value: widget.targetTimeLabel,
                                   ),
                                 ],
                               );
@@ -183,7 +235,7 @@ class RoundPlayPanel extends StatelessWidget {
                                 Expanded(
                                   child: _RoundStatCard(
                                     label: 'Your Target',
-                                    value: targetTimeLabel,
+                                    value: widget.targetTimeLabel,
                                   ),
                                 ),
                               ],
@@ -205,7 +257,7 @@ class RoundPlayPanel extends StatelessWidget {
             final resetButton = SizedBox(
               height: GameConstants.minTouchTargetSize + 6,
               child: OutlinedButton.icon(
-                onPressed: isBusy ? null : onReset,
+                onPressed: widget.isBusy ? null : widget.onReset,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('RESET'),
               ),
@@ -213,28 +265,28 @@ class RoundPlayPanel extends StatelessWidget {
             final startButton = SizedBox(
               height: GameConstants.minTouchTargetSize + 6,
               child: ElevatedButton.icon(
-                onPressed: isBusy
+                onPressed: widget.isBusy
                     ? null
                     : () async {
-                        await onStartOrStopRound();
+                        await widget.onStartOrStopRound();
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
                   foregroundColor: AppColors.onAccent,
-                  elevation: isRunning ? 3 : 1,
+                  elevation: widget.isRunning ? 3 : 1,
                 ),
-                icon: isBusy
+                icon: widget.isBusy
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Icon(
-                        isRunning
+                        widget.isRunning
                             ? Icons.stop_rounded
                             : Icons.play_arrow_rounded,
                       ),
-                label: Text(isRunning ? 'Stop round' : 'Start round'),
+                label: Text(widget.isRunning ? 'Stop round' : 'Start round'),
               ),
             );
 
