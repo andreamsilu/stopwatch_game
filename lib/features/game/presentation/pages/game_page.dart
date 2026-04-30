@@ -154,13 +154,12 @@ class _GameBody extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (state.selectedTab) {
       case GameTab.home:
-        if (!state.showRoundBoard) {
-          return HomeOverviewPanel(
-            onPlayPressed: onPlayPressed,
-            onOpenLeaderboard: onOpenLeaderboard,
-            onOpenHistory: onOpenHistory,
-          );
-        }
+        return HomeOverviewPanel(
+          onPlayPressed: onPlayPressed,
+          onOpenLeaderboard: onOpenLeaderboard,
+          onOpenHistory: onOpenHistory,
+        );
+      case GameTab.play:
         return RoundPlayPanel(
           targetTimeLabel: state.targetTimeLabel,
           currentTimeLabel: state.elapsedTimeLabel,

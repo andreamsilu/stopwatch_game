@@ -18,8 +18,7 @@ class GameController extends StateNotifier<GameState> {
 
   void openRoundBoard() {
     state = state.copyWith(
-      selectedTab: GameTab.home,
-      showRoundBoard: true,
+      selectedTab: GameTab.play,
       targetTime: _generateRandomTargetTime(),
       clearLatestResult: true,
     );
@@ -40,7 +39,6 @@ class GameController extends StateNotifier<GameState> {
       isRunning: true,
       isSubmitting: false,
       elapsed: _stopwatch.elapsed,
-      showRoundBoard: true,
     );
   }
 

@@ -111,6 +111,8 @@ class _TabButton extends StatelessWidget {
     switch (tab) {
       case GameTab.home:
         return 'Home';
+      case GameTab.play:
+        return 'Play';
       case GameTab.leaderboard:
         return 'Leaderboard';
       case GameTab.history:

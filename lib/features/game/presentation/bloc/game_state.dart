@@ -1,4 +1,4 @@
-enum GameTab { home, leaderboard, history, settings }
+enum GameTab { home, play, leaderboard, history, settings }
 
 class LeaderboardEntry {
   const LeaderboardEntry({
@@ -49,7 +49,6 @@ class HistoryEntry {
 class GameState {
   const GameState({
     required this.selectedTab,
-    required this.showRoundBoard,
     required this.elapsed,
     required this.isRunning,
     required this.isSubmitting,
@@ -61,7 +60,6 @@ class GameState {
 
   const GameState.initial()
     : selectedTab = GameTab.home,
-      showRoundBoard = false,
       elapsed = Duration.zero,
       isRunning = false,
       isSubmitting = false,
@@ -117,7 +115,6 @@ class GameState {
       history = const [];
 
   final GameTab selectedTab;
-  final bool showRoundBoard;
   final Duration elapsed;
   final bool isRunning;
   final bool isSubmitting;
@@ -157,7 +154,6 @@ class GameState {
 
   GameState copyWith({
     GameTab? selectedTab,
-    bool? showRoundBoard,
     Duration? elapsed,
     bool? isRunning,
     bool? isSubmitting,
@@ -169,7 +165,6 @@ class GameState {
   }) {
     return GameState(
       selectedTab: selectedTab ?? this.selectedTab,
-      showRoundBoard: showRoundBoard ?? this.showRoundBoard,
       elapsed: elapsed ?? this.elapsed,
       isRunning: isRunning ?? this.isRunning,
       isSubmitting: isSubmitting ?? this.isSubmitting,
