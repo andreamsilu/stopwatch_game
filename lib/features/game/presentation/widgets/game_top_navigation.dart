@@ -18,23 +18,31 @@ class GameTopNavigation extends StatelessWidget {
     final tabs = GameTab.values;
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final tab in tabs) ...[
-                _TabButton(
-                  tab: tab,
-                  isActive: tab == activeTab,
-                  onPressed: () => onTabSelected(tab),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Padding(
+            padding: const EdgeInsets.all(8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (final tab in tabs) ...[
+                      _TabButton(
+                        tab: tab,
+                        isActive: tab == activeTab,
+                        onPressed: () => onTabSelected(tab),
+                      ),
+                      if (tab != tabs.last) const SizedBox(width: 8),
+                    ],
+                  ],
                 ),
-                if (tab != tabs.last) const SizedBox(width: 8),
-              ],
-            ],
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
