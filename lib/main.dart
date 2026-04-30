@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/theme/app_theme.dart';
@@ -90,11 +91,21 @@ class StopwatchChallengeApp extends StatelessWidget {
         title: 'Stopwatch Challenge',
         theme: AppTheme.lightTheme,
         builder: (context, child) {
-          return Focus(
-            autofocus: true,
-            canRequestFocus: true,
-            onKeyEvent: _handleWebShortcutBlock,
-            child: child ?? const SizedBox.shrink(),
+          return Listener(
+            onPointerDown: (event) {
+              if (kIsWeb && event.kind == PointerDeviceKind.mouse) {
+                // Consume secondary mouse clicks to prevent right-click actions.
+                if (event.buttons == kSecondaryMouseButton) {
+                  return;
+                }
+              }
+            },
+            child: Focus(
+              autofocus: true,
+              canRequestFocus: true,
+              onKeyEvent: _handleWebShortcutBlock,
+              child: child ?? const SizedBox.shrink(),
+            ),
           );
         },
         home: const LoginPage(),
