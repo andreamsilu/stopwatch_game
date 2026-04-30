@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 
-class SettingsPanel extends StatelessWidget {
-  const SettingsPanel({super.key});
+class HelpSupportPanel extends StatelessWidget {
+  const HelpSupportPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,25 +14,30 @@ class SettingsPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Settings',
+              'Help & Support',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              'Adjust experience preferences. Values should be persisted via backend or local storage in the next step.',
+              'Need assistance with Stopwatch Challenge? Use these quick support channels.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
-            const _SettingItem(
-              title: 'Sound feedback',
-              subtitle: 'Audio cues for round start and stop',
+            const _SupportItem(
+              title: 'How to play',
+              subtitle: 'Start the round, stop near target time, and improve precision.',
             ),
             const SizedBox(height: 10),
-            const _SettingItem(
-              title: 'Keyboard shortcuts',
-              subtitle: 'Enable spacebar start and stop support',
+            const _SupportItem(
+              title: 'Report an issue',
+              subtitle: 'Send game bugs or unexpected behavior to support team.',
+            ),
+            const SizedBox(height: 10),
+            const _SupportItem(
+              title: 'Contact support',
+              subtitle: 'Email: support@stopwatchchallenge.app',
             ),
           ],
         ),
@@ -41,8 +46,8 @@ class SettingsPanel extends StatelessWidget {
   }
 }
 
-class _SettingItem extends StatelessWidget {
-  const _SettingItem({required this.title, required this.subtitle});
+class _SupportItem extends StatelessWidget {
+  const _SupportItem({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -55,13 +60,11 @@ class _SettingItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFD6DFEA)),
       ),
-      child: SwitchListTile(
-        value: true,
-      onChanged: (_) {},
-      title: Text(title),
-      subtitle: Text(subtitle),
-      activeColor: AppColors.primary,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        leading: const Icon(Icons.help_outline, color: AppColors.primary),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       ),
     );
   }

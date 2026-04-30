@@ -117,8 +117,8 @@ class _TabButton extends StatelessWidget {
         return 'Leaderboard';
       case GameTab.history:
         return 'History';
-      case GameTab.settings:
-        return 'Settings';
+      case GameTab.support:
+        return 'Support';
     }
   }
 }

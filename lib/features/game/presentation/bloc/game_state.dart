@@ -1,4 +1,4 @@
-enum GameTab { home, play, leaderboard, history, settings }
+enum GameTab { home, play, leaderboard, history, support }
 
 class LeaderboardEntry {
   const LeaderboardEntry({

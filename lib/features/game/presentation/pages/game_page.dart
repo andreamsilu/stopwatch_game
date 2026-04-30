@@ -6,11 +6,11 @@ import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/leaderboard_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_result_dialog.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/settings_panel.dart';
 
 class GamePage extends ConsumerWidget {
   const GamePage({super.key});
@@ -172,8 +172,8 @@ class _GameBody extends StatelessWidget {
         return LeaderboardPanel(entries: state.leaderboard);
       case GameTab.history:
         return HistoryPanel(history: state.history);
-      case GameTab.settings:
-        return const SettingsPanel();
+      case GameTab.support:
+        return const HelpSupportPanel();
     }
   }
 }
