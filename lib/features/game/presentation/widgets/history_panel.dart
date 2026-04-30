@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class HistoryPanel extends StatelessWidget {
@@ -34,11 +33,15 @@ class HistoryPanel extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyLarge,
               )
             else
-              for (var i = 0; i < history.length && i < 8; i++) ...[
-                _HistoryTile(item: history[i]),
-                if (i != (history.length < 8 ? history.length : 8) - 1)
-                  const SizedBox(height: 8),
-              ],
+              ListView.separated(
+                itemCount: history.length,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  return _HistoryTile(item: history[index]);
+                },
+              ),
           ],
         ),
       ),
