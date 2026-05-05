@@ -14,7 +14,6 @@ class HomeOverviewPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -51,107 +50,52 @@ class HomeOverviewPanel extends StatelessWidget {
                       vertical: isSmallMobile ? 20 : 28,
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOutCubic,
-                          width: 68,
-                          height: 68,
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(34),
-                          ),
-                          child: const Icon(
-                            Icons.timer_outlined,
-                            color: AppColors.primary,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Beat the Clock',
-                          style: (isSmallMobile
-                                  ? textTheme.headlineSmall
-                                  : textTheme.displaySmall)
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Stop as close as possible to the target to win coins.',
-                          style: textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: const [
-                            _StatPill(
-                              icon: Icons.bolt_rounded,
-                              label: 'Win window',
-                              value: '±100 ms',
-                            ),
-                            _StatPill(
-                              icon: Icons.graphic_eq_rounded,
-                              label: 'Rhythm',
-                              value: '1s beat',
-                            ),
-                            _StatPill(
-                              icon: Icons.monetization_on_outlined,
-                              label: 'Reward',
-                              value: '+100 coins',
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final compactActions = constraints.maxWidth < 520;
-                            final playButton = SizedBox(
-                              height: GameConstants.minTouchTargetSize + 6,
-                              child: ElevatedButton.icon(
-                                onPressed: onPlayPressed,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.accent,
-                                  foregroundColor: AppColors.onAccent,
-                                  elevation: 0,
-                                ),
-                                icon: const Icon(Icons.play_arrow_rounded),
-                                label: const Text('Start Round'),
-                              ),
-                            );
-                            final historyButton = SizedBox(
-                              height: GameConstants.minTouchTargetSize + 6,
-                              child: OutlinedButton.icon(
-                                onPressed: onOpenHistory,
-                                icon: const Icon(Icons.history),
-                                label: const Text('View History'),
-                              ),
-                            );
-                            if (compactActions) {
-                              return Column(
-                                children: [
-                                  SizedBox(width: double.infinity, child: playButton),
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: historyButton,
-                                  ),
-                                ],
-                              );
-                            }
-                            return Row(
-                              children: [
-                                Expanded(child: playButton),
-                                const SizedBox(width: 10),
-                                Expanded(child: historyButton),
-                              ],
-                            );
-                          },
-                        ),
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: const Icon(
+                      Icons.timer_outlined,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Stopwatch Challenge',
+                    style: (isSmallMobile
+                            ? Theme.of(context).textTheme.headlineSmall
+                            : Theme.of(context).textTheme.displaySmall)
+                        ?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Hit the exact target time to win a prize',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    height: GameConstants.minTouchTargetSize + 6,
+                    child: ElevatedButton.icon(
+                      onPressed: onPlayPressed,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: AppColors.onAccent,
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('Play'),
+                    ),
+                  ),
                       ],
                     ),
                   ),
@@ -168,13 +112,6 @@ class HomeOverviewPanel extends StatelessWidget {
               return Column(
                 children: [
                   _QuickCard(
-                    title: 'How to play',
-                    subtitle: 'Start, track the beat, stop near target.',
-                    icon: Icons.rocket_launch_outlined,
-                    onTap: onPlayPressed,
-                  ),
-                  const SizedBox(height: 10),
-                  _QuickCard(
                     title: 'History',
                     subtitle: 'View your recent round results',
                     icon: Icons.history,
@@ -185,15 +122,6 @@ class HomeOverviewPanel extends StatelessWidget {
             }
             return Row(
               children: [
-                Expanded(
-                  child: _QuickCard(
-                    title: 'How to play',
-                    subtitle: 'Start, track the beat, stop near target.',
-                    icon: Icons.rocket_launch_outlined,
-                    onTap: onPlayPressed,
-                  ),
-                ),
-                const SizedBox(width: 10),
                 Expanded(
                   child: _QuickCard(
                     title: 'History',
@@ -207,51 +135,6 @@ class HomeOverviewPanel extends StatelessWidget {
           },
         ),
       ],
-    );
-  }
-}
-
-class _StatPill extends StatelessWidget {
-  const _StatPill({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.primary),
-          const SizedBox(width: 6),
-          RichText(
-            text: TextSpan(
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.onBackground),
-              children: [
-                TextSpan(text: '$label: '),
-                TextSpan(
-                  text: value,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
