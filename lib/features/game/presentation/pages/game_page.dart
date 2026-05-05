@@ -189,6 +189,7 @@ class GamePage extends ConsumerWidget {
                                         onOpenHistory: () =>
                                             controller.selectTab(GameTab.history),
                                         onResetRound: controller.onResetPressed,
+                                      onToggleSound: controller.toggleSoundEnabled,
                                         onStartOrStopRound: () async {
                                           if (gameState.isRunning) {
                                             await controller.onStopPressed();
@@ -289,6 +290,7 @@ class _GameBody extends StatelessWidget {
     required this.onPlayPressed,
     required this.onOpenHistory,
     required this.onResetRound,
+    required this.onToggleSound,
     required this.onStartOrStopRound,
   });
 
@@ -296,6 +298,7 @@ class _GameBody extends StatelessWidget {
   final VoidCallback onPlayPressed;
   final VoidCallback onOpenHistory;
   final VoidCallback onResetRound;
+  final VoidCallback onToggleSound;
   final Future<void> Function() onStartOrStopRound;
 
   @override
@@ -314,7 +317,9 @@ class _GameBody extends StatelessWidget {
           targetTime: state.targetTime,
           isRunning: state.isRunning,
           isBusy: state.isSubmitting,
+          isSoundEnabled: state.isSoundEnabled,
           onReset: onResetRound,
+          onToggleSound: onToggleSound,
           onStartOrStopRound: onStartOrStopRound,
           totalWins: state.totalWins,
           totalPrizeCoins: state.totalPrizeCoins,

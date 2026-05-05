@@ -38,6 +38,7 @@ class GameState {
     required this.elapsed,
     required this.isRunning,
     required this.isSubmitting,
+    required this.isSoundEnabled,
     required this.targetTime,
     required this.latestResult,
     required this.history,
@@ -50,6 +51,7 @@ class GameState {
       elapsed = Duration.zero,
       isRunning = false,
       isSubmitting = false,
+      isSoundEnabled = true,
       targetTime = const Duration(milliseconds: 8200),
       latestResult = null,
       history = const [],
@@ -60,6 +62,7 @@ class GameState {
   final Duration elapsed;
   final bool isRunning;
   final bool isSubmitting;
+  final bool isSoundEnabled;
   final Duration targetTime;
   final RoundResultData? latestResult;
   final List<HistoryEntry> history;
@@ -100,6 +103,7 @@ class GameState {
     Duration? elapsed,
     bool? isRunning,
     bool? isSubmitting,
+    bool? isSoundEnabled,
     Duration? targetTime,
     RoundResultData? latestResult,
     bool clearLatestResult = false,
@@ -112,6 +116,7 @@ class GameState {
       elapsed: elapsed ?? this.elapsed,
       isRunning: isRunning ?? this.isRunning,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
       targetTime: targetTime ?? this.targetTime,
       latestResult: clearLatestResult
           ? null

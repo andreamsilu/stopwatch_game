@@ -3,10 +3,13 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class GameController extends StateNotifier<GameState> {
-  GameController() : super(const GameState.initial());
+  GameController() : super(const GameState.initial()) {
+    GameFeedbackService.setSoundEnabled(state.isSoundEnabled);
+  }
 
   final Stopwatch _stopwatch = Stopwatch();
   final Random _random = Random();
@@ -14,6 +17,12 @@ class GameController extends StateNotifier<GameState> {
 
   void selectTab(GameTab tab) {
     state = state.copyWith(selectedTab: tab);
+  }
+
+  void toggleSoundEnabled() {
+    final nextEnabled = !state.isSoundEnabled;
+    state = state.copyWith(isSoundEnabled: nextEnabled);
+    GameFeedbackService.setSoundEnabled(nextEnabled);
   }
 
   void openRoundBoard() {

@@ -15,12 +15,23 @@ class GameFeedbackService {
   static final AudioPlayer _tickPlayer = AudioPlayer();
   static final AudioPlayer _fxPlayer = AudioPlayer();
   static Timer? _tickLoop;
+  static bool _isSoundEnabled = true;
   static bool _audioPrepared = false;
   static Uint8List? _tickWav;
   static Uint8List? _clapWav;
   static Uint8List? _sadWav;
 
+  static void setSoundEnabled(bool enabled) {
+    _isSoundEnabled = enabled;
+    if (!enabled) {
+      _stopTickLoop();
+      _tickPlayer.stop();
+      _fxPlayer.stop();
+    }
+  }
+
   static Future<void> onRoundStart() async {
+    if (!_isSoundEnabled) return;
     await _prepareAudio();
     await _playTick();
     await _safeHaptic(HapticFeedback.selectionClick);
@@ -29,24 +40,28 @@ class GameFeedbackService {
 
   static Future<void> onRoundStop() async {
     _stopTickLoop();
+    if (!_isSoundEnabled) return;
     await _playTick();
     await _safeHaptic(HapticFeedback.mediumImpact);
   }
 
   static Future<void> onRoundReset() async {
     _stopTickLoop();
+    if (!_isSoundEnabled) return;
     await _playTick();
     await _safeHaptic(HapticFeedback.lightImpact);
   }
 
   static Future<void> onWin() async {
     _stopTickLoop();
+    if (!_isSoundEnabled) return;
     await _playCelebrationClaps();
     await _safeHaptic(HapticFeedback.heavyImpact);
   }
 
   static Future<void> onLose() async {
     _stopTickLoop();
+    if (!_isSoundEnabled) return;
     await _playSadCue();
     await _safeHaptic(HapticFeedback.selectionClick);
   }
@@ -83,6 +98,7 @@ class GameFeedbackService {
   }
 
   static Future<void> _playTick() async {
+    if (!_isSoundEnabled) return;
     await _prepareAudio();
     try {
       final source = _tickWav;
@@ -98,6 +114,7 @@ class GameFeedbackService {
   }
 
   static Future<void> _playClick() async {
+    if (!_isSoundEnabled) return;
     try {
       await SystemSound.play(SystemSoundType.click);
     } catch (_) {
@@ -106,6 +123,7 @@ class GameFeedbackService {
   }
 
   static Future<void> _playAlert() async {
+    if (!_isSoundEnabled) return;
     try {
       await SystemSound.play(SystemSoundType.alert);
     } catch (_) {
@@ -114,6 +132,7 @@ class GameFeedbackService {
   }
 
   static void _startTickLoop() {
+    if (!_isSoundEnabled) return;
     _tickLoop?.cancel();
     // Keep audio rhythm aligned with the stopwatch second cadence.
     _tickLoop = Timer.periodic(const Duration(seconds: 1), (_) async {

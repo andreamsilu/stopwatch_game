@@ -14,7 +14,9 @@ class RoundPlayPanel extends StatefulWidget {
     required this.targetTime,
     required this.isRunning,
     required this.isBusy,
+    required this.isSoundEnabled,
     required this.onReset,
+    required this.onToggleSound,
     required this.onStartOrStopRound,
     required this.totalWins,
     required this.totalPrizeCoins,
@@ -27,7 +29,9 @@ class RoundPlayPanel extends StatefulWidget {
   final Duration targetTime;
   final bool isRunning;
   final bool isBusy;
+  final bool isSoundEnabled;
   final VoidCallback onReset;
+  final VoidCallback onToggleSound;
   final Future<void> Function() onStartOrStopRound;
   final int totalWins;
   final int totalPrizeCoins;
@@ -115,9 +119,15 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                               ),
                               const Spacer(),
                               IconButton(
-                                onPressed: () {},
-                                icon: const Icon(Icons.volume_up_outlined),
-                                tooltip: 'Sound settings',
+                                onPressed: widget.onToggleSound,
+                                icon: Icon(
+                                  widget.isSoundEnabled
+                                      ? Icons.volume_up_outlined
+                                      : Icons.volume_off_outlined,
+                                ),
+                                tooltip: widget.isSoundEnabled
+                                    ? 'Disable sounds'
+                                    : 'Enable sounds',
                                 visualDensity: VisualDensity.compact,
                                 constraints: const BoxConstraints.tightFor(
                                   width: 36,
@@ -140,9 +150,15 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                         ),
                         const Spacer(),
                         IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.volume_up_outlined),
-                          tooltip: 'Sound settings',
+                          onPressed: widget.onToggleSound,
+                          icon: Icon(
+                            widget.isSoundEnabled
+                                ? Icons.volume_up_outlined
+                                : Icons.volume_off_outlined,
+                          ),
+                          tooltip: widget.isSoundEnabled
+                              ? 'Disable sounds'
+                              : 'Enable sounds',
                           visualDensity: VisualDensity.compact,
                           constraints: const BoxConstraints.tightFor(
                             width: 36,
