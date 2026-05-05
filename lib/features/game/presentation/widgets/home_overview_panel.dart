@@ -47,7 +47,7 @@ class HomeOverviewPanel extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: isSmallMobile ? 16 : 24,
-                      vertical: isSmallMobile ? 20 : 28,
+                      vertical: isSmallMobile ? 18 : 22,
                     ),
                     child: Column(
                       children: [
@@ -81,7 +81,7 @@ class HomeOverviewPanel extends StatelessWidget {
                     'Hit the exact target time to win a prize',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     height: GameConstants.minTouchTargetSize + 6,
@@ -110,12 +110,20 @@ class HomeOverviewPanel extends StatelessWidget {
             final compact = constraints.maxWidth < 560;
             if (compact) {
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _QuickCard(
                     title: 'History',
                     subtitle: 'View your recent round results',
                     icon: Icons.history,
                     onTap: onOpenHistory,
+                  ),
+                  const SizedBox(height: 10),
+                  _QuickCard(
+                    title: 'How to play',
+                    subtitle: 'Start, follow the 1-second beat, stop near target.',
+                    icon: Icons.tips_and_updates_outlined,
+                    onTap: onPlayPressed,
                   ),
                 ],
               );
@@ -128,6 +136,15 @@ class HomeOverviewPanel extends StatelessWidget {
                     subtitle: 'View your recent round results',
                     icon: Icons.history,
                     onTap: onOpenHistory,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _QuickCard(
+                    title: 'How to play',
+                    subtitle: 'Start, follow the 1-second beat, stop near target.',
+                    icon: Icons.tips_and_updates_outlined,
+                    onTap: onPlayPressed,
                   ),
                 ),
               ],

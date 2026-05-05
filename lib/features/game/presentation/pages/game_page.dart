@@ -81,7 +81,7 @@ class GamePage extends ConsumerWidget {
                           activeTab: gameState.selectedTab,
                           onTabSelected: controller.selectTab,
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: SingleChildScrollView(
                             child: Align(
