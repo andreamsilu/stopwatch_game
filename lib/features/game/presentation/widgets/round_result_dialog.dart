@@ -126,12 +126,14 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    widget.result.deltaLabel,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 10),
+                  if (widget.result.outcomeLabel != 'WIN') ...[
+                    Text(
+                      widget.result.deltaLabel,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   SizedBox(
                     height: 56,
                     child: Center(
