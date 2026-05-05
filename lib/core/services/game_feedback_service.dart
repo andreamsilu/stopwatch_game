@@ -11,6 +11,8 @@ import 'package:audioplayers/audioplayers.dart';
 /// feedback without owning platform-specific branching logic.
 class GameFeedbackService {
   const GameFeedbackService._();
+  static const _winClapAssetPath = 'win-clap.mp3';
+  static const _loseMusicAssetPath = 'lose-music.mp3';
 
   static final AudioPlayer _tickPlayer = AudioPlayer();
   static final AudioPlayer _fxPlayer = AudioPlayer();
@@ -146,6 +148,13 @@ class GameFeedbackService {
   }
 
   static Future<void> _playCelebrationClaps() async {
+    try {
+      await _fxPlayer.stop();
+      await _fxPlayer.play(AssetSource(_winClapAssetPath));
+      return;
+    } catch (_) {
+      // Fall back to generated clap pattern when asset playback is unavailable.
+    }
     await _prepareAudio();
     final source = _clapWav;
     if (source == null) {
@@ -168,6 +177,13 @@ class GameFeedbackService {
   }
 
   static Future<void> _playSadCue() async {
+    try {
+      await _fxPlayer.stop();
+      await _fxPlayer.play(AssetSource(_loseMusicAssetPath));
+      return;
+    } catch (_) {
+      // Fall back to generated sad cue when asset playback is unavailable.
+    }
     await _prepareAudio();
     final source = _sadWav;
     if (source == null) {
