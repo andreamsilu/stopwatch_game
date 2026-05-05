@@ -7,7 +7,6 @@ import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
@@ -44,6 +43,23 @@ class GamePage extends ConsumerWidget {
     });
 
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        actions: [
+          Builder(
+            builder: (context) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton.filledTonal(
+                onPressed: () => Scaffold.of(context).openEndDrawer(),
+                tooltip: 'Open navigation menu',
+                icon: const Icon(Icons.menu_rounded),
+              ),
+            ),
+          ),
+        ],
+      ),
       endDrawer: Drawer(
         child: SafeArea(
           child: Padding(
@@ -58,12 +74,47 @@ class GamePage extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                GameTopNavigation(
-                  activeTab: gameState.selectedTab,
-                  onTabSelected: (tab) {
-                    controller.selectTab(tab);
-                    Navigator.of(context).maybePop();
-                  },
+                Expanded(
+                  child: ListView(
+                    children: [
+                      _DrawerNavTile(
+                        label: 'Home',
+                        icon: Icons.home_outlined,
+                        isActive: gameState.selectedTab == GameTab.home,
+                        onTap: () {
+                          controller.selectTab(GameTab.home);
+                          Navigator.of(context).maybePop();
+                        },
+                      ),
+                      _DrawerNavTile(
+                        label: 'Play',
+                        icon: Icons.play_arrow_rounded,
+                        isActive: gameState.selectedTab == GameTab.play,
+                        onTap: () {
+                          controller.selectTab(GameTab.play);
+                          Navigator.of(context).maybePop();
+                        },
+                      ),
+                      _DrawerNavTile(
+                        label: 'History',
+                        icon: Icons.history,
+                        isActive: gameState.selectedTab == GameTab.history,
+                        onTap: () {
+                          controller.selectTab(GameTab.history);
+                          Navigator.of(context).maybePop();
+                        },
+                      ),
+                      _DrawerNavTile(
+                        label: 'Support',
+                        icon: Icons.support_agent_outlined,
+                        isActive: gameState.selectedTab == GameTab.support,
+                        onTap: () {
+                          controller.selectTab(GameTab.support);
+                          Navigator.of(context).maybePop();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -103,18 +154,6 @@ class GamePage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _GameHeaderBar(activeTab: gameState.selectedTab),
-                        const SizedBox(height: 6),
-                        Builder(
-                          builder: (context) => Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton.filledTonal(
-                              onPressed: () => Scaffold.of(context).openEndDrawer(),
-                              tooltip: 'Open navigation menu',
-                              icon: const Icon(Icons.menu_rounded),
-                            ),
-                          ),
-                        ),
                         Expanded(
                           child: RefreshIndicator(
                             onRefresh: controller.onPullToRefresh,
@@ -178,38 +217,32 @@ class GamePage extends ConsumerWidget {
   }
 }
 
-class _GameHeaderBar extends StatelessWidget {
-  const _GameHeaderBar({required this.activeTab});
+class _DrawerNavTile extends StatelessWidget {
+  const _DrawerNavTile({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.onTap,
+  });
 
-  final GameTab activeTab;
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            _titleForTab(activeTab),
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        onTap: onTap,
+        leading: Icon(icon),
+        title: Text(label),
+        selected: isActive,
+        selectedTileColor: AppColors.secondary.withValues(alpha: 0.16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
-  }
-
-  String _titleForTab(GameTab tab) {
-    switch (tab) {
-      case GameTab.home:
-        return 'Home';
-      case GameTab.play:
-        return 'Play';
-      case GameTab.history:
-        return 'History';
-      case GameTab.support:
-        return 'Support';
-    }
   }
 }
 
