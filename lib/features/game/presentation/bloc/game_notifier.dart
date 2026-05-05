@@ -64,13 +64,16 @@ class GameController extends StateNotifier<GameState> {
       ),
       ...state.history,
     ];
+    _stopwatch.reset();
 
     state = state.copyWith(
       isRunning: false,
       isSubmitting: false,
-      elapsed: stoppedElapsed,
+      elapsed: Duration.zero,
       latestResult: backendResult,
       history: nextHistory,
+      totalWins: state.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
+      totalPrizeCoins: state.totalPrizeCoins + backendResult.prizeCoins,
     );
   }
 
@@ -112,19 +115,25 @@ class GameController extends StateNotifier<GameState> {
     // For now, derive result from local stopwatch and target.
     final differenceMs =
         actualElapsed.inMilliseconds - targetTime.inMilliseconds;
-    const winToleranceMs = 50;
+    // Award a win when the stop is within +/-100ms of target.
+    const winToleranceMs = 100;
     final isWin = differenceMs.abs() <= winToleranceMs;
     final absDifferenceMs = differenceMs.abs();
     final timingDirection = differenceMs < 0 ? 'Early' : 'Late';
     final deltaLabel = isWin
-        ? 'Perfect stop on target'
+        ? 'Great timing! Within +/-$winToleranceMs ms. Prize unlocked!'
         : '$timingDirection by $absDifferenceMs ms';
+    const perfectStopPrizeCoins = 100;
+    const perfectStopPrizeLabel = 'Perfect Stop Reward';
 
     return RoundResultData(
       outcomeLabel: isWin ? 'WIN' : 'LOSE',
       deltaLabel: deltaLabel,
       finalTimeLabel: _formatDurationWithMilliseconds(actualElapsed),
       differenceMs: differenceMs,
+      prizeLabel: isWin ? perfectStopPrizeLabel : 'No prize',
+      prizeCoins: isWin ? perfectStopPrizeCoins : 0,
+      isPrizeAwarded: isWin,
     );
   }
 

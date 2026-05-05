@@ -5,13 +5,11 @@ import 'package:stopwatch_game/core/constants/game_constants.dart';
 class HomeOverviewPanel extends StatelessWidget {
   const HomeOverviewPanel({
     required this.onPlayPressed,
-    required this.onOpenLeaderboard,
     required this.onOpenHistory,
     super.key,
   });
 
   final VoidCallback onPlayPressed;
-  final VoidCallback onOpenLeaderboard;
   final VoidCallback onOpenHistory;
 
   @override
@@ -28,11 +26,32 @@ class HomeOverviewPanel extends StatelessWidget {
           },
           child: Card(
             margin: EdgeInsets.zero,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                children: [
-                  AnimatedContainer(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallMobile = constraints.maxWidth < 380;
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.background,
+                        AppColors.secondary.withValues(alpha: 0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallMobile ? 16 : 24,
+                      vertical: isSmallMobile ? 20 : 28,
+                    ),
+                    child: Column(
+                      children: [
+                        AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
                     width: 64,
@@ -49,14 +68,17 @@ class HomeOverviewPanel extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Stopwatch Challenge',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    style: (isSmallMobile
+                            ? Theme.of(context).textTheme.headlineSmall
+                            : Theme.of(context).textTheme.displaySmall)
+                        ?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Stop at the perfect time',
+                    'Hit the exact target time to win a prize',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 18),
@@ -74,8 +96,11 @@ class HomeOverviewPanel extends StatelessWidget {
                       label: const Text('Play'),
                     ),
                   ),
-                ],
-              ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -87,15 +112,8 @@ class HomeOverviewPanel extends StatelessWidget {
               return Column(
                 children: [
                   _QuickCard(
-                    title: 'Leaderboard',
-                    subtitle: 'Rank #124 globally',
-                    icon: Icons.emoji_events_outlined,
-                    onTap: onOpenLeaderboard,
-                  ),
-                  const SizedBox(height: 10),
-                  _QuickCard(
                     title: 'History',
-                    subtitle: 'Last: 00:05.02',
+                    subtitle: 'View your recent round results',
                     icon: Icons.history,
                     onTap: onOpenHistory,
                   ),
@@ -106,17 +124,8 @@ class HomeOverviewPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _QuickCard(
-                    title: 'Leaderboard',
-                    subtitle: 'Rank #124 globally',
-                    icon: Icons.emoji_events_outlined,
-                    onTap: onOpenLeaderboard,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _QuickCard(
                     title: 'History',
-                    subtitle: 'Last: 00:05.02',
+                    subtitle: 'View your recent round results',
                     icon: Icons.history,
                     onTap: onOpenHistory,
                   ),
@@ -130,7 +139,7 @@ class HomeOverviewPanel extends StatelessWidget {
   }
 }
 
-class _QuickCard extends StatelessWidget {
+class _QuickCard extends StatefulWidget {
   const _QuickCard({
     required this.title,
     required this.subtitle,
@@ -144,34 +153,85 @@ class _QuickCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_QuickCard> createState() => _QuickCardState();
+}
+
+class _QuickCardState extends State<_QuickCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '$title section',
+      label: '${widget.title} section',
       button: true,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        splashColor: AppColors.secondary.withValues(alpha: 0.14),
-        highlightColor: AppColors.secondary.withValues(alpha: 0.08),
-        child: Card(
-          margin: EdgeInsets.zero,
-          color: const Color(0xFFF8FAFC),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, size: 18, color: AppColors.primary),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          scale: _isHovered ? 1.01 : 1,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: widget.onTap,
+            splashColor: AppColors.secondary.withValues(alpha: 0.14),
+            highlightColor: AppColors.secondary.withValues(alpha: 0.08),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.background,
+                    AppColors.secondary.withValues(alpha: 0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isHovered
+                      ? AppColors.accent.withValues(alpha: 0.55)
+                      : AppColors.primary.withValues(alpha: 0.08),
+                ),
+                boxShadow: _isHovered
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.16),
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Card(
+                margin: EdgeInsets.zero,
+                color: Colors.transparent,
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(widget.icon, size: 18, color: AppColors.primary),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.title,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.subtitle,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-              ],
+              ),
             ),
           ),
         ),

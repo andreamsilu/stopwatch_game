@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/leaderboard_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_result_dialog.dart';
 
@@ -25,11 +27,17 @@ class GamePage extends ConsumerWidget {
       final shouldShowDialog = next.latestResult != null && !hadDialog;
       if (!shouldShowDialog || !context.mounted) return;
       final result = next.latestResult!;
+      if (result.isPrizeAwarded) {
+        await GameFeedbackService.onWin();
+      } else {
+        await GameFeedbackService.onLose();
+      }
       await showDialog<void>(
         context: context,
         builder: (_) => RoundResultDialog(
           result: result,
           onPlayAgain: controller.onResetPressed,
+          onCancel: controller.onResetPressed,
         ),
       );
       controller.dismissResultDialog();
@@ -47,12 +55,13 @@ class GamePage extends ConsumerWidget {
                   width < GameConstants.tabletBreakpoint;
               final isLargeDesktop = width >= 1400;
               final isWindows = defaultTargetPlatform == TargetPlatform.windows;
+              final isVerySmallMobile = width < 380;
               final horizontalPadding = isMobile
-                  ? 14.0
+                  ? (isVerySmallMobile ? 8.0 : 12.0)
                   : (isWindows
                         ? 12.0
                         : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0)));
-              final verticalPadding = isMobile ? 16.0 : 24.0;
+              final verticalPadding = isMobile ? (isVerySmallMobile ? 10.0 : 14.0) : 24.0;
               final maxContentWidth = isMobile
                   ? width
                   : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
@@ -97,22 +106,22 @@ class GamePage extends ConsumerWidget {
                                       ),
                                     );
                                   },
-                                  child: _GameBody(
-                                    key: ValueKey<GameTab>(gameState.selectedTab),
-                                    state: gameState,
-                                    onPlayPressed: controller.openRoundBoard,
-                                    onOpenLeaderboard: () =>
-                                        controller.selectTab(GameTab.leaderboard),
-                                    onOpenHistory: () =>
-                                        controller.selectTab(GameTab.history),
-                                    onResetRound: controller.onResetPressed,
-                                    onStartOrStopRound: () async {
-                                      if (gameState.isRunning) {
-                                        await controller.onStopPressed();
-                                      } else {
-                                        await controller.onStartPressed();
-                                      }
-                                    },
+                                  child: _GamePanelShell(
+                                    child: _GameBody(
+                                      key: ValueKey<GameTab>(gameState.selectedTab),
+                                      state: gameState,
+                                      onPlayPressed: controller.openRoundBoard,
+                                      onOpenHistory: () =>
+                                          controller.selectTab(GameTab.history),
+                                      onResetRound: controller.onResetPressed,
+                                      onStartOrStopRound: () async {
+                                        if (gameState.isRunning) {
+                                          await controller.onStopPressed();
+                                        } else {
+                                          await controller.onStartPressed();
+                                        }
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
@@ -132,12 +141,47 @@ class GamePage extends ConsumerWidget {
   }
 }
 
+class _GamePanelShell extends StatelessWidget {
+  const _GamePanelShell({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallMobile = screenWidth < 420;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.background.withValues(alpha: 0.96),
+            AppColors.secondary.withValues(alpha: 0.08),
+            AppColors.background.withValues(alpha: 0.96),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.24)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.14),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(isSmallMobile ? 4 : 8),
+      child: child,
+    );
+  }
+}
+
 class _GameBody extends StatelessWidget {
   const _GameBody({
     super.key,
     required this.state,
     required this.onPlayPressed,
-    required this.onOpenLeaderboard,
     required this.onOpenHistory,
     required this.onResetRound,
     required this.onStartOrStopRound,
@@ -145,7 +189,6 @@ class _GameBody extends StatelessWidget {
 
   final GameState state;
   final VoidCallback onPlayPressed;
-  final VoidCallback onOpenLeaderboard;
   final VoidCallback onOpenHistory;
   final VoidCallback onResetRound;
   final Future<void> Function() onStartOrStopRound;
@@ -156,20 +199,21 @@ class _GameBody extends StatelessWidget {
       case GameTab.home:
         return HomeOverviewPanel(
           onPlayPressed: onPlayPressed,
-          onOpenLeaderboard: onOpenLeaderboard,
           onOpenHistory: onOpenHistory,
         );
       case GameTab.play:
         return RoundPlayPanel(
           targetTimeLabel: state.targetTimeLabel,
           currentTimeLabel: state.elapsedTimeLabel,
+          elapsed: state.elapsed,
+          targetTime: state.targetTime,
           isRunning: state.isRunning,
           isBusy: state.isSubmitting,
           onReset: onResetRound,
           onStartOrStopRound: onStartOrStopRound,
+          totalWins: state.totalWins,
+          totalPrizeCoins: state.totalPrizeCoins,
         );
-      case GameTab.leaderboard:
-        return LeaderboardPanel(entries: state.leaderboard);
       case GameTab.history:
         return HistoryPanel(history: state.history);
       case GameTab.support:

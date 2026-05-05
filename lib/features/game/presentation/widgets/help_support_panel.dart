@@ -56,12 +56,35 @@ class _SupportItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.background,
+            AppColors.secondary.withValues(alpha: 0.1),
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD6DFEA)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: ListTile(
-        leading: const Icon(Icons.help_outline, color: AppColors.primary),
+        leading: Icon(
+          Icons.help_outline,
+          color: AppColors.primary,
+          shadows: [
+            Shadow(
+              color: AppColors.accent.withValues(alpha: 0.35),
+              blurRadius: 8,
+            ),
+          ],
+        ),
         title: Text(title),
         subtitle: Text(subtitle),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),

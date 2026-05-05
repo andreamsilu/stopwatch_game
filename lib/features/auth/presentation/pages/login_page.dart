@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
-import 'package:stopwatch_game/features/auth/presentation/widgets/login_brand_header.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_footer.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_form_card.dart';
-import 'package:stopwatch_game/features/auth/presentation/widgets/secure_access_card.dart';
 import 'package:stopwatch_game/features/game/presentation/pages/game_page.dart';
 
 class LoginPage extends ConsumerWidget {
@@ -39,8 +37,7 @@ class LoginPage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const LoginBrandHeader(),
-                        SizedBox(height: isMobile ? 28 : 56),
+                        SizedBox(height: isMobile ? 10 : 20),
                         Align(
                           child: Container(
                             width: 60,
@@ -106,14 +103,7 @@ class LoginPage extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        Align(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 430),
-                            child: const SecureAccessCard(),
-                          ),
-                        ),
-                        SizedBox(height: isMobile ? 36 : 56),
+                        SizedBox(height: isMobile ? 30 : 46),
                         const LoginFooter(),
                       ],
                     ),

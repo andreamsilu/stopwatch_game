@@ -48,7 +48,7 @@ class GameTopNavigation extends StatelessWidget {
   }
 }
 
-class _TabButton extends StatelessWidget {
+class _TabButton extends StatefulWidget {
   const _TabButton({
     required this.tab,
     required this.isActive,
@@ -60,46 +60,78 @@ class _TabButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
+  State<_TabButton> createState() => _TabButtonState();
+}
+
+class _TabButtonState extends State<_TabButton> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '${_labelForTab(tab)} tab',
+      label: '${_labelForTab(widget.tab)} tab',
       button: true,
-      selected: isActive,
-      child: SizedBox(
-        height: GameConstants.minTouchTargetSize,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+      selected: widget.isActive,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 150),
+          scale: _isHovered && !widget.isActive ? 1.03 : 1,
           curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isActive
-                ? const [
-                    BoxShadow(
-                      color: Color(0x26A88300),
-                      blurRadius: 14,
-                      offset: Offset(0, 5),
-                    ),
-                  ]
-                : null,
-          ),
-          child: TextButton(
-            onPressed: onPressed,
-            style: TextButton.styleFrom(
-              foregroundColor: isActive
-                  ? AppColors.onAccent
-                  : AppColors.onBackground.withValues(alpha: 0.82),
-              shape: RoundedRectangleBorder(
+          child: SizedBox(
+            height: GameConstants.minTouchTargetSize,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                gradient: widget.isActive
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.accent, AppColors.secondary],
+                      )
+                    : null,
+                color: widget.isActive
+                    ? null
+                    : (_isHovered
+                          ? AppColors.secondary.withValues(alpha: 0.14)
+                          : Colors.transparent),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: widget.isActive
+                      ? AppColors.primary.withValues(alpha: 0.25)
+                      : AppColors.primary.withValues(alpha: 0.1),
+                ),
+                boxShadow: widget.isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.35),
+                          blurRadius: 14,
+                          offset: Offset(0, 5),
+                        ),
+                      ]
+                    : null,
               ),
-              minimumSize: const Size(86, GameConstants.minTouchTargetSize),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-            ),
-            child: Text(
-              _labelForTab(tab),
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              child: TextButton(
+                onPressed: widget.onPressed,
+                style: TextButton.styleFrom(
+                  foregroundColor: widget.isActive
+                      ? AppColors.onAccent
+                      : AppColors.onBackground.withValues(alpha: 0.82),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  minimumSize: const Size(86, GameConstants.minTouchTargetSize),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                ),
+                child: Text(
+                  _labelForTab(widget.tab),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -113,8 +145,6 @@ class _TabButton extends StatelessWidget {
         return 'Home';
       case GameTab.play:
         return 'Play';
-      case GameTab.leaderboard:
-        return 'Leaderboard';
       case GameTab.history:
         return 'History';
       case GameTab.support:
@@ -122,3 +152,4 @@ class _TabButton extends StatelessWidget {
     }
   }
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
