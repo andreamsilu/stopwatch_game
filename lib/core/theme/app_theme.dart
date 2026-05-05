@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 
 class AppTheme {
@@ -21,24 +22,26 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFFF2F6FB),
-      textTheme:
-          const TextTheme(
-            displayLarge: TextStyle(fontSize: 46, fontWeight: FontWeight.w700),
-            displayMedium: TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
-            displaySmall: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
-            headlineMedium: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
-            headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-            titleLarge: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
-            titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-            bodyLarge: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-            bodyMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-            bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-          ).apply(
-            bodyColor: AppColors.onBackground,
-            displayColor: AppColors.onBackground,
-          ),
+      fontFamily: GoogleFonts.figtree().fontFamily,
+      textTheme: GoogleFonts.figtreeTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(fontSize: 46, fontWeight: FontWeight.w700),
+          displayMedium: TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
+          displaySmall: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+          headlineMedium: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          titleLarge: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
+          titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          bodyLarge: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+          bodyMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ).apply(
+          bodyColor: AppColors.onBackground,
+          displayColor: AppColors.onBackground,
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
