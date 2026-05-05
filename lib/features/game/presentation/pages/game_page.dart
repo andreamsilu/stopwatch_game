@@ -7,6 +7,7 @@ import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
@@ -18,6 +19,8 @@ class GamePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final useDrawerNav =
+        MediaQuery.of(context).size.width < GameConstants.mobileBreakpoint;
     final gameState = ref.watch(gameControllerProvider);
     final controller = ref.read(gameControllerProvider.notifier);
 
@@ -43,84 +46,88 @@ class GamePage extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        actions: [
-          Builder(
-            builder: (context) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton.filledTonal(
-                onPressed: () => Scaffold.of(context).openEndDrawer(),
-                tooltip: 'Open navigation menu',
-                icon: const Icon(Icons.menu_rounded),
-              ),
-            ),
-          ),
-        ],
-      ),
-      endDrawer: Drawer(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Navigation',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
+      appBar: useDrawerNav
+          ? AppBar(
+              automaticallyImplyLeading: false,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              actions: [
+                Builder(
+                  builder: (context) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton.filledTonal(
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                      tooltip: 'Open navigation menu',
+                      icon: const Icon(Icons.menu_rounded),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: ListView(
+              ],
+            )
+          : null,
+      endDrawer: useDrawerNav
+          ? Drawer(
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _DrawerNavTile(
-                        label: 'Home',
-                        icon: Icons.home_outlined,
-                        isActive: gameState.selectedTab == GameTab.home,
-                        onTap: () {
-                          controller.selectTab(GameTab.home);
-                          Navigator.of(context).maybePop();
-                        },
+                      Text(
+                        'Navigation',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      _DrawerNavTile(
-                        label: 'Play',
-                        icon: Icons.play_arrow_rounded,
-                        isActive: gameState.selectedTab == GameTab.play,
-                        onTap: () {
-                          controller.selectTab(GameTab.play);
-                          Navigator.of(context).maybePop();
-                        },
-                      ),
-                      _DrawerNavTile(
-                        label: 'History',
-                        icon: Icons.history,
-                        isActive: gameState.selectedTab == GameTab.history,
-                        onTap: () {
-                          controller.selectTab(GameTab.history);
-                          Navigator.of(context).maybePop();
-                        },
-                      ),
-                      _DrawerNavTile(
-                        label: 'Support',
-                        icon: Icons.support_agent_outlined,
-                        isActive: gameState.selectedTab == GameTab.support,
-                        onTap: () {
-                          controller.selectTab(GameTab.support);
-                          Navigator.of(context).maybePop();
-                        },
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            _DrawerNavTile(
+                              label: 'Home',
+                              icon: Icons.home_outlined,
+                              isActive: gameState.selectedTab == GameTab.home,
+                              onTap: () {
+                                controller.selectTab(GameTab.home);
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                            _DrawerNavTile(
+                              label: 'Play',
+                              icon: Icons.play_arrow_rounded,
+                              isActive: gameState.selectedTab == GameTab.play,
+                              onTap: () {
+                                controller.selectTab(GameTab.play);
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                            _DrawerNavTile(
+                              label: 'History',
+                              icon: Icons.history,
+                              isActive: gameState.selectedTab == GameTab.history,
+                              onTap: () {
+                                controller.selectTab(GameTab.history);
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                            _DrawerNavTile(
+                              label: 'Support',
+                              icon: Icons.support_agent_outlined,
+                              isActive: gameState.selectedTab == GameTab.support,
+                              onTap: () {
+                                controller.selectTab(GameTab.support);
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
+              ),
+            )
+          : null,
       body: ExperienceBackground(
         child: SafeArea(
           child: LayoutBuilder(
@@ -154,6 +161,13 @@ class GamePage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (!useDrawerNav) ...[
+                          GameTopNavigation(
+                            activeTab: gameState.selectedTab,
+                            onTabSelected: controller.selectTab,
+                          ),
+                          const SizedBox(height: 6),
+                        ],
                         Expanded(
                           child: RefreshIndicator(
                             onRefresh: controller.onPullToRefresh,
