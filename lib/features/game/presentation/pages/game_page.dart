@@ -44,6 +44,32 @@ class GamePage extends ConsumerWidget {
     });
 
     return Scaffold(
+      endDrawer: Drawer(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Navigation',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                GameTopNavigation(
+                  activeTab: gameState.selectedTab,
+                  onTabSelected: (tab) {
+                    controller.selectTab(tab);
+                    Navigator.of(context).maybePop();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: ExperienceBackground(
         child: SafeArea(
           child: LayoutBuilder(
@@ -61,7 +87,7 @@ class GamePage extends ConsumerWidget {
                   : (isWindows
                         ? 12.0
                         : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0)));
-              final verticalPadding = isMobile ? (isVerySmallMobile ? 10.0 : 14.0) : 24.0;
+              final verticalPadding = isMobile ? (isVerySmallMobile ? 6.0 : 8.0) : 20.0;
               final maxContentWidth = isMobile
                   ? width
                   : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
@@ -77,50 +103,61 @@ class GamePage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        GameTopNavigation(
-                          activeTab: gameState.selectedTab,
-                          onTabSelected: controller.selectTab,
+                        _GameHeaderBar(activeTab: gameState.selectedTab),
+                        const SizedBox(height: 6),
+                        Builder(
+                          builder: (context) => Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton.filledTonal(
+                              onPressed: () => Scaffold.of(context).openEndDrawer(),
+                              tooltip: 'Open navigation menu',
+                              icon: const Icon(Icons.menu_rounded),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 8),
                         Expanded(
-                          child: SingleChildScrollView(
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: isLargeDesktop ? 1100 : double.infinity,
-                                ),
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 220),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  transitionBuilder: (child, animation) {
-                                    return FadeTransition(
-                                      opacity: animation,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(0, 0.02),
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: child,
+                          child: RefreshIndicator(
+                            onRefresh: controller.onPullToRefresh,
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: isLargeDesktop ? 1100 : double.infinity,
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 220),
+                                    switchInCurve: Curves.easeOutCubic,
+                                    switchOutCurve: Curves.easeInCubic,
+                                    transitionBuilder: (child, animation) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: SlideTransition(
+                                          position: Tween<Offset>(
+                                            begin: const Offset(0, 0.02),
+                                            end: Offset.zero,
+                                          ).animate(animation),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: _GamePanelShell(
+                                      child: _GameBody(
+                                        key: ValueKey<GameTab>(gameState.selectedTab),
+                                        state: gameState,
+                                        onPlayPressed: controller.openRoundBoard,
+                                        onOpenHistory: () =>
+                                            controller.selectTab(GameTab.history),
+                                        onResetRound: controller.onResetPressed,
+                                        onStartOrStopRound: () async {
+                                          if (gameState.isRunning) {
+                                            await controller.onStopPressed();
+                                          } else {
+                                            await controller.onStartPressed();
+                                          }
+                                        },
                                       ),
-                                    );
-                                  },
-                                  child: _GamePanelShell(
-                                    child: _GameBody(
-                                      key: ValueKey<GameTab>(gameState.selectedTab),
-                                      state: gameState,
-                                      onPlayPressed: controller.openRoundBoard,
-                                      onOpenHistory: () =>
-                                          controller.selectTab(GameTab.history),
-                                      onResetRound: controller.onResetPressed,
-                                      onStartOrStopRound: () async {
-                                        if (gameState.isRunning) {
-                                          await controller.onStopPressed();
-                                        } else {
-                                          await controller.onStartPressed();
-                                        }
-                                      },
                                     ),
                                   ),
                                 ),
@@ -138,6 +175,41 @@ class GamePage extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _GameHeaderBar extends StatelessWidget {
+  const _GameHeaderBar({required this.activeTab});
+
+  final GameTab activeTab;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            _titleForTab(activeTab),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _titleForTab(GameTab tab) {
+    switch (tab) {
+      case GameTab.home:
+        return 'Home';
+      case GameTab.play:
+        return 'Play';
+      case GameTab.history:
+        return 'History';
+      case GameTab.support:
+        return 'Support';
+    }
   }
 }
 
@@ -171,7 +243,7 @@ class _GamePanelShell extends StatelessWidget {
           ),
         ],
       ),
-      padding: EdgeInsets.all(isSmallMobile ? 4 : 8),
+      padding: EdgeInsets.all(isSmallMobile ? 2 : 8),
       child: child,
     );
   }

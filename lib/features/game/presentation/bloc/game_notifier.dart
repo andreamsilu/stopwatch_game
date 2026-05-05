@@ -91,6 +91,14 @@ class GameController extends StateNotifier<GameState> {
     );
   }
 
+  Future<void> onPullToRefresh() async {
+    if (state.isSubmitting) return;
+    onResetPressed();
+    state = state.copyWith(clearLatestResult: true);
+    // Keep the indicator visible briefly so users perceive refresh feedback.
+    await Future<void>.delayed(const Duration(milliseconds: 260));
+  }
+
   void dismissResultDialog() {
     state = state.copyWith(clearLatestResult: true);
   }

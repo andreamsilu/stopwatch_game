@@ -83,6 +83,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallMobile = screenWidth < 380;
+    final isTightMobile = screenWidth < 430;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -92,8 +93,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 12 : 18,
-                  vertical: isSmallMobile ? 8 : 10,
+                  horizontal: isSmallMobile ? 10 : 16,
+                  vertical: isSmallMobile ? 6 : 8,
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -117,6 +118,11 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                 onPressed: () {},
                                 icon: const Icon(Icons.volume_up_outlined),
                                 tooltip: 'Sound settings',
+                                visualDensity: VisualDensity.compact,
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 36,
+                                  height: 36,
+                                ),
                               ),
                             ],
                           ),
@@ -137,6 +143,11 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                           onPressed: () {},
                           icon: const Icon(Icons.volume_up_outlined),
                           tooltip: 'Sound settings',
+                          visualDensity: VisualDensity.compact,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
                         ),
                       ],
                     );
@@ -146,16 +157,21 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               const Divider(height: 1),
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 12 : 20,
-                  vertical: isSmallMobile ? 8 : 14,
+                  horizontal: isSmallMobile ? 10 : 18,
+                  vertical: isSmallMobile ? 6 : 10,
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final maxWidth = constraints.maxWidth;
-                    final responsivePreferred = maxWidth < 600
-                        ? (maxWidth * 0.82)
-                        : GameConstants.stopwatchCircleDesktopDiameter;
-                    final maxAllowedDiameter = (maxWidth - 20).clamp(140.0, 360.0);
+                    final compactPanel = maxWidth < 430;
+                    final responsivePreferred = compactPanel
+                        ? (maxWidth * 0.66)
+                        : (maxWidth < 600
+                              ? (maxWidth * 0.76)
+                              : GameConstants.stopwatchCircleDesktopDiameter);
+                    final maxAllowedDiameter = compactPanel
+                        ? (maxWidth - 36).clamp(140.0, 260.0)
+                        : (maxWidth - 20).clamp(140.0, 360.0);
                     final circleDiameter = responsivePreferred
                         .clamp(140.0, maxAllowedDiameter)
                         .toDouble();
@@ -167,7 +183,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                               .clamp(0.0, 1.0);
                     // Keep elapsed time clear of rotating progress cycles.
                     final timerFontSize = (circleDiameter * 0.19)
-                        .clamp(24.0, 44.0)
+                        .clamp(compactPanel ? 22.0 : 24.0, compactPanel ? 38.0 : 44.0)
                         .toDouble();
                     final timerMaxWidth = (circleDiameter * 0.56)
                         .clamp(88.0, 180.0)
@@ -270,7 +286,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: compactPanel ? 10 : 16),
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final compactStats = constraints.maxWidth < 420;
@@ -281,36 +297,23 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                     children: [
                                       Expanded(
                                         child: _RoundStatCard(
-                                          label: 'Start time',
-                                          value: '00:00.000',
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: _RoundStatCard(
                                           label: 'Target time',
                                           value: widget.targetTimeLabel,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: _RoundStatCard(
                                           label: 'Prize coins',
                                           value: '${widget.totalPrizeCoins}',
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: _RoundStatCard(
-                                          label: 'Perfect stops',
-                                          value: '${widget.totalWins}',
-                                        ),
-                                      ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _RoundStatCard(
+                                    label: 'Perfect stops',
+                                    value: '${widget.totalWins}',
                                   ),
                                 ],
                               );
@@ -319,25 +322,18 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                               children: [
                                 Expanded(
                                   child: _RoundStatCard(
-                                    label: 'Start time',
-                                    value: '00:00.000',
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _RoundStatCard(
                                     label: 'Target time',
                                     value: widget.targetTimeLabel,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: _RoundStatCard(
                                     label: 'Prize coins',
                                     value: '${widget.totalPrizeCoins}',
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: _RoundStatCard(
                                     label: 'Perfect stops',
@@ -356,12 +352,12 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isTightMobile ? 8 : 12),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 560;
             final resetButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + 6,
+              height: GameConstants.minTouchTargetSize + (isTightMobile ? 2 : 6),
               child: OutlinedButton.icon(
                 onPressed: widget.isBusy
                     ? null
@@ -374,7 +370,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               ),
             );
             final startButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + 6,
+              height: GameConstants.minTouchTargetSize + (isTightMobile ? 2 : 6),
               child: AnimatedScale(
                 duration: const Duration(milliseconds: 170),
                 curve: Curves.easeOutCubic,
