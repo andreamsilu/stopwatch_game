@@ -15,21 +15,28 @@ void main() {
 }
 
 bool _blockInspectionShortcuts(KeyEvent event) {
-  if (!kIsWeb || event is! KeyDownEvent) {
-    return false;
-  }
+  if (!kIsWeb || event is! KeyDownEvent) return false;
 
   final keyboard = HardwareKeyboard.instance;
   final key = event.logicalKey;
   final ctrlOrCmd = keyboard.isControlPressed || keyboard.isMetaPressed;
 
-  return key == LogicalKeyboardKey.f12 ||
+  // Block devtools / source view shortcuts.
+  final isDevToolsCombo =
+      key == LogicalKeyboardKey.f12 ||
       (ctrlOrCmd &&
           keyboard.isShiftPressed &&
           (key == LogicalKeyboardKey.keyI ||
               key == LogicalKeyboardKey.keyJ ||
               key == LogicalKeyboardKey.keyC)) ||
       (ctrlOrCmd && key == LogicalKeyboardKey.keyU);
+
+  // Block common navigation shortcuts (reload / close tab) while game is active.
+  final isNavigationCombo = ctrlOrCmd &&
+      (key == LogicalKeyboardKey.keyR || // reload
+          key == LogicalKeyboardKey.keyW); // close tab
+
+  return isDevToolsCombo || isNavigationCombo;
 }
 
 class StopwatchChallengeApp extends StatelessWidget {

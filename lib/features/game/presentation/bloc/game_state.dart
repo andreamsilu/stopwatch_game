@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum GameTab { home, play, history, support }
 
 class RoundResultData {
@@ -39,6 +41,10 @@ class GameState {
     required this.isRunning,
     required this.isSubmitting,
     required this.isSoundEnabled,
+    required this.startButtonVisualOffset,
+    required this.startButtonHitboxOffset,
+    required this.interactionSessionId,
+    required this.latestInteractionPayload,
     required this.targetTime,
     required this.latestResult,
     required this.history,
@@ -52,6 +58,10 @@ class GameState {
       isRunning = false,
       isSubmitting = false,
       isSoundEnabled = true,
+      startButtonVisualOffset = Offset.zero,
+      startButtonHitboxOffset = Offset.zero,
+      interactionSessionId = 'bootstrap-session',
+      latestInteractionPayload = null,
       targetTime = const Duration(milliseconds: 8200),
       latestResult = null,
       history = const [],
@@ -63,6 +73,10 @@ class GameState {
   final bool isRunning;
   final bool isSubmitting;
   final bool isSoundEnabled;
+  final Offset startButtonVisualOffset;
+  final Offset startButtonHitboxOffset;
+  final String interactionSessionId;
+  final Map<String, dynamic>? latestInteractionPayload;
   final Duration targetTime;
   final RoundResultData? latestResult;
   final List<HistoryEntry> history;
@@ -104,6 +118,11 @@ class GameState {
     bool? isRunning,
     bool? isSubmitting,
     bool? isSoundEnabled,
+    Offset? startButtonVisualOffset,
+    Offset? startButtonHitboxOffset,
+    String? interactionSessionId,
+    Map<String, dynamic>? latestInteractionPayload,
+    bool clearLatestInteractionPayload = false,
     Duration? targetTime,
     RoundResultData? latestResult,
     bool clearLatestResult = false,
@@ -117,6 +136,14 @@ class GameState {
       isRunning: isRunning ?? this.isRunning,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
+      startButtonVisualOffset:
+          startButtonVisualOffset ?? this.startButtonVisualOffset,
+      startButtonHitboxOffset:
+          startButtonHitboxOffset ?? this.startButtonHitboxOffset,
+      interactionSessionId: interactionSessionId ?? this.interactionSessionId,
+      latestInteractionPayload: clearLatestInteractionPayload
+          ? null
+          : (latestInteractionPayload ?? this.latestInteractionPayload),
       targetTime: targetTime ?? this.targetTime,
       latestResult: clearLatestResult
           ? null

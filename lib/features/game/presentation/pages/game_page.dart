@@ -6,7 +6,6 @@ import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
-import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
@@ -204,6 +203,12 @@ class GamePage extends ConsumerWidget {
                                             controller.selectTab(GameTab.history),
                                         onResetRound: controller.onResetPressed,
                                       onToggleSound: controller.toggleSoundEnabled,
+                                      onStartControlPointerDown:
+                                          controller.onStartControlPointerDown,
+                                      onStartControlPointerMove:
+                                          controller.onStartControlPointerMove,
+                                      onStartControlPointerUp:
+                                          controller.onStartControlPointerUp,
                                         onStartOrStopRound: () async {
                                           if (gameState.isRunning) {
                                             await controller.onStopPressed();
@@ -305,6 +310,9 @@ class _GameBody extends StatelessWidget {
     required this.onOpenHistory,
     required this.onResetRound,
     required this.onToggleSound,
+    required this.onStartControlPointerDown,
+    required this.onStartControlPointerMove,
+    required this.onStartControlPointerUp,
     required this.onStartOrStopRound,
   });
 
@@ -313,6 +321,9 @@ class _GameBody extends StatelessWidget {
   final VoidCallback onOpenHistory;
   final VoidCallback onResetRound;
   final VoidCallback onToggleSound;
+  final void Function(Offset position, {bool? isTrusted}) onStartControlPointerDown;
+  final ValueChanged<Offset> onStartControlPointerMove;
+  final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
   final Future<void> Function() onStartOrStopRound;
 
   @override
@@ -332,8 +343,13 @@ class _GameBody extends StatelessWidget {
           isRunning: state.isRunning,
           isBusy: state.isSubmitting,
           isSoundEnabled: state.isSoundEnabled,
+          startButtonVisualOffset: state.startButtonVisualOffset,
+          startButtonHitboxOffset: state.startButtonHitboxOffset,
           onReset: onResetRound,
           onToggleSound: onToggleSound,
+          onStartControlPointerDown: onStartControlPointerDown,
+          onStartControlPointerMove: onStartControlPointerMove,
+          onStartControlPointerUp: onStartControlPointerUp,
           onStartOrStopRound: onStartOrStopRound,
           totalWins: state.totalWins,
           totalPrizeCoins: state.totalPrizeCoins,

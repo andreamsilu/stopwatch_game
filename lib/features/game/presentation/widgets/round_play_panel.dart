@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flame/game.dart';
+import 'package:flame/game.dart' hide Matrix4;
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
+import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
@@ -15,8 +16,13 @@ class RoundPlayPanel extends StatefulWidget {
     required this.isRunning,
     required this.isBusy,
     required this.isSoundEnabled,
+    required this.startButtonVisualOffset,
+    required this.startButtonHitboxOffset,
     required this.onReset,
     required this.onToggleSound,
+    required this.onStartControlPointerDown,
+    required this.onStartControlPointerMove,
+    required this.onStartControlPointerUp,
     required this.onStartOrStopRound,
     required this.totalWins,
     required this.totalPrizeCoins,
@@ -30,8 +36,14 @@ class RoundPlayPanel extends StatefulWidget {
   final bool isRunning;
   final bool isBusy;
   final bool isSoundEnabled;
+  final Offset startButtonVisualOffset;
+  final Offset startButtonHitboxOffset;
   final VoidCallback onReset;
   final VoidCallback onToggleSound;
+  final void Function(Offset position, {bool? isTrusted})
+  onStartControlPointerDown;
+  final ValueChanged<Offset> onStartControlPointerMove;
+  final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
   final Future<void> Function() onStartOrStopRound;
   final int totalWins;
   final int totalPrizeCoins;
@@ -373,7 +385,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 560;
             final resetButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + (isTightMobile ? 2 : 6),
+              height: GameConstants.minTouchTargetSize + 6,
               child: OutlinedButton.icon(
                 onPressed: widget.isBusy
                     ? null
@@ -386,50 +398,16 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               ),
             );
             final startButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + (isTightMobile ? 2 : 6),
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 170),
-                curve: Curves.easeOutCubic,
-                scale: widget.isRunning ? 1.02 : 1,
-                child: ElevatedButton.icon(
-                  onPressed: widget.isBusy
-                      ? null
-                      : () async {
-                          if (widget.isRunning) {
-                            await GameFeedbackService.onRoundStop();
-                          } else {
-                            await GameFeedbackService.onRoundStart();
-                          }
-                          await widget.onStartOrStopRound();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.onAccent,
-                    elevation: widget.isRunning ? 3 : 1,
-                  ),
-                  icon: widget.isBusy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          widget.isRunning
-                              ? Icons.stop_rounded
-                              : Icons.play_arrow_rounded,
-                        ),
-                  label: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    ),
-                    child: Text(
-                      widget.isRunning ? 'Stop round' : 'Start round',
-                      key: ValueKey<bool>(widget.isRunning),
-                    ),
-                  ),
-                ),
+              height: GameConstants.minTouchTargetSize + 6,
+              child: _OffsetAwareStartControl(
+                isRunning: widget.isRunning,
+                isBusy: widget.isBusy,
+                visualOffset: widget.startButtonVisualOffset,
+                hitboxOffset: widget.startButtonHitboxOffset,
+                onPointerDown: widget.onStartControlPointerDown,
+                onPointerMove: widget.onStartControlPointerMove,
+                onPointerUp: widget.onStartControlPointerUp,
+                onTap: _handleStartOrStopTap,
               ),
             );
 
@@ -450,6 +428,118 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               ],
             );
           },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleStartOrStopTap() async {
+    if (widget.isBusy) return;
+    if (widget.isRunning) {
+      await GameFeedbackService.onRoundStop();
+    } else {
+      await GameFeedbackService.onRoundStart();
+    }
+    await widget.onStartOrStopRound();
+  }
+}
+
+class _OffsetAwareStartControl extends StatelessWidget {
+  const _OffsetAwareStartControl({
+    required this.isRunning,
+    required this.isBusy,
+    required this.visualOffset,
+    required this.hitboxOffset,
+    required this.onPointerDown,
+    required this.onPointerMove,
+    required this.onPointerUp,
+    required this.onTap,
+  });
+
+  final bool isRunning;
+  final bool isBusy;
+  final Offset visualOffset;
+  final Offset hitboxOffset;
+  final void Function(Offset position, {bool? isTrusted}) onPointerDown;
+  final ValueChanged<Offset> onPointerMove;
+  final void Function(Offset position, {bool? isTrusted}) onPointerUp;
+  final Future<void> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(
+            visualOffset.dx,
+            visualOffset.dy,
+            0,
+          ),
+          child: IgnorePointer(
+            child: SizedBox.expand(
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 170),
+                curve: Curves.easeOutCubic,
+                scale: isRunning ? 1.02 : 1,
+                child: ElevatedButton.icon(
+                  onPressed: isBusy ? null : () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.onAccent,
+                    elevation: isRunning ? 3 : 1,
+                  ),
+                  icon: isBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                        ),
+                  label: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: Text(
+                      isRunning ? 'Stop round' : 'Start round',
+                      key: ValueKey<bool>(isRunning),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(
+              hitboxOffset.dx,
+              hitboxOffset.dy,
+              0,
+            ),
+            child: Listener(
+              onPointerDown: (event) => onPointerDown(
+                event.position,
+                isTrusted: PointerEventTrust.currentIsTrusted(),
+              ),
+              onPointerMove: (event) => onPointerMove(event.position),
+              onPointerUp: (event) => onPointerUp(
+                event.position,
+                isTrusted: PointerEventTrust.currentIsTrusted(),
+              ),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: isBusy ? null : () => onTap(),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
         ),
       ],
     );
