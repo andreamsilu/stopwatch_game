@@ -10,6 +10,7 @@ class LoginState {
     required this.errorMessage,
     required this.existingUser,
     required this.registeredUser,
+    required this.subscriptionAccepted,
   });
 
   static const String defaultPhoneNumber = '712345678';
@@ -20,7 +21,8 @@ class LoginState {
       isSubmitting = false,
       errorMessage = null,
       existingUser = null,
-      registeredUser = null;
+      registeredUser = null,
+      subscriptionAccepted = false;
 
   final LoginStep step;
   final String phoneNumber;
@@ -28,6 +30,9 @@ class LoginState {
   final String? errorMessage;
   final UserModel? existingUser;
   final UserModel? registeredUser;
+  final bool subscriptionAccepted;
+
+  bool get requiresSubscriptionConsent => existingUser == null;
 
   String get normalizedMsisdn {
     final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
@@ -44,7 +49,10 @@ class LoginState {
 
   bool get canContinue => !isSubmitting && normalizedMsisdn.length >= 12;
 
-  bool get canConfirm => !isSubmitting && step == LoginStep.confirm;
+  bool get canConfirm =>
+      !isSubmitting &&
+      step == LoginStep.confirm &&
+      (!requiresSubscriptionConsent || subscriptionAccepted);
 
   LoginState copyWith({
     LoginStep? step,
@@ -56,6 +64,7 @@ class LoginState {
     bool clearExistingUser = false,
     UserModel? registeredUser,
     bool clearRegisteredUser = false,
+    bool? subscriptionAccepted,
   }) {
     return LoginState(
       step: step ?? this.step,
@@ -68,6 +77,8 @@ class LoginState {
       registeredUser: clearRegisteredUser
           ? null
           : (registeredUser ?? this.registeredUser),
+      subscriptionAccepted:
+          subscriptionAccepted ?? this.subscriptionAccepted,
     );
   }
 }

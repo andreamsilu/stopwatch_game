@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
@@ -13,11 +14,13 @@ class LoginFormCard extends StatelessWidget {
     required this.canContinue,
     required this.canConfirm,
     required this.isReturningUser,
+    required this.subscriptionAccepted,
     required this.errorMessage,
     required this.onPhoneChanged,
     required this.onContinue,
     required this.onConfirm,
     required this.onBackToPhone,
+    required this.onSubscriptionAcceptedChanged,
     super.key,
   });
 
@@ -28,11 +31,13 @@ class LoginFormCard extends StatelessWidget {
   final bool canContinue;
   final bool canConfirm;
   final bool isReturningUser;
+  final bool subscriptionAccepted;
   final String? errorMessage;
   final ValueChanged<String> onPhoneChanged;
   final Future<void> Function() onContinue;
   final Future<void> Function() onConfirm;
   final VoidCallback onBackToPhone;
+  final ValueChanged<bool> onSubscriptionAcceptedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +68,11 @@ class LoginFormCard extends StatelessWidget {
                 isSubmitting: isSubmitting,
                 canConfirm: canConfirm,
                 isReturningUser: isReturningUser,
+                subscriptionAccepted: subscriptionAccepted,
                 errorMessage: errorMessage,
                 onConfirm: onConfirm,
                 onBackToPhone: onBackToPhone,
+                onSubscriptionAcceptedChanged: onSubscriptionAcceptedChanged,
               ),
       ),
     );
@@ -220,9 +227,11 @@ class _ConfirmStep extends StatelessWidget {
     required this.isSubmitting,
     required this.canConfirm,
     required this.isReturningUser,
+    required this.subscriptionAccepted,
     required this.errorMessage,
     required this.onConfirm,
     required this.onBackToPhone,
+    required this.onSubscriptionAcceptedChanged,
     super.key,
   });
 
@@ -230,9 +239,11 @@ class _ConfirmStep extends StatelessWidget {
   final bool isSubmitting;
   final bool canConfirm;
   final bool isReturningUser;
+  final bool subscriptionAccepted;
   final String? errorMessage;
   final Future<void> Function() onConfirm;
   final VoidCallback onBackToPhone;
+  final ValueChanged<bool> onSubscriptionAcceptedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -263,12 +274,37 @@ class _ConfirmStep extends StatelessWidget {
           Text(
             isReturningUser
                 ? 'Welcome back! Confirm to continue with $maskedPhone.'
-                : 'Register with $maskedPhone to play.',
+                : 'Subscribe with $maskedPhone to play Stopwatch Challenge.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
           ),
-          const SizedBox(height: 28),
+          if (!isReturningUser) ...[
+            const SizedBox(height: 12),
+            Text(
+              RoundBillingCopy.entryFeeLabel,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              value: subscriptionAccepted,
+              onChanged: isSubmitting
+                  ? null
+                  : (value) => onSubscriptionAcceptedChanged(value ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(
+                RoundBillingCopy.subscriptionConsent,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
           if (errorMessage != null) ...[
             _ErrorBanner(message: errorMessage!),
             const SizedBox(height: 20),
@@ -293,7 +329,9 @@ class _ConfirmStep extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.verified_outlined),
-              label: const Text('Continue'),
+              label: Text(
+                isReturningUser ? 'Continue' : 'Subscribe & continue',
+              ),
             ),
           ),
         ],

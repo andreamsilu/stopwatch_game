@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart' hide Matrix4;
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/round_prepare_status_banner.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/stopwatch_3d_stage.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
@@ -17,11 +20,14 @@ class RoundPlayPanel extends StatefulWidget {
     required this.isRunning,
     required this.isBusy,
     required this.isLoadingTarget,
+    required this.preparePhase,
     this.roundErrorMessage,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
     required this.onReset,
+    required this.onTryAgain,
+    required this.canTryAgain,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
     required this.onStartControlPointerMove,
@@ -39,11 +45,14 @@ class RoundPlayPanel extends StatefulWidget {
   final bool isRunning;
   final bool isBusy;
   final bool isLoadingTarget;
+  final RoundPreparePhase preparePhase;
   final String? roundErrorMessage;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
   final VoidCallback onReset;
+  final VoidCallback onTryAgain;
+  final bool canTryAgain;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted})
   onStartControlPointerDown;
@@ -112,6 +121,23 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
       children: [
         if (widget.roundErrorMessage != null) ...[
           _RoundErrorBanner(message: widget.roundErrorMessage!),
+          const SizedBox(height: 10),
+        ],
+        RoundPrepareStatusBanner(phase: widget.preparePhase),
+        if (widget.canTryAgain) ...[
+          SizedBox(
+            width: double.infinity,
+            height: GameConstants.minTouchTargetSize + 4,
+            child: ElevatedButton.icon(
+              onPressed: widget.isBusy ? null : widget.onTryAgain,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+              ),
+              icon: const Icon(Icons.replay_rounded),
+              label: Text(RoundBillingCopy.tryAgainButtonLabel),
+            ),
+          ),
           const SizedBox(height: 10),
         ],
         Card(
@@ -390,15 +416,15 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                         await GameFeedbackService.onRoundReset();
                         widget.onReset();
                       },
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Reset round'),
+                icon: const Icon(Icons.close_rounded),
+                label: const Text('Leave round'),
               ),
             );
             final startButton = SizedBox(
               height: GameConstants.minTouchTargetSize + 6,
               child: _OffsetAwareStartControl(
                 isRunning: widget.isRunning,
-                isBusy: widget.isBusy,
+                isDisabled: widget.isBusy,
                 visualOffset: widget.startButtonVisualOffset,
                 hitboxOffset: widget.startButtonHitboxOffset,
                 onPointerDown: widget.onStartControlPointerDown,
@@ -444,7 +470,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
 class _OffsetAwareStartControl extends StatelessWidget {
   const _OffsetAwareStartControl({
     required this.isRunning,
-    required this.isBusy,
+    required this.isDisabled,
     required this.visualOffset,
     required this.hitboxOffset,
     required this.onPointerDown,
@@ -454,7 +480,7 @@ class _OffsetAwareStartControl extends StatelessWidget {
   });
 
   final bool isRunning;
-  final bool isBusy;
+  final bool isDisabled;
   final Offset visualOffset;
   final Offset hitboxOffset;
   final void Function(Offset position, {bool? isTrusted}) onPointerDown;

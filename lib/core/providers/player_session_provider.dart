@@ -15,3 +15,6 @@ final playerUserProvider = StateProvider<UserModel?>((ref) => null);
 final playerUserIdProvider = Provider<int?>((ref) {
   return ref.watch(playerUserProvider)?.id;
 });
+
+/// Set when the user completes registration/sign-in with subscription consent.
+final subscriptionActiveProvider = StateProvider<bool>((ref) => false);

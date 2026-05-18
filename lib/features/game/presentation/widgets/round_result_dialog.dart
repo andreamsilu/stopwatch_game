@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
@@ -196,6 +197,14 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    RoundBillingCopy.tryAgainCharges,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.onBackground.withValues(alpha: 0.7),
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   SizedBox(
                     height: 50,
@@ -208,8 +217,8 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                         backgroundColor: AppColors.accent,
                         foregroundColor: AppColors.onAccent,
                       ),
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      label: const Text('Play Again'),
+                      icon: const Icon(Icons.replay_rounded),
+                      label: Text(RoundBillingCopy.tryAgainButtonLabel),
                     ),
                   ),
                   const SizedBox(height: 8),

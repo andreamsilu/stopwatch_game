@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
 enum GameTab { home, play, history, support }
 
@@ -41,6 +42,7 @@ class GameState {
     required this.isRunning,
     required this.isSubmitting,
     required this.isLoadingTarget,
+    required this.preparePhase,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
@@ -63,6 +65,7 @@ class GameState {
       isRunning = false,
       isSubmitting = false,
       isLoadingTarget = false,
+      preparePhase = RoundPreparePhase.idle,
       isSoundEnabled = true,
       startButtonVisualOffset = Offset.zero,
       startButtonHitboxOffset = Offset.zero,
@@ -83,6 +86,7 @@ class GameState {
   final bool isRunning;
   final bool isSubmitting;
   final bool isLoadingTarget;
+  final RoundPreparePhase preparePhase;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
@@ -110,7 +114,19 @@ class GameState {
   bool get hasBillingForRound =>
       billingRequestId != null && billingRequestId!.isNotEmpty;
 
-  bool get canStartRound => hasBillingForRound && !isLoadingTarget;
+  bool get canStartRound =>
+      hasBillingForRound &&
+      !isLoadingTarget &&
+      preparePhase == RoundPreparePhase.idle;
+
+  /// Start/stop are allowed only after billing, or while a paid round is running.
+  bool get canControlStopwatch => isRunning || canStartRound;
+
+  /// True when start/stop (and pointer hitbox) must be inactive.
+  bool get isStopwatchControlDisabled =>
+      isSubmitting || isPreparingRound || !canControlStopwatch;
+
+  bool get isPreparingRound => preparePhase != RoundPreparePhase.idle;
 
   String get targetTimeLabel =>
       _formatDuration(targetTime, withMilliseconds: true);
@@ -138,6 +154,7 @@ class GameState {
     bool? isRunning,
     bool? isSubmitting,
     bool? isLoadingTarget,
+    RoundPreparePhase? preparePhase,
     bool? isSoundEnabled,
     Offset? startButtonVisualOffset,
     Offset? startButtonHitboxOffset,
@@ -163,6 +180,7 @@ class GameState {
       isRunning: isRunning ?? this.isRunning,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isLoadingTarget: isLoadingTarget ?? this.isLoadingTarget,
+      preparePhase: preparePhase ?? this.preparePhase,
       isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
       startButtonVisualOffset:
           startButtonVisualOffset ?? this.startButtonVisualOffset,

@@ -13,14 +13,18 @@ import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
 import 'package:stopwatch_game/features/game/data/game_session_mapper.dart';
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
 class GameController extends StateNotifier<GameState> {
   GameController({
     required String msisdn,
+    required bool isSubscribed,
     GameService? gameService,
     StopwatchApi? api,
   }) : _msisdn = msisdn,
+       _isSubscribed = isSubscribed,
        _gameService = gameService ?? GameService.create(api: api),
        super(const GameState.initial()) {
     GameFeedbackService.setSoundEnabled(state.isSoundEnabled);
@@ -28,6 +32,7 @@ class GameController extends StateNotifier<GameState> {
   }
 
   final String _msisdn;
+  final bool _isSubscribed;
   final GameService _gameService;
 
   String get _effectiveMsisdn {
@@ -56,32 +61,95 @@ class GameController extends StateNotifier<GameState> {
   }
 
   Future<void> openRoundBoard() async {
+    if (!_isSubscribed) {
+      state = state.copyWith(
+        selectedTab: GameTab.play,
+        roundErrorMessage: RoundBillingCopy.notSubscribed,
+      );
+      return;
+    }
+
     _beginInteractionSession();
+    _activeSession = null;
     state = state.copyWith(
       selectedTab: GameTab.play,
-      isLoadingTarget: true,
       clearLatestResult: true,
       clearLatestInteractionPayload: true,
       clearActiveSession: true,
       clearRoundError: true,
     );
+    await _chargeAndPrepareRound();
+  }
+
+  /// New round after a result or retry — always charges again.
+  Future<void> tryAgainRound() => prepareNewPaidRound();
+
+  /// Clears the current round UI without charging (subscription already active).
+  Future<void> cancelRound({bool goHome = false}) async {
+    if (state.isSubmitting && state.isRunning) return;
+
+    _stopwatch.stop();
+    _stopwatch.reset();
+    _ticker?.cancel();
     _activeSession = null;
-    await _prepareRoundWithBilling();
+
+    state = state.copyWith(
+      isRunning: false,
+      isSubmitting: false,
+      elapsed: Duration.zero,
+      isLoadingTarget: false,
+      preparePhase: RoundPreparePhase.idle,
+      clearActiveSession: true,
+      clearRoundError: true,
+      selectedTab: goHome ? GameTab.home : state.selectedTab,
+    );
+  }
+
+  /// New paid round: charge subscription fee, then allocate target time.
+  Future<void> prepareNewPaidRound() async {
+    if (!_isSubscribed) {
+      state = state.copyWith(roundErrorMessage: RoundBillingCopy.notSubscribed);
+      return;
+    }
+    if (state.isSubmitting || state.isPreparingRound) return;
+
+    await cancelRound();
+    _beginInteractionSession();
+    _activeSession = null;
+    state = state.copyWith(
+      selectedTab: GameTab.play,
+      clearLatestResult: true,
+      clearLatestInteractionPayload: true,
+      clearActiveSession: true,
+      clearRoundError: true,
+    );
+    await _chargeAndPrepareRound();
   }
 
   Future<void> onStartPressed() async {
-    if (state.isRunning || state.isSubmitting || state.isLoadingTarget) return;
+    if (state.isRunning ||
+        state.isSubmitting ||
+        state.isPreparingRound ||
+        !state.canStartRound) {
+      return;
+    }
 
     state = state.copyWith(isSubmitting: true, clearRoundError: true);
     try {
       await startGame();
     } on ApiException catch (e) {
-      state = state.copyWith(isSubmitting: false, roundErrorMessage: e.message);
+      state = state.copyWith(
+        isSubmitting: false,
+        roundErrorMessage: e.message,
+        clearActiveSession: true,
+      );
       return;
     } catch (_) {
       state = state.copyWith(
         isSubmitting: false,
-        roundErrorMessage: 'Could not start the round. Try again.',
+        roundErrorMessage:
+            'Could not start the round. Use Try again to start a new charged round.',
+        clearActiveSession: true,
       );
       return;
     }
@@ -146,34 +214,18 @@ class GameController extends StateNotifier<GameState> {
       history: nextHistory,
       totalWins: state.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
       totalPrizeCoins: state.totalPrizeCoins + backendResult.prizeCoins,
+      clearActiveSession: true,
     );
   }
 
   Future<void> onResetPressed() async {
-    if (state.isSubmitting || state.isLoadingTarget) return;
-
-    _stopwatch.stop();
-    _stopwatch.reset();
-    _ticker?.cancel();
-
-    _beginInteractionSession();
-    _activeSession = null;
-    state = state.copyWith(
-      isRunning: false,
-      elapsed: Duration.zero,
-      isLoadingTarget: true,
-      clearLatestInteractionPayload: true,
-      clearActiveSession: true,
-      clearRoundError: true,
-    );
-    await _prepareRoundWithBilling();
+    await cancelRound();
   }
 
   Future<void> onPullToRefresh() async {
-    if (state.isSubmitting || state.isLoadingTarget) return;
-    await onResetPressed();
+    if (state.isSubmitting || state.isPreparingRound) return;
+    await prepareNewPaidRound();
     state = state.copyWith(clearLatestResult: true);
-    // Keep the indicator visible briefly so users perceive refresh feedback.
     await Future<void>.delayed(const Duration(milliseconds: 260));
   }
 
@@ -182,14 +234,17 @@ class GameController extends StateNotifier<GameState> {
   }
 
   void onStartControlPointerDown(Offset position, {bool? isTrusted}) {
+    if (state.isStopwatchControlDisabled) return;
     _activeInteractionSession?.recordDown(position, isTrusted: isTrusted);
   }
 
   void onStartControlPointerMove(Offset position) {
+    if (state.isStopwatchControlDisabled) return;
     _activeInteractionSession?.recordMove(position);
   }
 
   void onStartControlPointerUp(Offset position, {bool? isTrusted}) {
+    if (state.isStopwatchControlDisabled) return;
     _activeInteractionSession?.recordUp(position, isTrusted: isTrusted);
   }
 
@@ -282,28 +337,43 @@ class GameController extends StateNotifier<GameState> {
     );
   }
 
-  Future<void> _prepareRoundWithBilling() async {
+  Future<void> _chargeAndPrepareRound() async {
+    state = state.copyWith(
+      isLoadingTarget: true,
+      preparePhase: RoundPreparePhase.charging,
+      clearRoundError: true,
+    );
+
     try {
-      final prepared = await _gameService.prepareRound(
+      final billing = await _gameService.enqueueBilling(
         msisdn: _effectiveMsisdn,
+        amount: EnvConfig.gameEntryFee,
       );
+      await _gameService.waitForBillingSuccess(requestId: billing.requestId);
+
+      state = state.copyWith(preparePhase: RoundPreparePhase.loadingTarget);
+
+      final target = await _gameService.fetchTargetTime(msisdn: _effectiveMsisdn);
 
       state = state.copyWith(
-        targetTime: Duration(milliseconds: prepared.targetTimeMs),
-        billingRequestId: prepared.billingRequestId,
+        targetTime: Duration(milliseconds: target.targetTimeMs),
+        billingRequestId: billing.requestId,
         isLoadingTarget: false,
+        preparePhase: RoundPreparePhase.idle,
         clearRoundError: true,
       );
     } on ApiException catch (e) {
       state = state.copyWith(
         isLoadingTarget: false,
+        preparePhase: RoundPreparePhase.idle,
         roundErrorMessage: e.message,
         clearActiveSession: true,
       );
     } catch (_) {
       state = state.copyWith(
         isLoadingTarget: false,
-        roundErrorMessage: 'Could not start billing or load target time.',
+        preparePhase: RoundPreparePhase.idle,
+        roundErrorMessage: 'Could not charge this round or load target time.',
         clearActiveSession: true,
       );
     }

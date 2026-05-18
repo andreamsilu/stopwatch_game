@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 
@@ -80,6 +81,14 @@ class HomeOverviewPanel extends StatelessWidget {
                   Text(
                     'Hit the exact target time to win a prize',
                     style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${RoundBillingCopy.entryFeeLabel} · ${RoundBillingCopy.chargedEveryRound}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.onBackground.withValues(alpha: 0.68),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 14),
                   SizedBox(

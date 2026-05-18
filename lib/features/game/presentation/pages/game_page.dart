@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
@@ -32,11 +34,9 @@ class GamePage extends ConsumerWidget {
         AppSnackBar.showError(context, next.roundErrorMessage!);
       }
 
-      if (next.isLoadingTarget && previous?.isLoadingTarget != true) {
-        AppSnackBar.showInfo(
-          context,
-          'Processing payment and loading your target…',
-        );
+      if (next.preparePhase == RoundPreparePhase.charging &&
+          previous?.preparePhase != RoundPreparePhase.charging) {
+        AppSnackBar.showInfo(context, RoundBillingCopy.preparingRoundCharge);
       }
 
       if (previous?.isLoadingTarget == true &&
@@ -45,7 +45,7 @@ class GamePage extends ConsumerWidget {
           next.selectedTab == GameTab.play) {
         AppSnackBar.showSuccess(
           context,
-          'Target time: ${next.targetTimeLabel}. Tap Start when ready!',
+          'Target: ${next.targetTimeLabel}. ${RoundBillingCopy.playReadyHint}',
         );
       }
 
@@ -87,8 +87,11 @@ class GamePage extends ConsumerWidget {
         context: context,
         builder: (_) => RoundResultDialog(
           result: result,
-          onPlayAgain: controller.onResetPressed,
-          onCancel: controller.onResetPressed,
+          onPlayAgain: () {
+            AppSnackBar.showInfo(context, RoundBillingCopy.tryAgainSnack);
+            controller.tryAgainRound();
+          },
+          onCancel: () => controller.cancelRound(goHome: true),
         ),
       );
       if (!context.mounted) return;
@@ -268,11 +271,14 @@ class GamePage extends ConsumerWidget {
                                         onOpenHistory: () =>
                                             controller.selectTab(GameTab.history),
                                         onResetRound: () {
+                                          controller.onResetPressed();
+                                        },
+                                        onTryAgainRound: () {
                                           AppSnackBar.showInfo(
                                             context,
-                                            'Resetting round…',
+                                            RoundBillingCopy.tryAgainSnack,
                                           );
-                                          controller.onResetPressed();
+                                          controller.tryAgainRound();
                                         },
                                       onToggleSound: controller.toggleSoundEnabled,
                                       onStartControlPointerDown:
@@ -282,6 +288,10 @@ class GamePage extends ConsumerWidget {
                                       onStartControlPointerUp:
                                           controller.onStartControlPointerUp,
                                         onStartOrStopRound: () async {
+                                          if (gameState
+                                              .isStopwatchControlDisabled) {
+                                            return;
+                                          }
                                           if (gameState.isRunning) {
                                             AppSnackBar.showInfo(
                                               context,
@@ -289,6 +299,9 @@ class GamePage extends ConsumerWidget {
                                             );
                                             await controller.onStopPressed();
                                           } else {
+                                            if (!gameState.canStartRound) {
+                                              return;
+                                            }
                                             AppSnackBar.showInfo(
                                               context,
                                               'Starting round…',
@@ -389,6 +402,7 @@ class _GameBody extends StatelessWidget {
     required this.onPlayPressed,
     required this.onOpenHistory,
     required this.onResetRound,
+    required this.onTryAgainRound,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
     required this.onStartControlPointerMove,
@@ -400,6 +414,7 @@ class _GameBody extends StatelessWidget {
   final VoidCallback onPlayPressed;
   final VoidCallback onOpenHistory;
   final VoidCallback onResetRound;
+  final VoidCallback onTryAgainRound;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerDown;
   final ValueChanged<Offset> onStartControlPointerMove;
@@ -421,16 +436,19 @@ class _GameBody extends StatelessWidget {
           elapsed: state.elapsed,
           targetTime: state.targetTime,
           isRunning: state.isRunning,
-          isBusy:
-              state.isSubmitting ||
-              state.isLoadingTarget ||
-              (!state.isRunning && !state.canStartRound),
+          isBusy: state.isStopwatchControlDisabled,
           isLoadingTarget: state.isLoadingTarget,
+          preparePhase: state.preparePhase,
+          canTryAgain:
+              !state.isRunning &&
+              !state.isPreparingRound &&
+              !state.hasBillingForRound,
           roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,
           startButtonHitboxOffset: state.startButtonHitboxOffset,
           onReset: onResetRound,
+          onTryAgain: onTryAgainRound,
           onToggleSound: onToggleSound,
           onStartControlPointerDown: onStartControlPointerDown,
           onStartControlPointerMove: onStartControlPointerMove,

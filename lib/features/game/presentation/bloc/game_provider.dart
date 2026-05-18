@@ -7,7 +7,12 @@ import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 final gameControllerProvider = StateNotifierProvider<GameController, GameState>(
   (ref) {
     final msisdn = ref.watch(playerMsisdnProvider);
+    final isSubscribed = ref.watch(subscriptionActiveProvider);
     final api = ref.watch(stopwatchApiProvider);
-    return GameController(msisdn: msisdn, api: api);
+    return GameController(
+      msisdn: msisdn,
+      isSubscribed: isSubscribed,
+      api: api,
+    );
   },
 );

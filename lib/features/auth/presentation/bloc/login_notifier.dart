@@ -19,7 +19,12 @@ class LoginNotifier extends StateNotifier<LoginState> {
       step: LoginStep.phone,
       clearExistingUser: true,
       clearError: true,
+      subscriptionAccepted: false,
     );
+  }
+
+  void setSubscriptionAccepted(bool value) {
+    state = state.copyWith(subscriptionAccepted: value, clearError: true);
   }
 
   Future<bool> continueWithPhone() async {

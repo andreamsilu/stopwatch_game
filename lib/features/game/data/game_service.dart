@@ -66,7 +66,7 @@ class GameService {
     }
 
     throw ApiException(
-      'Payment is still pending. Confirm the charge on your phone, then tap Play again.',
+      'Payment is still pending. Complete it on your phone, then tap Play again.',
     );
   }
 
