@@ -221,33 +221,24 @@ class _QuickCardState extends State<_QuickCard> {
                       ]
                     : null,
               ),
-              child: Card(
-                margin: EdgeInsets.zero,
-                color: Colors.transparent,
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(widget.icon, size: 18, color: AppColors.primary),
-                      const SizedBox(height: 10),
-                      Text(
-                        widget.title,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.subtitle,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(widget.icon, size: 18, color: AppColors.primary),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.title,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.subtitle,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ),
             ),
           ),

@@ -1,28 +1,26 @@
 import 'package:stopwatch_game/core/api/api_exception.dart';
-import 'package:stopwatch_game/core/api/api_response.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/core/config/api_config.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
-import 'package:stopwatch_game/features/game/data/mock_game_api_service.dart';
+import 'package:stopwatch_game/features/game/data/models/billing_transaction_request.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
 import 'package:stopwatch_game/features/game/data/models/round_preparation.dart';
+import 'package:stopwatch_game/features/game/data/models/start_game_request.dart';
+import 'package:stopwatch_game/features/game/data/models/stop_game_request.dart';
+import 'package:stopwatch_game/features/game/data/models/target_time_request.dart';
 import 'package:stopwatch_game/features/game/data/models/target_time_response.dart';
 
 export 'package:stopwatch_game/core/api/api_exception.dart' show ApiException;
 
 /// Gameplay and billing workflows.
 class GameService {
-  GameService._(this._useMock, this._api) : _mock = MockGameApiService();
+  GameService({StopwatchApi? api}) : _api = api ?? StopwatchApi.create();
 
-  factory GameService.create({StopwatchApi? api}) =>
-      GameService._(EnvConfig.useMockGame, api ?? StopwatchApi.create());
+  factory GameService.create({StopwatchApi? api}) => GameService(api: api);
 
-  final bool _useMock;
   final StopwatchApi _api;
-  final MockGameApiService _mock;
 
-  /// Billing → poll until paid → allocate target time.
   Future<RoundPreparation> prepareRound({required String msisdn}) async {
     final billing = await enqueueBilling(
       msisdn: msisdn,
@@ -39,19 +37,13 @@ class GameService {
   Future<BillingTransactionResponse> enqueueBilling({
     required String msisdn,
     required double amount,
-  }) {
-    return _useMock
-        ? _mock.enqueueBilling(msisdn: msisdn, amount: amount)
-        : _postBillingTransaction(msisdn: msisdn, amount: amount);
-  }
+  }) =>
+      _postBillingTransaction(msisdn: msisdn, amount: amount);
 
   Future<BillingTransactionResponse> getBillingStatus({
     required String requestId,
-  }) {
-    return _useMock
-        ? _mock.getBillingStatus(requestId: requestId)
-        : _fetchBillingStatus(requestId);
-  }
+  }) =>
+      _fetchBillingStatus(requestId);
 
   Future<BillingTransactionResponse> waitForBillingSuccess({
     required String requestId,
@@ -78,48 +70,28 @@ class GameService {
     );
   }
 
-  Future<TargetTimeResponse> fetchTargetTime({required String msisdn}) {
-    return _useMock
-        ? _mock.fetchTargetTime(msisdn: msisdn)
-        : _postTargetTime(msisdn);
-  }
+  Future<TargetTimeResponse> fetchTargetTime({required String msisdn}) =>
+      _postTargetTime(msisdn);
 
   Future<GameStartResponse> startGameSession({
     required String msisdn,
     required String billingRequestId,
     String? channel,
-  }) {
-    final resolvedChannel = channel ?? EnvConfig.gameChannel;
-    return _useMock
-        ? _mock.startGameSession(
-            msisdn: msisdn,
-            billingRequestId: billingRequestId,
-            channel: resolvedChannel,
-          )
-        : _postGameStart(
-            msisdn: msisdn,
-            billingRequestId: billingRequestId,
-            channel: resolvedChannel,
-          );
-  }
+  }) =>
+      _postGameStart(
+        msisdn: msisdn,
+        billingRequestId: billingRequestId,
+        channel: channel ?? EnvConfig.gameChannel,
+      );
 
   Future<GameStartResponse> stopGameSession({
     required String sessionRef,
     required int stoppedTimeMs,
-  }) {
-    return _useMock
-        ? _mock.stopGameSession(
-            sessionRef: sessionRef,
-            stoppedTimeMs: stoppedTimeMs,
-          )
-        : _postGameStop(sessionRef: sessionRef, stoppedTimeMs: stoppedTimeMs);
-  }
+  }) =>
+      _postGameStop(sessionRef: sessionRef, stoppedTimeMs: stoppedTimeMs);
 
-  Future<GameStartResponse> getGameSession({required String sessionRef}) {
-    return _useMock
-        ? _mock.getGameSession(sessionRef: sessionRef)
-        : _fetchGameSession(sessionRef);
-  }
+  Future<GameStartResponse> getGameSession({required String sessionRef}) =>
+      _fetchGameSession(sessionRef);
 
   Future<BillingTransactionResponse> _postBillingTransaction({
     required String msisdn,
@@ -127,28 +99,33 @@ class GameService {
   }) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.billingTransactions),
-      body: {'msisdn': msisdn, 'amount': amount},
+      body: BillingTransactionRequest(msisdn: msisdn, amount: amount).toJson(),
     );
-    return _parseBilling(response, 'Billing could not be started.');
+    return response.parse(
+      BillingTransactionResponse.fromJson,
+      context: 'POST /billing/transactions',
+    );
   }
 
   Future<BillingTransactionResponse> _fetchBillingStatus(String requestId) async {
     final response = await _api.get(
       Uri.parse(ApiConfig.billingTransaction(requestId)),
-      headers: StopwatchApi.acceptJsonHeaders,
     );
-    return _parseBilling(response, 'Could not check payment status.');
+    return response.parse(
+      BillingTransactionResponse.fromJson,
+      context: 'GET /billing/transactions/{requestId}',
+    );
   }
 
   Future<TargetTimeResponse> _postTargetTime(String msisdn) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.targetTime),
-      body: {'msisdn': msisdn},
+      body: TargetTimeRequest(msisdn: msisdn).toJson(),
     );
-    if (!response.hasJson) {
-      throw ApiException('Could not load target time.');
-    }
-    return TargetTimeResponse.fromJson(response.json!);
+    return response.parse(
+      TargetTimeResponse.fromJson,
+      context: 'POST /game/target-time',
+    );
   }
 
   Future<GameStartResponse> _postGameStart({
@@ -158,13 +135,16 @@ class GameService {
   }) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.gameStart),
-      body: {
-        'msisdn': msisdn,
-        'billingRequestId': billingRequestId,
-        'channel': channel,
-      },
+      body: StartGameRequest(
+        msisdn: msisdn,
+        billingRequestId: billingRequestId,
+        channel: channel,
+      ).toJson(),
     );
-    return _parseGameSession(response, 'Could not start game session.');
+    return response.parse(
+      GameStartResponse.fromJson,
+      context: 'POST /game/start',
+    );
   }
 
   Future<GameStartResponse> _postGameStop({
@@ -173,14 +153,14 @@ class GameService {
   }) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.gameStop),
-      body: {
-        'sessionRef': sessionRef,
-        'stoppedTimeMs': stoppedTimeMs,
-      },
+      body: StopGameRequest(sessionRef: sessionRef).toJson(),
     );
 
     if (response.hasJson) {
-      return GameStartResponse.fromJson(response.json!);
+      return response.parse(
+        GameStartResponse.fromJson,
+        context: 'POST /game/stop',
+      );
     }
 
     return getGameSession(sessionRef: sessionRef);
@@ -190,16 +170,9 @@ class GameService {
     final response = await _api.get(
       Uri.parse(ApiConfig.gameSession(sessionRef)),
     );
-    return _parseGameSession(response, 'Could not load game session.');
-  }
-
-  BillingTransactionResponse _parseBilling(ApiResponse response, String fallback) {
-    if (!response.hasJson) throw ApiException(fallback);
-    return BillingTransactionResponse.fromJson(response.json!);
-  }
-
-  GameStartResponse _parseGameSession(ApiResponse response, String fallback) {
-    if (!response.hasJson) throw ApiException(fallback);
-    return GameStartResponse.fromJson(response.json!);
+    return response.parse(
+      GameStartResponse.fromJson,
+      context: 'GET /game/sessions/{sessionRef}',
+    );
   }
 }

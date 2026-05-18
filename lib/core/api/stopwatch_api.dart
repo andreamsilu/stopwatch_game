@@ -1,11 +1,11 @@
-import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:stopwatch_game/core/api/api_exception.dart';
+import 'package:stopwatch_game/core/api/api_json.dart';
+import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/api/api_response.dart';
 
-/// HTTP transport only — [GET]/[POST], status handling, JSON decode.
-/// Domain parsing and workflows live in feature services.
+/// HTTP transport — JSON request bodies and JSON response decoding.
 class StopwatchApi {
   StopwatchApi({http.Client? client}) : _client = client ?? http.Client();
 
@@ -13,40 +13,116 @@ class StopwatchApi {
 
   final http.Client _client;
 
-  static const jsonHeaders = {
-    'accept': 'application/json',
-    'Content-Type': 'application/json',
-  };
-
-  static const acceptJsonHeaders = {'accept': 'application/json'};
+  static Map<String, String> get jsonHeaders => ApiJson.jsonHeaders;
 
   Future<ApiResponse> get(
     Uri uri, {
     Map<String, String>? headers,
     bool allowNotFound = false,
   }) async {
-    final response = await _client.get(
-      uri,
-      headers: headers ?? jsonHeaders,
-    );
-    return _toApiResponse(response, allowNotFound: allowNotFound);
+    const method = 'GET';
+    ApiLogger.logRequest(method: method, uri: uri);
+
+    final started = DateTime.now();
+    try {
+      final response = await _client.get(
+        uri,
+        headers: headers ?? jsonHeaders,
+      );
+      _logHttpResponse(
+        method: method,
+        uri: uri,
+        statusCode: response.statusCode,
+        body: response.body,
+        started: started,
+      );
+      return _toApiResponse(response, allowNotFound: allowNotFound);
+    } catch (e, stack) {
+      _logHttpError(method: method, uri: uri, error: e, started: started);
+      _rethrowTransportError(e, stack);
+    }
   }
 
   Future<ApiResponse> post(
     Uri uri, {
-    Map<String, dynamic>? body,
+    required Map<String, dynamic> body,
     Map<String, String>? headers,
     bool allowNotFound = false,
   }) async {
-    final response = await _client.post(
-      uri,
-      headers: headers ?? jsonHeaders,
-      body: body == null ? null : jsonEncode(body),
-    );
-    return _toApiResponse(response, allowNotFound: allowNotFound);
+    const method = 'POST';
+    ApiLogger.logRequest(method: method, uri: uri, body: body);
+
+    final started = DateTime.now();
+    try {
+      final response = await _client.post(
+        uri,
+        headers: headers ?? jsonHeaders,
+        body: ApiJson.encodeBody(body),
+      );
+      _logHttpResponse(
+        method: method,
+        uri: uri,
+        statusCode: response.statusCode,
+        body: response.body,
+        started: started,
+      );
+      return _toApiResponse(response, allowNotFound: allowNotFound);
+    } catch (e, stack) {
+      _logHttpError(method: method, uri: uri, error: e, started: started);
+      _rethrowTransportError(e, stack);
+    }
   }
 
   void close() => _client.close();
+
+  Never _rethrowTransportError(Object error, StackTrace stack) {
+    if (error is ApiException) {
+      Error.throwWithStackTrace(error, stack);
+    }
+
+    final message = error.toString();
+    if (kIsWeb &&
+        (message.contains('Failed to fetch') ||
+            message.contains('XMLHttpRequest'))) {
+      throw ApiException(
+        'Browser blocked the API call (CORS). '
+        'Run with "Windows (desktop)" in VS Code, or enable CORS on the server '
+        'for http://localhost:8080.',
+      );
+    }
+
+    Error.throwWithStackTrace(error, stack);
+  }
+
+  void _logHttpResponse({
+    required String method,
+    required Uri uri,
+    required int statusCode,
+    required String body,
+    required DateTime started,
+  }) {
+    ApiLogger.logResponse(
+      method: method,
+      uri: uri,
+      statusCode: statusCode,
+      body: body,
+      durationMs: DateTime.now().difference(started).inMilliseconds,
+    );
+  }
+
+  void _logHttpError({
+    required String method,
+    required Uri uri,
+    required Object error,
+    required DateTime started,
+  }) {
+    ApiLogger.logError(
+      method: method,
+      uri: uri,
+      error: error,
+      durationMs: DateTime.now().difference(started).inMilliseconds,
+    );
+  }
 
   ApiResponse _toApiResponse(
     http.Response response, {
@@ -57,41 +133,21 @@ class StopwatchApi {
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      final trimmed = response.body.trim();
+      final json = trimmed.isEmpty
+          ? null
+          : ApiJson.decodeObject(trimmed);
       return ApiResponse(
         statusCode: response.statusCode,
         body: response.body,
-        json: _decodeJsonBody(response.body),
+        json: json,
       );
     }
 
     throw ApiException(
-      _messageFromBody(response.body) ?? 'Request failed (${response.statusCode}).',
+      ApiJson.messageFromErrorBody(response.body) ??
+          'Request failed (${response.statusCode}).',
       statusCode: response.statusCode,
     );
-  }
-
-  Map<String, dynamic>? _decodeJsonBody(String body) {
-    final trimmed = body.trim();
-    if (trimmed.isEmpty) return null;
-    final decoded = jsonDecode(trimmed);
-    if (decoded is Map<String, dynamic>) return decoded;
-    return null;
-  }
-
-  String? _messageFromBody(String body) {
-    if (body.isEmpty) return null;
-    try {
-      final json = jsonDecode(body);
-      if (json is Map<String, dynamic>) {
-        final error = json['error'];
-        if (error is Map && error['message'] is String) {
-          return error['message'] as String;
-        }
-        if (json['message'] is String) return json['message'] as String;
-      }
-    } catch (_) {
-      return null;
-    }
-    return null;
   }
 }

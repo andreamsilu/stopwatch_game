@@ -684,12 +684,6 @@ class _RoundStatCard extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.9)),
-          left: BorderSide(color: Colors.white.withValues(alpha: 0.65)),
-          right: BorderSide(color: AppColors.primary.withValues(alpha: 0.12)),
-          bottom: BorderSide(color: AppColors.primary.withValues(alpha: 0.22)),
-        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1A00377D),

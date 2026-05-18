@@ -421,7 +421,10 @@ class _GameBody extends StatelessWidget {
           elapsed: state.elapsed,
           targetTime: state.targetTime,
           isRunning: state.isRunning,
-          isBusy: state.isSubmitting || state.isLoadingTarget,
+          isBusy:
+              state.isSubmitting ||
+              state.isLoadingTarget ||
+              (!state.isRunning && !state.canStartRound),
           isLoadingTarget: state.isLoadingTarget,
           roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,

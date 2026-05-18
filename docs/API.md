@@ -241,7 +241,7 @@ POST /api/v1/billing/transactions
 }
 ```
 
-**Client:** `GameService.enqueueBilling` — amount from `GAME_ENTRY_FEE` in `.env` (default `0.01`). Disabled when `MOCK_GAME=true`.
+**Client:** `GameService.enqueueBilling` — amount from `GAME_ENTRY_FEE` in `.env` (default `0.01`).
 
 After enqueue, the app polls **Get billing transaction status** until `success` or `failed` (Yas updates the record via the callback webhook below).
 
@@ -332,7 +332,7 @@ POST /api/v1/game/target-time
 }
 ```
 
-**Client:** `GameService.fetchTargetTime` — runs after billing when the user taps **Play**. Disabled when `MOCK_GAME=true` in `.env`.
+**Client:** `GameService.fetchTargetTime` — runs after billing when the user taps **Play**.
 
 ---
 
@@ -815,10 +815,10 @@ All endpoints from live Swagger (`/v3/api-docs`) except the Yas webhook:
 
 | Endpoint | Status | Source |
 |----------|--------|--------|
-| `GET /users?msisdn` | **Wired** (mock when `MOCK_AUTH=true`) | `StopwatchApi` |
+| `GET /users?msisdn` | **Wired** | `StopwatchApi` |
 | `GET /users/{id}` | **Wired** | `StopwatchApi` |
 | `POST /users` | **Wired** | `StopwatchApi` |
-| `POST /billing/transactions` | **Wired** (mock when `MOCK_GAME=true`) | `StopwatchApi` |
+| `POST /billing/transactions` | **Wired** | `StopwatchApi` |
 | `GET /billing/transactions/{requestId}` | **Wired** (poll) | `StopwatchApi` |
 | `POST /billing/callbacks/yas` | **Server only** (not in app) | — |
 | `POST /game/target-time` | **Wired** | `StopwatchApi` |

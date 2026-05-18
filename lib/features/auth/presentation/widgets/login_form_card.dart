@@ -2,50 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
-import 'package:stopwatch_game/features/auth/presentation/widgets/otp_input_boxes.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone_prefix.dart';
 
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({
     required this.step,
     required this.phoneValue,
-    required this.otpCode,
     required this.maskedPhone,
     required this.isSubmitting,
-    required this.isResendingOtp,
-    required this.canSendOtp,
-    required this.canVerifyOtp,
-    required this.canConfirmRegistration,
-    required this.requiresOtp,
+    required this.canContinue,
+    required this.canConfirm,
     required this.isReturningUser,
     required this.errorMessage,
     required this.onPhoneChanged,
-    required this.onOtpChanged,
-    required this.onSendOtp,
-    required this.onVerifyOtp,
-    required this.onResendOtp,
-    required this.onBackToDetails,
+    required this.onContinue,
+    required this.onConfirm,
+    required this.onBackToPhone,
     super.key,
   });
 
   final LoginStep step;
   final String phoneValue;
-  final String otpCode;
   final String maskedPhone;
   final bool isSubmitting;
-  final bool isResendingOtp;
-  final bool canSendOtp;
-  final bool canVerifyOtp;
-  final bool canConfirmRegistration;
-  final bool requiresOtp;
+  final bool canContinue;
+  final bool canConfirm;
   final bool isReturningUser;
   final String? errorMessage;
   final ValueChanged<String> onPhoneChanged;
-  final ValueChanged<String> onOtpChanged;
-  final Future<void> Function() onSendOtp;
-  final Future<void> Function() onVerifyOtp;
-  final Future<void> Function() onResendOtp;
-  final VoidCallback onBackToDetails;
+  final Future<void> Function() onContinue;
+  final Future<void> Function() onConfirm;
+  final VoidCallback onBackToPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -60,32 +47,25 @@ class LoginFormCard extends StatelessWidget {
         duration: const Duration(milliseconds: 280),
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
-        child: step == LoginStep.details
-            ? _DetailsStep(
-                key: const ValueKey('details'),
+        child: step == LoginStep.phone
+            ? _PhoneStep(
+                key: const ValueKey('phone'),
                 phoneValue: phoneValue,
                 isSubmitting: isSubmitting,
-                canSendOtp: canSendOtp,
-                requiresOtp: requiresOtp,
+                canContinue: canContinue,
                 errorMessage: errorMessage,
                 onPhoneChanged: onPhoneChanged,
-                onSendOtp: onSendOtp,
+                onContinue: onContinue,
               )
-            : _OtpStep(
-                key: const ValueKey('otp'),
+            : _ConfirmStep(
+                key: const ValueKey('confirm'),
                 maskedPhone: maskedPhone,
-                otpCode: otpCode,
                 isSubmitting: isSubmitting,
-                isResendingOtp: isResendingOtp,
-                canVerifyOtp: canVerifyOtp,
-                canConfirmRegistration: canConfirmRegistration,
-                requiresOtp: requiresOtp,
+                canConfirm: canConfirm,
                 isReturningUser: isReturningUser,
                 errorMessage: errorMessage,
-                onOtpChanged: onOtpChanged,
-                onVerifyOtp: onVerifyOtp,
-                onResendOtp: onResendOtp,
-                onBackToDetails: onBackToDetails,
+                onConfirm: onConfirm,
+                onBackToPhone: onBackToPhone,
               ),
       ),
     );
@@ -99,21 +79,15 @@ class _CardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD6DFEA)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x140F172A),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
+        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
         child: child,
       ),
     );
@@ -128,17 +102,16 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1F2),
+        color: const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: const Color(0xFFEF9A9A)),
       ),
       child: Text(
         message,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFFB91C1C),
+          color: const Color(0xFFB3261E),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -146,25 +119,23 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-class _DetailsStep extends StatelessWidget {
-  const _DetailsStep({
+class _PhoneStep extends StatelessWidget {
+  const _PhoneStep({
     required this.phoneValue,
     required this.isSubmitting,
-    required this.canSendOtp,
-    required this.requiresOtp,
+    required this.canContinue,
     required this.errorMessage,
     required this.onPhoneChanged,
-    required this.onSendOtp,
+    required this.onContinue,
     super.key,
   });
 
   final String phoneValue;
   final bool isSubmitting;
-  final bool canSendOtp;
-  final bool requiresOtp;
+  final bool canContinue;
   final String? errorMessage;
   final ValueChanged<String> onPhoneChanged;
-  final Future<void> Function() onSendOtp;
+  final Future<void> Function() onContinue;
 
   @override
   Widget build(BuildContext context) {
@@ -180,9 +151,7 @@ class _DetailsStep extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            requiresOtp
-                ? 'Enter your phone number. We will send a 6-digit verification code.'
-                : 'Enter your phone number to register or sign in.',
+            'Enter your phone number to register or sign in.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
@@ -205,7 +174,7 @@ class _DetailsStep extends StatelessWidget {
               enabled: !isSubmitting,
               onChanged: onPhoneChanged,
               decoration: const InputDecoration(
-                prefixIcon: TanzaniaPhonePrefix(style: 'flat', size: 24),
+                prefixIcon: TanzaniaPhonePrefix(size: 24),
                 hintText: '712 345 678',
               ),
             ),
@@ -218,16 +187,16 @@ class _DetailsStep extends StatelessWidget {
           SizedBox(
             height: GameConstants.minTouchTargetSize + 6,
             child: ElevatedButton.icon(
-              onPressed: canSendOtp
+              onPressed: canContinue
                   ? () async {
-                      await onSendOtp();
+                      await onContinue();
                     }
                   : null,
               iconAlignment: IconAlignment.end,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.onAccent,
-                elevation: canSendOtp ? 2 : 0,
+                elevation: canContinue ? 2 : 0,
               ),
               icon: isSubmitting
                   ? const SizedBox(
@@ -235,16 +204,8 @@ class _DetailsStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Icon(requiresOtp ? Icons.sms_outlined : Icons.arrow_forward_rounded),
-              label: Text(requiresOtp ? 'Send verification code' : 'Continue'),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'By continuing, you agree to our Terms of Service and Privacy Policy.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.onBackground.withValues(alpha: 0.72),
+                  : const Icon(Icons.arrow_forward_rounded),
+              label: const Text('Continue'),
             ),
           ),
         ],
@@ -253,40 +214,25 @@ class _DetailsStep extends StatelessWidget {
   }
 }
 
-class _OtpStep extends StatelessWidget {
-  const _OtpStep({
+class _ConfirmStep extends StatelessWidget {
+  const _ConfirmStep({
     required this.maskedPhone,
-    required this.otpCode,
     required this.isSubmitting,
-    required this.isResendingOtp,
-    required this.canVerifyOtp,
-    required this.canConfirmRegistration,
-    required this.requiresOtp,
+    required this.canConfirm,
     required this.isReturningUser,
     required this.errorMessage,
-    required this.onOtpChanged,
-    required this.onVerifyOtp,
-    required this.onResendOtp,
-    required this.onBackToDetails,
+    required this.onConfirm,
+    required this.onBackToPhone,
     super.key,
   });
 
   final String maskedPhone;
-  final String otpCode;
   final bool isSubmitting;
-  final bool isResendingOtp;
-  final bool canVerifyOtp;
-  final bool canConfirmRegistration;
-  final bool requiresOtp;
+  final bool canConfirm;
   final bool isReturningUser;
   final String? errorMessage;
-  final ValueChanged<String> onOtpChanged;
-  final Future<void> Function() onVerifyOtp;
-  final Future<void> Function() onResendOtp;
-  final VoidCallback onBackToDetails;
-
-  bool get _canSubmit =>
-      requiresOtp ? canVerifyOtp : canConfirmRegistration;
+  final Future<void> Function() onConfirm;
+  final VoidCallback onBackToPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +243,7 @@ class _OtpStep extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
-              onPressed: isSubmitting ? null : onBackToDetails,
+              onPressed: isSubmitting ? null : onBackToPhone,
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
               label: const Text('Back'),
               style: TextButton.styleFrom(
@@ -308,53 +254,37 @@ class _OtpStep extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            requiresOtp ? 'Enter verification code' : 'Confirm your number',
+            'Confirm your number',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            requiresOtp
-                ? 'We sent a 6-digit code to $maskedPhone'
-                : isReturningUser
+            isReturningUser
                 ? 'Welcome back! Confirm to continue with $maskedPhone.'
                 : 'Register with $maskedPhone to play.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
           ),
-          if (requiresOtp) ...[
-            const SizedBox(height: 24),
-            OtpInputBoxes(
-              value: otpCode,
-              enabled: !isSubmitting,
-              onChanged: onOtpChanged,
-              onCompleted: _canSubmit
-                  ? () async {
-                      await onVerifyOtp();
-                    }
-                  : null,
-            ),
-          ] else
-            const SizedBox(height: 28),
+          const SizedBox(height: 28),
           if (errorMessage != null) ...[
-            const SizedBox(height: 14),
             _ErrorBanner(message: errorMessage!),
+            const SizedBox(height: 20),
           ],
-          const SizedBox(height: 20),
           SizedBox(
             height: GameConstants.minTouchTargetSize + 6,
             child: ElevatedButton.icon(
-              onPressed: _canSubmit
+              onPressed: canConfirm
                   ? () async {
-                      await onVerifyOtp();
+                      await onConfirm();
                     }
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.onAccent,
-                elevation: _canSubmit ? 2 : 0,
+                elevation: canConfirm ? 2 : 0,
               ),
               icon: isSubmitting
                   ? const SizedBox(
@@ -363,28 +293,9 @@ class _OtpStep extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.verified_outlined),
-              label: Text(requiresOtp ? 'Verify & continue' : 'Continue'),
+              label: const Text('Continue'),
             ),
           ),
-          if (requiresOtp) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton(
-                onPressed: isSubmitting || isResendingOtp
-                    ? null
-                    : () async {
-                        await onResendOtp();
-                      },
-                child: isResendingOtp
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Resend code'),
-              ),
-            ),
-          ],
         ],
       ),
     );

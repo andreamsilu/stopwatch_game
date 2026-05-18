@@ -194,7 +194,13 @@ class GameController extends StateNotifier<GameState> {
   }
 
   Future<void> startGame() async {
-    final billingRequestId = _resolveBillingRequestId();
+    final billingRequestId = state.billingRequestId;
+    if (billingRequestId == null || billingRequestId.isEmpty) {
+      throw ApiException(
+        'Payment is not ready. Go to Home, tap Play, and wait for billing to complete.',
+      );
+    }
+
     final session = await _gameService.startGameSession(
       msisdn: _effectiveMsisdn,
       billingRequestId: billingRequestId,
@@ -207,13 +213,6 @@ class GameController extends StateNotifier<GameState> {
       sessionRef: session.sessionRef,
       activeSessionId: session.id,
     );
-  }
-
-  String _resolveBillingRequestId() {
-    if (state.billingRequestId != null && state.billingRequestId!.isNotEmpty) {
-      return state.billingRequestId!;
-    }
-    return 'alloc-${_effectiveMsisdn}-${state.targetTime.inMilliseconds}';
   }
 
   Future<GameStartResponse?> stopGame({required int stoppedTimeMs}) async {
@@ -297,29 +296,17 @@ class GameController extends StateNotifier<GameState> {
       );
     } on ApiException catch (e) {
       state = state.copyWith(
-        targetTime: _generateRandomTargetTime(),
         isLoadingTarget: false,
         roundErrorMessage: e.message,
+        clearActiveSession: true,
       );
     } catch (_) {
       state = state.copyWith(
-        targetTime: _generateRandomTargetTime(),
         isLoadingTarget: false,
         roundErrorMessage: 'Could not start billing or load target time.',
+        clearActiveSession: true,
       );
     }
-  }
-
-  Duration _generateRandomTargetTime() {
-    const minMilliseconds = 3000;
-    const maxMilliseconds = 12000;
-    final randomMilliseconds =
-        minMilliseconds +
-        _random.nextInt(maxMilliseconds - minMilliseconds + 1);
-
-    // Keep values on 10ms steps so stopwatch precision remains readable.
-    final snappedToTenMs = (randomMilliseconds ~/ 10) * 10;
-    return Duration(milliseconds: snappedToTenMs);
   }
 
   String _formatDurationWithMilliseconds(Duration value) {

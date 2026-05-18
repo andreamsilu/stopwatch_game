@@ -36,25 +36,21 @@ class EnvConfig {
     return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
   }
 
-  /// When `true`, auth skips HTTP and uses local mock OTP (`123456`).
-  static bool get useMockAuth {
-    final raw = _optional('MOCK_AUTH', 'true').toLowerCase();
-    return _isTruthy(raw);
-  }
-
-  /// When `true`, target time is generated locally instead of `POST /game/target-time`.
-  static bool get useMockGame {
-    final raw = _optional('MOCK_GAME', 'false').toLowerCase();
-    return _isTruthy(raw);
-  }
-
   static bool _isTruthy(String raw) =>
       raw == 'true' || raw == '1' || raw == 'yes';
 
-  static String get gameChannel => _optional('GAME_CHANNEL', 'SMS');
-
-  static String get mockBillingRequestId =>
-      _optional('MOCK_BILLING_REQUEST_ID', 'mock-billing-request');
+  /// API allows only `APP`, `SMS`, or `WEB` (uppercase). Values like `web` in `.env` are normalized.
+  static String get gameChannel {
+    final raw = _optional('GAME_CHANNEL', 'SMS').toUpperCase();
+    switch (raw) {
+      case 'APP':
+      case 'SMS':
+      case 'WEB':
+        return raw;
+      default:
+        return 'SMS';
+    }
+  }
 
   static double get gameEntryFee {
     final raw = _optional('GAME_ENTRY_FEE', '0.01');
@@ -69,5 +65,11 @@ class EnvConfig {
   static Duration get billingPollTimeout {
     final ms = int.tryParse(_optional('BILLING_POLL_TIMEOUT_MS', '120000')) ?? 120000;
     return Duration(milliseconds: ms.clamp(5000, 600000));
+  }
+
+  /// Log backend request/response bodies to the console via [ApiLogger].
+  static bool get apiLogResponses {
+    final raw = _optional('API_LOG_RESPONSES', 'true').toLowerCase();
+    return _isTruthy(raw);
   }
 }

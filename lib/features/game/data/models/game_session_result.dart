@@ -12,7 +12,7 @@ class GameSessionResult {
       stoppedTimeMs: json['stoppedTimeMs'] as int,
       differenceMs: json['differenceMs'] as int,
       winner: json['winner'] as bool,
-      prizeAmount: json['prizeAmount'] as int,
+      prizeAmount: (json['prizeAmount'] as num).toInt(),
       createdAt: json['createdAt'] as String?,
     );
   }

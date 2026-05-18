@@ -107,6 +107,11 @@ class GameState {
     return '$minutes:$seconds.$centiseconds';
   }
 
+  bool get hasBillingForRound =>
+      billingRequestId != null && billingRequestId!.isNotEmpty;
+
+  bool get canStartRound => hasBillingForRound && !isLoadingTarget;
+
   String get targetTimeLabel =>
       _formatDuration(targetTime, withMilliseconds: true);
   String get elapsedTimeLabel =>

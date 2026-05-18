@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/core/theme/app_theme.dart';
 import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
@@ -9,6 +10,10 @@ import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart'
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnvConfig.load();
+  ApiLogger.enabled = EnvConfig.apiLogResponses;
+  if (ApiLogger.enabled) {
+    debugPrint('[StopwatchApi] HTTP logging ON (API_LOG_RESPONSES=true)');
+  }
 
   if (kIsWeb) {
     BrowserContextMenu.disableContextMenu();

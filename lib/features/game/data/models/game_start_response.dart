@@ -23,7 +23,7 @@ class GameStartResponse {
       billingRequestId: json['billingRequestId'] as String,
       msisdn: json['msisdn'] as String,
       channel: json['channel'] as String,
-      entryFee: json['entryFee'] as int,
+      entryFee: (json['entryFee'] as num).toInt(),
       targetTimeMs: json['targetTimeMs'] as int,
       status: json['status'] as String,
       startedAt: json['startedAt'] as String?,

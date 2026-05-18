@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/features/auth/data/auth_service.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
@@ -13,84 +14,50 @@ class LoginNotifier extends StateNotifier<LoginState> {
     state = state.copyWith(phoneNumber: value, clearError: true);
   }
 
-  void updateOtpCode(String value) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    final trimmed = digits.length > LoginState.otpLength
-        ? digits.substring(0, LoginState.otpLength)
-        : digits;
-    state = state.copyWith(otpCode: trimmed, clearError: true);
-  }
-
-  void backToDetails() {
+  void backToPhone() {
     state = state.copyWith(
-      step: LoginStep.details,
-      otpCode: '',
+      step: LoginStep.phone,
       clearExistingUser: true,
       clearError: true,
     );
   }
 
-  Future<bool> sendOtp() async {
-    if (!state.canSendOtp) return false;
+  Future<bool> continueWithPhone() async {
+    if (!state.canContinue) return false;
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
       final existing = await _auth.prepareLogin(msisdn: state.normalizedMsisdn);
       state = state.copyWith(
         isSubmitting: false,
-        step: LoginStep.otp,
+        step: LoginStep.confirm,
         existingUser: existing,
-        otpCode: _auth.isMock ? LoginState.defaultOtpCode : '',
       );
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
       return false;
-    } catch (_) {
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('continueWithPhone failed: $e\n$stack');
+      }
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: 'Network error. Check your connection and try again.',
+        errorMessage: _messageForUnexpectedError(
+          e,
+          fallback: 'Could not verify your number. Please try again.',
+        ),
       );
       return false;
     }
   }
 
-  Future<bool> resendOtp() async {
-    state = state.copyWith(isResendingOtp: true, clearError: true);
-    try {
-      final existing = await _auth.prepareLogin(msisdn: state.normalizedMsisdn);
-      state = state.copyWith(
-        isResendingOtp: false,
-        existingUser: existing,
-        otpCode: _auth.isMock ? LoginState.defaultOtpCode : state.otpCode,
-      );
-      return true;
-    } on ApiException catch (e) {
-      state = state.copyWith(isResendingOtp: false, errorMessage: e.message);
-      return false;
-    } catch (_) {
-      state = state.copyWith(
-        isResendingOtp: false,
-        errorMessage: 'Could not refresh. Try again shortly.',
-      );
-      return false;
-    }
-  }
-
-  Future<bool> verifyOtpAndRegister() async {
-    if (_auth.isMock) {
-      if (!state.canVerifyOtp) return false;
-    } else if (!state.canConfirmRegistration) {
-      return false;
-    }
+  Future<bool> signIn() async {
+    if (!state.canConfirm) return false;
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      final user = await _auth.completeLogin(
-        msisdn: state.normalizedMsisdn,
-        otp: state.otpCode,
-      );
-
+      final user = await _auth.signIn(msisdn: state.normalizedMsisdn);
       state = state.copyWith(
         isSubmitting: false,
         registeredUser: user,
@@ -99,12 +66,25 @@ class LoginNotifier extends StateNotifier<LoginState> {
     } on ApiException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
       return false;
-    } catch (_) {
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('signIn failed: $e\n$stack');
+      }
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: 'Could not complete registration. Please try again.',
+        errorMessage: _messageForUnexpectedError(
+          e,
+          fallback: 'Could not complete registration. Please try again.',
+        ),
       );
       return false;
     }
+  }
+
+  String _messageForUnexpectedError(Object error, {required String fallback}) {
+    if (error is TypeError || error is FormatException) {
+      return 'Server returned unexpected data. Please try again.';
+    }
+    return fallback;
   }
 }

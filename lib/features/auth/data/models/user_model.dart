@@ -11,12 +11,15 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final msisdn = json['msisdn'] as String;
+    final username = json['username'];
+
     return UserModel(
-      id: json['id'] as int,
-      msisdn: json['msisdn'] as String,
-      username: json['username'] as String,
-      channelSource: json['channelSource'] as String,
-      status: json['status'] as String,
+      id: (json['id'] as num).toInt(),
+      msisdn: msisdn,
+      username: username is String && username.isNotEmpty ? username : msisdn,
+      channelSource: json['channelSource'] as String? ?? 'APP',
+      status: json['status'] as String? ?? 'active',
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
       lastLoginAt: json['lastLoginAt'] as String?,
