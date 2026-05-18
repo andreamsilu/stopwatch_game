@@ -7,12 +7,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
+import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
+import 'package:stopwatch_game/core/config/env_config.dart';
+import 'package:stopwatch_game/core/api/stopwatch_api.dart';
+import 'package:stopwatch_game/features/game/data/game_service.dart';
+import 'package:stopwatch_game/features/game/data/game_session_mapper.dart';
+import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class GameController extends StateNotifier<GameState> {
-  GameController() : super(const GameState.initial()) {
+  GameController({
+    required String msisdn,
+    GameService? gameService,
+    StopwatchApi? api,
+  }) : _msisdn = msisdn,
+       _gameService = gameService ?? GameService.create(api: api),
+       super(const GameState.initial()) {
     GameFeedbackService.setSoundEnabled(state.isSoundEnabled);
     _beginInteractionSession();
+  }
+
+  final String _msisdn;
+  final GameService _gameService;
+
+  String get _effectiveMsisdn {
+    if (_msisdn.isNotEmpty) return _msisdn;
+    final digits = LoginState.defaultPhoneNumber.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('255')) return digits;
+    return '255$digits';
   }
 
   final Stopwatch _stopwatch = Stopwatch();
@@ -21,6 +43,7 @@ class GameController extends StateNotifier<GameState> {
   _RoundInteractionSession? _activeInteractionSession;
   final List<double> _reactionHistoryMs = [];
   final List<double> _clickVarianceHistory = [];
+  GameStartResponse? _activeSession;
 
   void selectTab(GameTab tab) {
     state = state.copyWith(selectedTab: tab);
@@ -32,21 +55,36 @@ class GameController extends StateNotifier<GameState> {
     GameFeedbackService.setSoundEnabled(nextEnabled);
   }
 
-  void openRoundBoard() {
+  Future<void> openRoundBoard() async {
     _beginInteractionSession();
     state = state.copyWith(
       selectedTab: GameTab.play,
-      targetTime: _generateRandomTargetTime(),
+      isLoadingTarget: true,
       clearLatestResult: true,
       clearLatestInteractionPayload: true,
+      clearActiveSession: true,
+      clearRoundError: true,
     );
+    _activeSession = null;
+    await _prepareRoundWithBilling();
   }
 
   Future<void> onStartPressed() async {
-    if (state.isRunning || state.isSubmitting) return;
+    if (state.isRunning || state.isSubmitting || state.isLoadingTarget) return;
 
-    state = state.copyWith(isSubmitting: true);
-    await startGame();
+    state = state.copyWith(isSubmitting: true, clearRoundError: true);
+    try {
+      await startGame();
+    } on ApiException catch (e) {
+      state = state.copyWith(isSubmitting: false, roundErrorMessage: e.message);
+      return;
+    } catch (_) {
+      state = state.copyWith(
+        isSubmitting: false,
+        roundErrorMessage: 'Could not start the round. Try again.',
+      );
+      return;
+    }
 
     _stopwatch.start();
     _ticker?.cancel();
@@ -69,11 +107,23 @@ class GameController extends StateNotifier<GameState> {
     _ticker?.cancel();
     final stoppedElapsed = _stopwatch.elapsed;
 
-    await stopGame();
+    GameStartResponse? stoppedSession;
+    try {
+      stoppedSession = await stopGame(
+        stoppedTimeMs: stoppedElapsed.inMilliseconds,
+      );
+    } on ApiException catch (e) {
+      state = state.copyWith(roundErrorMessage: e.message);
+    } catch (_) {
+      state = state.copyWith(
+        roundErrorMessage: 'Could not submit stop time. Showing local result.',
+      );
+    }
 
     final backendResult = await fetchRoundResultFromBackend(
       actualElapsed: stoppedElapsed,
       targetTime: state.targetTime,
+      stoppedSession: stoppedSession,
     );
     final nextHistory = [
       HistoryEntry(
@@ -99,25 +149,29 @@ class GameController extends StateNotifier<GameState> {
     );
   }
 
-  void onResetPressed() {
-    if (state.isSubmitting) return;
+  Future<void> onResetPressed() async {
+    if (state.isSubmitting || state.isLoadingTarget) return;
 
     _stopwatch.stop();
     _stopwatch.reset();
     _ticker?.cancel();
 
     _beginInteractionSession();
+    _activeSession = null;
     state = state.copyWith(
       isRunning: false,
       elapsed: Duration.zero,
-      targetTime: _generateRandomTargetTime(),
+      isLoadingTarget: true,
       clearLatestInteractionPayload: true,
+      clearActiveSession: true,
+      clearRoundError: true,
     );
+    await _prepareRoundWithBilling();
   }
 
   Future<void> onPullToRefresh() async {
-    if (state.isSubmitting) return;
-    onResetPressed();
+    if (state.isSubmitting || state.isLoadingTarget) return;
+    await onResetPressed();
     state = state.copyWith(clearLatestResult: true);
     // Keep the indicator visible briefly so users perceive refresh feedback.
     await Future<void>.delayed(const Duration(milliseconds: 260));
@@ -140,23 +194,71 @@ class GameController extends StateNotifier<GameState> {
   }
 
   Future<void> startGame() async {
-    // TODO: Integrate backend start endpoint here.
-    // This is intentionally kept as a placeholder so game result logic
-    // remains server-owned, not frontend-owned.
+    final billingRequestId = _resolveBillingRequestId();
+    final session = await _gameService.startGameSession(
+      msisdn: _effectiveMsisdn,
+      billingRequestId: billingRequestId,
+      channel: EnvConfig.gameChannel,
+    );
+    _activeSession = session;
+    state = state.copyWith(
+      targetTime: Duration(milliseconds: session.targetTimeMs),
+      billingRequestId: session.billingRequestId,
+      sessionRef: session.sessionRef,
+      activeSessionId: session.id,
+    );
   }
 
-  Future<void> stopGame() async {
-    // TODO: Integrate backend stop endpoint here.
-    // This is intentionally kept as a placeholder so game result logic
-    // remains server-owned, not frontend-owned.
+  String _resolveBillingRequestId() {
+    if (state.billingRequestId != null && state.billingRequestId!.isNotEmpty) {
+      return state.billingRequestId!;
+    }
+    return 'alloc-${_effectiveMsisdn}-${state.targetTime.inMilliseconds}';
+  }
+
+  Future<GameStartResponse?> stopGame({required int stoppedTimeMs}) async {
+    final sessionRef = _resolveSessionLookupRef();
+    if (sessionRef.isEmpty) return null;
+
+    final session = await _gameService.stopGameSession(
+      sessionRef: sessionRef,
+      stoppedTimeMs: stoppedTimeMs,
+    );
+    _activeSession = session;
+    return session;
+  }
+
+  String _resolveSessionLookupRef() {
+    return state.sessionRef ??
+        state.billingRequestId ??
+        _activeSession?.sessionRef ??
+        _activeSession?.billingRequestId ??
+        '';
   }
 
   Future<RoundResultData> fetchRoundResultFromBackend({
     required Duration actualElapsed,
     required Duration targetTime,
+    GameStartResponse? stoppedSession,
   }) async {
-    // TODO: Replace with backend response payload when endpoint is available.
-    // For now, derive result from local stopwatch and target.
+    if (stoppedSession != null) {
+      final fromStop = GameSessionMapper.toRoundResult(stoppedSession);
+      if (fromStop != null) return fromStop;
+    }
+
+    final lookupRef = _resolveSessionLookupRef();
+    if (lookupRef.isNotEmpty) {
+      try {
+        final session = await _gameService.getGameSession(sessionRef: lookupRef);
+        final mapped = GameSessionMapper.toRoundResult(session);
+        if (mapped != null) return mapped;
+      } on ApiException catch (e) {
+        state = state.copyWith(roundErrorMessage: e.message);
+      } catch (_) {
+        // Fall through to local result.
+      }
+    }
+
     final differenceMs =
         actualElapsed.inMilliseconds - targetTime.inMilliseconds;
     // Award a win when the stop is within +/-100ms of target.
@@ -179,6 +281,33 @@ class GameController extends StateNotifier<GameState> {
       prizeCoins: isWin ? perfectStopPrizeCoins : 0,
       isPrizeAwarded: isWin,
     );
+  }
+
+  Future<void> _prepareRoundWithBilling() async {
+    try {
+      final prepared = await _gameService.prepareRound(
+        msisdn: _effectiveMsisdn,
+      );
+
+      state = state.copyWith(
+        targetTime: Duration(milliseconds: prepared.targetTimeMs),
+        billingRequestId: prepared.billingRequestId,
+        isLoadingTarget: false,
+        clearRoundError: true,
+      );
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        targetTime: _generateRandomTargetTime(),
+        isLoadingTarget: false,
+        roundErrorMessage: e.message,
+      );
+    } catch (_) {
+      state = state.copyWith(
+        targetTime: _generateRandomTargetTime(),
+        isLoadingTarget: false,
+        roundErrorMessage: 'Could not start billing or load target time.',
+      );
+    }
   }
 
   Duration _generateRandomTargetTime() {

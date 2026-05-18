@@ -40,12 +40,17 @@ class GameState {
     required this.elapsed,
     required this.isRunning,
     required this.isSubmitting,
+    required this.isLoadingTarget,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
     required this.interactionSessionId,
     required this.latestInteractionPayload,
     required this.targetTime,
+    required this.billingRequestId,
+    required this.sessionRef,
+    required this.activeSessionId,
+    required this.roundErrorMessage,
     required this.latestResult,
     required this.history,
     required this.totalWins,
@@ -57,12 +62,17 @@ class GameState {
       elapsed = Duration.zero,
       isRunning = false,
       isSubmitting = false,
+      isLoadingTarget = false,
       isSoundEnabled = true,
       startButtonVisualOffset = Offset.zero,
       startButtonHitboxOffset = Offset.zero,
       interactionSessionId = 'bootstrap-session',
       latestInteractionPayload = null,
       targetTime = const Duration(milliseconds: 8200),
+      billingRequestId = null,
+      sessionRef = null,
+      activeSessionId = null,
+      roundErrorMessage = null,
       latestResult = null,
       history = const [],
       totalWins = 0,
@@ -72,12 +82,17 @@ class GameState {
   final Duration elapsed;
   final bool isRunning;
   final bool isSubmitting;
+  final bool isLoadingTarget;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
   final String interactionSessionId;
   final Map<String, dynamic>? latestInteractionPayload;
   final Duration targetTime;
+  final String? billingRequestId;
+  final String? sessionRef;
+  final int? activeSessionId;
+  final String? roundErrorMessage;
   final RoundResultData? latestResult;
   final List<HistoryEntry> history;
   final int totalWins;
@@ -117,6 +132,7 @@ class GameState {
     Duration? elapsed,
     bool? isRunning,
     bool? isSubmitting,
+    bool? isLoadingTarget,
     bool? isSoundEnabled,
     Offset? startButtonVisualOffset,
     Offset? startButtonHitboxOffset,
@@ -124,6 +140,12 @@ class GameState {
     Map<String, dynamic>? latestInteractionPayload,
     bool clearLatestInteractionPayload = false,
     Duration? targetTime,
+    String? billingRequestId,
+    String? sessionRef,
+    int? activeSessionId,
+    String? roundErrorMessage,
+    bool clearRoundError = false,
+    bool clearActiveSession = false,
     RoundResultData? latestResult,
     bool clearLatestResult = false,
     List<HistoryEntry>? history,
@@ -135,6 +157,7 @@ class GameState {
       elapsed: elapsed ?? this.elapsed,
       isRunning: isRunning ?? this.isRunning,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      isLoadingTarget: isLoadingTarget ?? this.isLoadingTarget,
       isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
       startButtonVisualOffset:
           startButtonVisualOffset ?? this.startButtonVisualOffset,
@@ -145,6 +168,16 @@ class GameState {
           ? null
           : (latestInteractionPayload ?? this.latestInteractionPayload),
       targetTime: targetTime ?? this.targetTime,
+      billingRequestId: clearActiveSession
+          ? null
+          : (billingRequestId ?? this.billingRequestId),
+      sessionRef: clearActiveSession ? null : (sessionRef ?? this.sessionRef),
+      activeSessionId: clearActiveSession
+          ? null
+          : (activeSessionId ?? this.activeSessionId),
+      roundErrorMessage: clearRoundError
+          ? null
+          : (roundErrorMessage ?? this.roundErrorMessage),
       latestResult: clearLatestResult
           ? null
           : (latestResult ?? this.latestResult),

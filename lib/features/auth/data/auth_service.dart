@@ -1,43 +1,81 @@
+import 'package:stopwatch_game/core/api/api_exception.dart';
+import 'package:stopwatch_game/core/api/stopwatch_api.dart';
+import 'package:stopwatch_game/core/config/api_config.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
-import 'package:stopwatch_game/features/auth/data/auth_api_service.dart';
 import 'package:stopwatch_game/features/auth/data/mock_auth_api_service.dart';
 import 'package:stopwatch_game/features/auth/data/models/user_model.dart';
 
-/// Auth gateway used by [LoginNotifier] — real API or mock based on `.env`.
-class AuthService {
-  AuthService._(this._useMock)
-    : _api = AuthApiService(),
-      _mock = const MockAuthApiService();
+export 'package:stopwatch_game/core/api/api_exception.dart' show ApiException;
 
-  factory AuthService.create() => AuthService._(EnvConfig.useMockAuth);
+/// User registration and sign-in workflows.
+class AuthService {
+  AuthService._(this._useMock, this._api)
+    : _mock = const MockAuthApiService();
+
+  factory AuthService.create({StopwatchApi? api}) =>
+      AuthService._(EnvConfig.useMockAuth, api ?? StopwatchApi.create());
 
   final bool _useMock;
-  final AuthApiService _api;
+  final StopwatchApi _api;
   final MockAuthApiService _mock;
 
   bool get isMock => _useMock;
 
-  String channelSourceForPlatform() => _useMock
-      ? _mock.channelSourceForPlatform()
-      : _api.channelSourceForPlatform();
+  Future<UserModel?> lookupUserByMsisdn({required String msisdn}) {
+    return _useMock
+        ? _mock.getUserByMsisdn(msisdn: msisdn)
+        : _fetchUserByMsisdn(msisdn);
+  }
 
-  Future<void> requestOtp({required String msisdn}) => _useMock
-      ? _mock.requestOtp(msisdn: msisdn)
-      : _api.requestOtp(msisdn: msisdn);
+  Future<UserModel> getUserById({required int id}) {
+    return _useMock ? _mock.getUserById(id: id) : _fetchUserById(id);
+  }
 
-  Future<UserModel> verifyOtpAndRegister({
+  Future<UserModel> registerOrUpdateUser({required String msisdn}) {
+    return _useMock
+        ? _mock.registerOrUpdateUser(msisdn: msisdn)
+        : _postUser(msisdn);
+  }
+
+  Future<UserModel?> prepareLogin({required String msisdn}) =>
+      lookupUserByMsisdn(msisdn: msisdn);
+
+  Future<UserModel> completeLogin({
     required String msisdn,
     required String otp,
-    required String channelSource,
-  }) => _useMock
-      ? _mock.verifyOtpAndRegister(
-          msisdn: msisdn,
-          otp: otp,
-          channelSource: channelSource,
-        )
-      : _api.verifyOtpAndRegister(
-          msisdn: msisdn,
-          otp: otp,
-          channelSource: channelSource,
-        );
+  }) async {
+    if (_useMock) {
+      return _mock.completeLogin(msisdn: msisdn, otp: otp);
+    }
+    final registered = await registerOrUpdateUser(msisdn: msisdn);
+    return getUserById(id: registered.id);
+  }
+
+  Future<UserModel?> _fetchUserByMsisdn(String msisdn) async {
+    final response = await _api.get(
+      Uri.parse(ApiConfig.users).replace(queryParameters: {'msisdn': msisdn}),
+      allowNotFound: true,
+    );
+    if (response.isNotFound || !response.hasJson) return null;
+    return UserModel.fromJson(response.json!);
+  }
+
+  Future<UserModel> _fetchUserById(int id) async {
+    final response = await _api.get(Uri.parse(ApiConfig.userById(id)));
+    if (!response.hasJson) {
+      throw ApiException('Could not load user profile.');
+    }
+    return UserModel.fromJson(response.json!);
+  }
+
+  Future<UserModel> _postUser(String msisdn) async {
+    final response = await _api.post(
+      Uri.parse(ApiConfig.users),
+      body: {'msisdn': msisdn},
+    );
+    if (!response.hasJson) {
+      throw ApiException('Registration failed.');
+    }
+    return UserModel.fromJson(response.json!);
+  }
 }

@@ -35,6 +35,12 @@ This document describes the HTTP API contract required by the **Stopwatch Challe
 http://188.64.189.38:9090
 ```
 
+**Interactive API reference (Swagger UI):**
+
+[http://188.64.189.38:9090/swagger-ui/index.html](http://188.64.189.38:9090/swagger-ui/index.html)
+
+OpenAPI: `GET /v3/api-docs` on the same host.
+
 | Environment | Base URL |
 |-------------|----------|
 | **Current (development)** | `http://188.64.189.38:9090` |
@@ -85,11 +91,33 @@ POST http://188.64.189.38:9090/api/v1/users
 
 ## Users
 
-Registers or upserts a player before entering the game. This is the **live** backend endpoint confirmed against `http://188.64.189.38:9090`.
+Registers or upserts a player before entering the game.
 
-**Client references:** `LoginNotifier.submitLogin` (map phone → `msisdn`, add `username` + `channelSource`)
+**Client:** `AuthService` — `lookupUserByMsisdn`, `registerOrUpdateUser`, `getUserById` (`login_notifier.dart`).
 
-### Create / register user
+### Get user by msisdn (live)
+
+```http
+GET /api/v1/users?msisdn=255676589824
+```
+
+**Success — `200 OK`** — `UserResponse` (same schema as register).
+
+**Client:** Called on phone **Continue** (`LoginNotifier.sendOtp` → `prepareLogin`).
+
+---
+
+### Get user by id (live)
+
+```http
+GET /api/v1/users/{id}
+```
+
+**Client:** Called after successful register (`getUserById`) to refresh profile into `playerUserProvider`.
+
+---
+
+### Register or update user (live)
 
 ```http
 POST /api/v1/users
@@ -102,21 +130,17 @@ POST /api/v1/users
 | `accept` | `application/json` |
 | `Content-Type` | `application/json` |
 
-**Request body**
+**Request body (Swagger)**
 
 ```json
 {
-  "msisdn": "255676589824",
-  "channelSource": "WEB",
-  "username": "KIBABU"
+  "msisdn": "255676589824"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `msisdn` | string | Yes | Mobile number (digits, country code included — e.g. Tanzania `255…`) |
-| `channelSource` | string | Yes | Client channel; e.g. `WEB` for Flutter web builds |
-| `username` | string | Yes | Display / account name chosen by the player |
+| `msisdn` | string | Yes | Mobile number (e.g. Tanzania `255…`) |
 
 **cURL example**
 
@@ -169,38 +193,237 @@ curl -X 'POST' \
 | `x-content-type-options` | `nosniff` |
 | `x-frame-options` | `DENY` |
 
-**Client mapping notes**
+**Client mapping**
 
 | App field | API field |
 |-----------|-----------|
 | Login phone input | `msisdn` |
-| Platform | `channelSource` — use `WEB` on web; map `android` / `ios` / desktop when known |
-| *(not in UI yet)* | `username` — add a field on login or derive a default until UX is defined |
 
-> **Note:** This response does **not** include a bearer token. Store `id` (and profile fields) locally after a successful call. Document additional auth headers here once session/JWT endpoints are confirmed in Swagger.
-
-> **Client status:** `LoginNotifier.submitLogin` still bypasses the API. Wire it to `POST /api/v1/users` before production.
-
-### Suggested `channelSource` values
-
-| Client platform | Suggested value |
-|-----------------|-----------------|
-| Flutter web | `WEB` |
-| Android | `ANDROID` *(confirm with backend)* |
-| iOS | `IOS` *(confirm with backend)* |
-| Windows / Linux / macOS | `DESKTOP` *(confirm with backend)* |
+Server sets `channelSource=APP` and `status=active` for new users. Store `id` in `playerUserProvider` after login.
 
 ---
 
 ## Game rounds
 
+### Fetch target time (live)
+
+Used when opening or resetting the play board (`GameController.openRoundBoard`, `onResetPressed`).
+
+### Enqueue billing (live)
+
+Called when the player taps **Play** on the home screen (`GameController.openRoundBoard`). Enqueues a Yas payment; the returned `requestId` is passed to `POST /game/start` as `billingRequestId`.
+
+```http
+POST /api/v1/billing/transactions
+```
+
+**Request body**
+
+```json
+{
+  "msisdn": "255676589824",
+  "amount": 0.01
+}
+```
+
+**Success — `200 OK`**
+
+```json
+{
+  "id": 0,
+  "msisdn": "255676589824",
+  "requestId": "string",
+  "billingType": "string",
+  "amount": 0.01,
+  "status": "pending",
+  "createdAt": "2026-05-18T11:39:10.126Z",
+  "updatedAt": "2026-05-18T11:39:10.126Z"
+}
+```
+
+**Client:** `GameService.enqueueBilling` — amount from `GAME_ENTRY_FEE` in `.env` (default `0.01`). Disabled when `MOCK_GAME=true`.
+
+After enqueue, the app polls **Get billing transaction status** until `success` or `failed` (Yas updates the record via the callback webhook below).
+
+---
+
+### Get billing transaction status (live)
+
+Portal polling while Yas processes the charge. Status lifecycle: `pending` → `acknowledged` → `success` | `failed`.
+
+```http
+GET /api/v1/billing/transactions/{requestId}
+```
+
+**Path**
+
+| Name | Description |
+|------|-------------|
+| `requestId` | Value returned from **Enqueue billing** |
+
+**Success — `200 OK`**
+
+Same schema as **Enqueue billing** (`BillingTransactionResponse`), with `status` updated as Yas ACK/callback events arrive.
+
+**Client:** `GameService.waitForBillingSuccess` — polls every `BILLING_POLL_INTERVAL_MS` (default `2000`) until terminal status or `BILLING_POLL_TIMEOUT_MS` (default `120000`).
+
+---
+
+### Yas CP_NOTIFICATION callback (server only)
+
+Inbound webhook from **Yas SDP** — not called by the Flutter app. Yas posts charge results here; your backend persists them and updates the transaction row the app polls above.
+
+```http
+POST /api/v1/billing/callbacks/yas
+```
+
+**Request body (excerpt)**
+
+```json
+{
+  "isGenericOffer": true,
+  "requestId": "string",
+  "requestTimeStamp": "string",
+  "requestParam": {
+    "data": [{ "name": "string", "value": "string" }]
+  },
+  "operation": "string"
+}
+```
+
+**Success — `200 OK` (Yas ACK JSON)**
+
+```json
+{
+  "requestId": "string",
+  "responseId": "string",
+  "responseTimeStamp": "string",
+  "operation": "string",
+  "responseParam": {
+    "status": "string",
+    "statusCode": "string",
+    "description": "string"
+  }
+}
+```
+
+---
+
+### Allocate target time (live)
+
+```http
+POST /api/v1/game/target-time
+```
+
+**Request body**
+
+```json
+{
+  "msisdn": "255676589824"
+}
+```
+
+**Success — `200 OK`**
+
+```json
+{
+  "msisdn": "255676589824",
+  "targetTimeMs": 160835
+}
+```
+
+**Client:** `GameService.fetchTargetTime` — runs after billing when the user taps **Play**. Disabled when `MOCK_GAME=true` in `.env`.
+
+---
+
+### Start game session (live)
+
+Called when the player presses **Start round** (`GameController.startGame`). Requires a prior target-time allocation and billing.
+
+```http
+POST /api/v1/game/start
+```
+
+**Request body**
+
+```json
+{
+  "msisdn": "255676589824",
+  "billingRequestId": "string",
+  "channel": "SMS"
+}
+```
+
+**Success — `200 OK`**
+
+```json
+{
+  "id": 0,
+  "sessionRef": "string",
+  "billingRequestId": "string",
+  "msisdn": "string",
+  "channel": "SMS",
+  "entryFee": 0,
+  "targetTimeMs": 160835,
+  "status": "string",
+  "startedAt": "2026-05-18T11:23:02.613Z",
+  "endedAt": null,
+  "result": null
+}
+```
+
+**Client:** `GameService.startGameSession` — uses `billingRequestId` from target-time (or derived id). Channel from `GAME_CHANNEL` in `.env` (default `SMS`).
+
+---
+
+### Stop game session (live)
+
+Called when the player presses **Stop round** (`GameController.stopGame`).
+
+```http
+POST /api/v1/game/stop
+```
+
+**Request body**
+
+```json
+{
+  "sessionRef": "string",
+  "stoppedTimeMs": 0
+}
+```
+
+**Success — `200 OK`**
+
+Returns the completed session (same schema as start). If the body is empty, the client falls back to `GET /game/sessions/{sessionRef}`.
+
+**Client:** `GameService.stopGameSession`
+
+---
+
+### Get game session (live)
+
+Lookup session by `sessionRef` (same value as `billingRequestId`). Used after stop if the stop response has no `result`.
+
+```http
+GET /api/v1/game/sessions/{sessionRef}
+```
+
+**Success — `200 OK`**
+
+Same schema as start response; `result` is populated when the round is complete.
+
+**Client:** `GameService.getGameSession` → `GameSessionMapper.toRoundResult`. Falls back to local scoring if `result` is null.
+
+---
+
 Round lifecycle maps to `GameController` methods:
 
 | Client method | Intended API call |
 |---------------|-------------------|
-| `openRoundBoard()` | Create round (target time) |
-| `startGame()` | Start round |
-| `stopGame()` + `fetchRoundResultFromBackend()` | Stop round & get result |
+| `openRoundBoard()` | `POST /api/v1/game/target-time` |
+| `startGame()` | `POST /api/v1/game/start` |
+| `stopGame()` + `fetchRoundResultFromBackend()` | `POST /game/stop` then `GET /game/sessions/{sessionRef}` if needed |
 
 ### Game rules (server-enforced)
 
@@ -588,16 +811,22 @@ The client should surface `message` to users for auth failures; game errors may 
 
 ## Client integration status
 
-| Area | Status | Source file |
-|------|--------|-------------|
-| Register user `POST /api/v1/users` | **Documented (live)** — not wired in app | `lib/features/auth/presentation/bloc/login_notifier.dart` |
-| Login / continue | Bypassed (always succeeds) | `login_notifier.dart` |
-| Start round | Placeholder | `lib/features/game/presentation/bloc/game_notifier.dart` |
-| Stop round | Placeholder | `game_notifier.dart` |
-| Round result | Local stub (±100 ms rule) | `fetchRoundResultFromBackend` |
-| Interaction telemetry | No HTTP call | `lib/core/services/interaction_telemetry_service.dart` |
+All endpoints from live Swagger (`/v3/api-docs`) except the Yas webhook:
 
-When implementing the client, replace the `TODO` blocks in those files with calls matching this document.
+| Endpoint | Status | Source |
+|----------|--------|--------|
+| `GET /users?msisdn` | **Wired** (mock when `MOCK_AUTH=true`) | `StopwatchApi` |
+| `GET /users/{id}` | **Wired** | `StopwatchApi` |
+| `POST /users` | **Wired** | `StopwatchApi` |
+| `POST /billing/transactions` | **Wired** (mock when `MOCK_GAME=true`) | `StopwatchApi` |
+| `GET /billing/transactions/{requestId}` | **Wired** (poll) | `StopwatchApi` |
+| `POST /billing/callbacks/yas` | **Server only** (not in app) | — |
+| `POST /game/target-time` | **Wired** | `StopwatchApi` |
+| `POST /game/start` | **Wired** | `StopwatchApi` |
+| `POST /game/stop` | **Wired** | `StopwatchApi` |
+| `GET /game/sessions/{sessionRef}` | **Wired** | `StopwatchApi` |
+
+**Not on Swagger** (documented for future backend): `POST /game/interaction-telemetry` — client collects payload locally only (`interaction_telemetry_service.dart`).
 
 ---
 

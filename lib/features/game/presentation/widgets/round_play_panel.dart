@@ -16,6 +16,8 @@ class RoundPlayPanel extends StatefulWidget {
     required this.targetTime,
     required this.isRunning,
     required this.isBusy,
+    required this.isLoadingTarget,
+    this.roundErrorMessage,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
@@ -36,6 +38,8 @@ class RoundPlayPanel extends StatefulWidget {
   final Duration targetTime;
   final bool isRunning;
   final bool isBusy;
+  final bool isLoadingTarget;
+  final String? roundErrorMessage;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
@@ -106,6 +110,10 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (widget.roundErrorMessage != null) ...[
+          _RoundErrorBanner(message: widget.roundErrorMessage!),
+          const SizedBox(height: 10),
+        ],
         Card(
           margin: EdgeInsets.zero,
           child: Column(
@@ -155,6 +163,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                           PlaySurface3DTilt(
                             child: _TargetTimeBadge(
                               targetTimeLabel: widget.targetTimeLabel,
+                              isLoading: widget.isLoadingTarget,
                             ),
                           ),
                         ],
@@ -165,6 +174,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                         PlaySurface3DTilt(
                           child: _TargetTimeBadge(
                             targetTimeLabel: widget.targetTimeLabel,
+                            isLoading: widget.isLoadingTarget,
                           ),
                         ),
                         const Spacer(),
@@ -558,10 +568,40 @@ class _OffsetAwareStartControl extends StatelessWidget {
   }
 }
 
+class _RoundErrorBanner extends StatelessWidget {
+  const _RoundErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      child: Text(
+        message,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: const Color(0xFFB91C1C),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 class _TargetTimeBadge extends StatelessWidget {
-  const _TargetTimeBadge({required this.targetTimeLabel});
+  const _TargetTimeBadge({
+    required this.targetTimeLabel,
+    required this.isLoading,
+  });
 
   final String targetTimeLabel;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -598,13 +638,23 @@ class _TargetTimeBadge extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            targetTimeLabel,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: AppColors.onAccent,
+          if (isLoading)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.onAccent,
+              ),
+            )
+          else
+            Text(
+              targetTimeLabel,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: AppColors.onAccent,
+              ),
             ),
-          ),
         ],
       ),
     );

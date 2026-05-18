@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
+import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
@@ -23,6 +24,46 @@ class GamePage extends ConsumerWidget {
     final gameState = ref.watch(gameControllerProvider);
     final controller = ref.read(gameControllerProvider.notifier);
 
+    ref.listen<GameState>(gameControllerProvider, (previous, next) {
+      if (!context.mounted) return;
+
+      if (next.roundErrorMessage != null &&
+          next.roundErrorMessage != previous?.roundErrorMessage) {
+        AppSnackBar.showError(context, next.roundErrorMessage!);
+      }
+
+      if (next.isLoadingTarget && previous?.isLoadingTarget != true) {
+        AppSnackBar.showInfo(
+          context,
+          'Processing payment and loading your target…',
+        );
+      }
+
+      if (previous?.isLoadingTarget == true &&
+          !next.isLoadingTarget &&
+          next.roundErrorMessage == null &&
+          next.selectedTab == GameTab.play) {
+        AppSnackBar.showSuccess(
+          context,
+          'Target time: ${next.targetTimeLabel}. Tap Start when ready!',
+        );
+      }
+
+      if (previous?.isRunning != true && next.isRunning) {
+        AppSnackBar.showInfo(
+          context,
+          'Timer running — stop as close to the target as you can.',
+        );
+      }
+
+      if (previous?.isSoundEnabled != next.isSoundEnabled) {
+        AppSnackBar.showInfo(
+          context,
+          next.isSoundEnabled ? 'Sound effects on' : 'Sound effects off',
+        );
+      }
+    });
+
     ref.listen<GameState>(gameControllerProvider, (previous, next) async {
       final hadDialog = previous?.latestResult != null;
       final shouldShowDialog = next.latestResult != null && !hadDialog;
@@ -33,6 +74,15 @@ class GamePage extends ConsumerWidget {
       } else {
         await GameFeedbackService.onLose();
       }
+      if (!context.mounted) return;
+      if (result.isPrizeAwarded) {
+        AppSnackBar.showSuccess(context, 'You won! ${result.prizeLabel}');
+      } else {
+        AppSnackBar.showWarning(
+          context,
+          'Round complete — ${result.deltaLabel}',
+        );
+      }
       await showDialog<void>(
         context: context,
         builder: (_) => RoundResultDialog(
@@ -41,6 +91,7 @@ class GamePage extends ConsumerWidget {
           onCancel: controller.onResetPressed,
         ),
       );
+      if (!context.mounted) return;
       controller.dismissResultDialog();
     });
 
@@ -169,7 +220,16 @@ class GamePage extends ConsumerWidget {
                         ],
                         Expanded(
                           child: RefreshIndicator(
-                            onRefresh: controller.onPullToRefresh,
+                            onRefresh: () async {
+                              AppSnackBar.showInfo(context, 'Refreshing round…');
+                              await controller.onPullToRefresh();
+                              if (context.mounted) {
+                                AppSnackBar.showSuccess(
+                                  context,
+                                  'Round refreshed.',
+                                );
+                              }
+                            },
                             child: SingleChildScrollView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               child: Align(
@@ -198,10 +258,22 @@ class GamePage extends ConsumerWidget {
                                       child: _GameBody(
                                         key: ValueKey<GameTab>(gameState.selectedTab),
                                         state: gameState,
-                                        onPlayPressed: controller.openRoundBoard,
+                                        onPlayPressed: () {
+                                          AppSnackBar.showInfo(
+                                            context,
+                                            'Starting a new round…',
+                                          );
+                                          controller.openRoundBoard();
+                                        },
                                         onOpenHistory: () =>
                                             controller.selectTab(GameTab.history),
-                                        onResetRound: controller.onResetPressed,
+                                        onResetRound: () {
+                                          AppSnackBar.showInfo(
+                                            context,
+                                            'Resetting round…',
+                                          );
+                                          controller.onResetPressed();
+                                        },
                                       onToggleSound: controller.toggleSoundEnabled,
                                       onStartControlPointerDown:
                                           controller.onStartControlPointerDown,
@@ -211,8 +283,16 @@ class GamePage extends ConsumerWidget {
                                           controller.onStartControlPointerUp,
                                         onStartOrStopRound: () async {
                                           if (gameState.isRunning) {
+                                            AppSnackBar.showInfo(
+                                              context,
+                                              'Stopping timer…',
+                                            );
                                             await controller.onStopPressed();
                                           } else {
+                                            AppSnackBar.showInfo(
+                                              context,
+                                              'Starting round…',
+                                            );
                                             await controller.onStartPressed();
                                           }
                                         },
@@ -341,7 +421,9 @@ class _GameBody extends StatelessWidget {
           elapsed: state.elapsed,
           targetTime: state.targetTime,
           isRunning: state.isRunning,
-          isBusy: state.isSubmitting,
+          isBusy: state.isSubmitting || state.isLoadingTarget,
+          isLoadingTarget: state.isLoadingTarget,
+          roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,
           startButtonHitboxOffset: state.startButtonHitboxOffset,

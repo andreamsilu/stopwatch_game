@@ -10,6 +10,7 @@ class LoginState {
     required this.isSubmitting,
     required this.isResendingOtp,
     required this.errorMessage,
+    required this.existingUser,
     required this.registeredUser,
   });
 
@@ -23,6 +24,7 @@ class LoginState {
       isSubmitting = false,
       isResendingOtp = false,
       errorMessage = null,
+      existingUser = null,
       registeredUser = null;
 
   final LoginStep step;
@@ -31,6 +33,7 @@ class LoginState {
   final bool isSubmitting;
   final bool isResendingOtp;
   final String? errorMessage;
+  final UserModel? existingUser;
   final UserModel? registeredUser;
 
   static const int otpLength = 6;
@@ -55,6 +58,8 @@ class LoginState {
 
   bool get canVerifyOtp => !isSubmitting && otpCode.length == otpLength;
 
+  bool get canConfirmRegistration => !isSubmitting && step == LoginStep.otp;
+
   LoginState copyWith({
     LoginStep? step,
     String? phoneNumber,
@@ -63,6 +68,8 @@ class LoginState {
     bool? isResendingOtp,
     String? errorMessage,
     bool clearError = false,
+    UserModel? existingUser,
+    bool clearExistingUser = false,
     UserModel? registeredUser,
     bool clearRegisteredUser = false,
   }) {
@@ -73,6 +80,9 @@ class LoginState {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isResendingOtp: isResendingOtp ?? this.isResendingOtp,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      existingUser: clearExistingUser
+          ? null
+          : (existingUser ?? this.existingUser),
       registeredUser: clearRegisteredUser
           ? null
           : (registeredUser ?? this.registeredUser),

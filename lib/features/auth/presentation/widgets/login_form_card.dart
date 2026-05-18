@@ -15,6 +15,9 @@ class LoginFormCard extends StatelessWidget {
     required this.isResendingOtp,
     required this.canSendOtp,
     required this.canVerifyOtp,
+    required this.canConfirmRegistration,
+    required this.requiresOtp,
+    required this.isReturningUser,
     required this.errorMessage,
     required this.onPhoneChanged,
     required this.onOtpChanged,
@@ -33,6 +36,9 @@ class LoginFormCard extends StatelessWidget {
   final bool isResendingOtp;
   final bool canSendOtp;
   final bool canVerifyOtp;
+  final bool canConfirmRegistration;
+  final bool requiresOtp;
+  final bool isReturningUser;
   final String? errorMessage;
   final ValueChanged<String> onPhoneChanged;
   final ValueChanged<String> onOtpChanged;
@@ -60,6 +66,7 @@ class LoginFormCard extends StatelessWidget {
                 phoneValue: phoneValue,
                 isSubmitting: isSubmitting,
                 canSendOtp: canSendOtp,
+                requiresOtp: requiresOtp,
                 errorMessage: errorMessage,
                 onPhoneChanged: onPhoneChanged,
                 onSendOtp: onSendOtp,
@@ -71,6 +78,9 @@ class LoginFormCard extends StatelessWidget {
                 isSubmitting: isSubmitting,
                 isResendingOtp: isResendingOtp,
                 canVerifyOtp: canVerifyOtp,
+                canConfirmRegistration: canConfirmRegistration,
+                requiresOtp: requiresOtp,
+                isReturningUser: isReturningUser,
                 errorMessage: errorMessage,
                 onOtpChanged: onOtpChanged,
                 onVerifyOtp: onVerifyOtp,
@@ -141,6 +151,7 @@ class _DetailsStep extends StatelessWidget {
     required this.phoneValue,
     required this.isSubmitting,
     required this.canSendOtp,
+    required this.requiresOtp,
     required this.errorMessage,
     required this.onPhoneChanged,
     required this.onSendOtp,
@@ -150,6 +161,7 @@ class _DetailsStep extends StatelessWidget {
   final String phoneValue;
   final bool isSubmitting;
   final bool canSendOtp;
+  final bool requiresOtp;
   final String? errorMessage;
   final ValueChanged<String> onPhoneChanged;
   final Future<void> Function() onSendOtp;
@@ -168,7 +180,9 @@ class _DetailsStep extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Enter your phone number. We will send a 6-digit verification code.',
+            requiresOtp
+                ? 'Enter your phone number. We will send a 6-digit verification code.'
+                : 'Enter your phone number to register or sign in.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
@@ -221,8 +235,8 @@ class _DetailsStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.sms_outlined),
-              label: const Text('Send verification code'),
+                  : Icon(requiresOtp ? Icons.sms_outlined : Icons.arrow_forward_rounded),
+              label: Text(requiresOtp ? 'Send verification code' : 'Continue'),
             ),
           ),
           const SizedBox(height: 16),
@@ -246,6 +260,9 @@ class _OtpStep extends StatelessWidget {
     required this.isSubmitting,
     required this.isResendingOtp,
     required this.canVerifyOtp,
+    required this.canConfirmRegistration,
+    required this.requiresOtp,
+    required this.isReturningUser,
     required this.errorMessage,
     required this.onOtpChanged,
     required this.onVerifyOtp,
@@ -259,11 +276,17 @@ class _OtpStep extends StatelessWidget {
   final bool isSubmitting;
   final bool isResendingOtp;
   final bool canVerifyOtp;
+  final bool canConfirmRegistration;
+  final bool requiresOtp;
+  final bool isReturningUser;
   final String? errorMessage;
   final ValueChanged<String> onOtpChanged;
   final Future<void> Function() onVerifyOtp;
   final Future<void> Function() onResendOtp;
   final VoidCallback onBackToDetails;
+
+  bool get _canSubmit =>
+      requiresOtp ? canVerifyOtp : canConfirmRegistration;
 
   @override
   Widget build(BuildContext context) {
@@ -285,29 +308,36 @@ class _OtpStep extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Enter verification code',
+            requiresOtp ? 'Enter verification code' : 'Confirm your number',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'We sent a 6-digit code to $maskedPhone',
+            requiresOtp
+                ? 'We sent a 6-digit code to $maskedPhone'
+                : isReturningUser
+                ? 'Welcome back! Confirm to continue with $maskedPhone.'
+                : 'Register with $maskedPhone to play.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
           ),
-          const SizedBox(height: 24),
-          OtpInputBoxes(
-            value: otpCode,
-            enabled: !isSubmitting,
-            onChanged: onOtpChanged,
-            onCompleted: canVerifyOtp
-                ? () async {
-                    await onVerifyOtp();
-                  }
-                : null,
-          ),
+          if (requiresOtp) ...[
+            const SizedBox(height: 24),
+            OtpInputBoxes(
+              value: otpCode,
+              enabled: !isSubmitting,
+              onChanged: onOtpChanged,
+              onCompleted: _canSubmit
+                  ? () async {
+                      await onVerifyOtp();
+                    }
+                  : null,
+            ),
+          ] else
+            const SizedBox(height: 28),
           if (errorMessage != null) ...[
             const SizedBox(height: 14),
             _ErrorBanner(message: errorMessage!),
@@ -316,7 +346,7 @@ class _OtpStep extends StatelessWidget {
           SizedBox(
             height: GameConstants.minTouchTargetSize + 6,
             child: ElevatedButton.icon(
-              onPressed: canVerifyOtp
+              onPressed: _canSubmit
                   ? () async {
                       await onVerifyOtp();
                     }
@@ -324,7 +354,7 @@ class _OtpStep extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.onAccent,
-                elevation: canVerifyOtp ? 2 : 0,
+                elevation: _canSubmit ? 2 : 0,
               ),
               icon: isSubmitting
                   ? const SizedBox(
@@ -333,26 +363,28 @@ class _OtpStep extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.verified_outlined),
-              label: const Text('Verify & continue'),
+              label: Text(requiresOtp ? 'Verify & continue' : 'Continue'),
             ),
           ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed: isSubmitting || isResendingOtp
-                  ? null
-                  : () async {
-                      await onResendOtp();
-                    },
-              child: isResendingOtp
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Resend code'),
+          if (requiresOtp) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: isSubmitting || isResendingOtp
+                    ? null
+                    : () async {
+                        await onResendOtp();
+                      },
+                child: isResendingOtp
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Resend code'),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stopwatch_game/features/auth/data/auth_api_service.dart';
 import 'package:stopwatch_game/features/auth/data/auth_service.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 
@@ -26,6 +25,7 @@ class LoginNotifier extends StateNotifier<LoginState> {
     state = state.copyWith(
       step: LoginStep.details,
       otpCode: '',
+      clearExistingUser: true,
       clearError: true,
     );
   }
@@ -35,14 +35,15 @@ class LoginNotifier extends StateNotifier<LoginState> {
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      await _auth.requestOtp(msisdn: state.normalizedMsisdn);
+      final existing = await _auth.prepareLogin(msisdn: state.normalizedMsisdn);
       state = state.copyWith(
         isSubmitting: false,
         step: LoginStep.otp,
-        otpCode: LoginState.defaultOtpCode,
+        existingUser: existing,
+        otpCode: _auth.isMock ? LoginState.defaultOtpCode : '',
       );
       return true;
-    } on AuthApiException catch (e) {
+    } on ApiException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
       return false;
     } catch (_) {
@@ -57,43 +58,51 @@ class LoginNotifier extends StateNotifier<LoginState> {
   Future<bool> resendOtp() async {
     state = state.copyWith(isResendingOtp: true, clearError: true);
     try {
-      await _auth.requestOtp(msisdn: state.normalizedMsisdn);
-      state = state.copyWith(isResendingOtp: false);
+      final existing = await _auth.prepareLogin(msisdn: state.normalizedMsisdn);
+      state = state.copyWith(
+        isResendingOtp: false,
+        existingUser: existing,
+        otpCode: _auth.isMock ? LoginState.defaultOtpCode : state.otpCode,
+      );
       return true;
-    } on AuthApiException catch (e) {
+    } on ApiException catch (e) {
       state = state.copyWith(isResendingOtp: false, errorMessage: e.message);
       return false;
     } catch (_) {
       state = state.copyWith(
         isResendingOtp: false,
-        errorMessage: 'Could not resend code. Try again shortly.',
+        errorMessage: 'Could not refresh. Try again shortly.',
       );
       return false;
     }
   }
 
   Future<bool> verifyOtpAndRegister() async {
-    if (!state.canVerifyOtp) return false;
+    if (_auth.isMock) {
+      if (!state.canVerifyOtp) return false;
+    } else if (!state.canConfirmRegistration) {
+      return false;
+    }
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      final user = await _auth.verifyOtpAndRegister(
+      final user = await _auth.completeLogin(
         msisdn: state.normalizedMsisdn,
         otp: state.otpCode,
-        channelSource: _auth.channelSourceForPlatform(),
       );
+
       state = state.copyWith(
         isSubmitting: false,
         registeredUser: user,
       );
       return true;
-    } on AuthApiException catch (e) {
+    } on ApiException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
       return false;
     } catch (_) {
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: 'Verification failed. Please try again.',
+        errorMessage: 'Could not complete registration. Please try again.',
       );
       return false;
     }

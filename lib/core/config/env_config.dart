@@ -39,6 +39,35 @@ class EnvConfig {
   /// When `true`, auth skips HTTP and uses local mock OTP (`123456`).
   static bool get useMockAuth {
     final raw = _optional('MOCK_AUTH', 'true').toLowerCase();
-    return raw == 'true' || raw == '1' || raw == 'yes';
+    return _isTruthy(raw);
+  }
+
+  /// When `true`, target time is generated locally instead of `POST /game/target-time`.
+  static bool get useMockGame {
+    final raw = _optional('MOCK_GAME', 'false').toLowerCase();
+    return _isTruthy(raw);
+  }
+
+  static bool _isTruthy(String raw) =>
+      raw == 'true' || raw == '1' || raw == 'yes';
+
+  static String get gameChannel => _optional('GAME_CHANNEL', 'SMS');
+
+  static String get mockBillingRequestId =>
+      _optional('MOCK_BILLING_REQUEST_ID', 'mock-billing-request');
+
+  static double get gameEntryFee {
+    final raw = _optional('GAME_ENTRY_FEE', '0.01');
+    return double.tryParse(raw) ?? 0.01;
+  }
+
+  static Duration get billingPollInterval {
+    final ms = int.tryParse(_optional('BILLING_POLL_INTERVAL_MS', '2000')) ?? 2000;
+    return Duration(milliseconds: ms.clamp(500, 30000));
+  }
+
+  static Duration get billingPollTimeout {
+    final ms = int.tryParse(_optional('BILLING_POLL_TIMEOUT_MS', '120000')) ?? 120000;
+    return Duration(milliseconds: ms.clamp(5000, 600000));
   }
 }
