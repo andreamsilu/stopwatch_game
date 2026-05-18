@@ -3,6 +3,7 @@ import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/otp_input_boxes.dart';
+import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone_prefix.dart';
 
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({
@@ -190,18 +191,7 @@ class _DetailsStep extends StatelessWidget {
               enabled: !isSubmitting,
               onChanged: onPhoneChanged,
               decoration: const InputDecoration(
-                prefixIcon: SizedBox(
-                  width: 96,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(width: 10),
-                      Icon(Icons.flag, size: 14),
-                      SizedBox(width: 6),
-                      Text('+255'),
-                    ],
-                  ),
-                ),
+                prefixIcon: TanzaniaPhonePrefix(style: 'flat', size: 24),
                 hintText: '712 345 678',
               ),
             ),
