@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/core/theme/app_theme.dart';
 import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EnvConfig.load();
+
   if (kIsWeb) {
     BrowserContextMenu.disableContextMenu();
     HardwareKeyboard.instance.addHandler(_blockInspectionShortcuts);

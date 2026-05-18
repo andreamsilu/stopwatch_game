@@ -5,6 +5,7 @@ import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/stopwatch_3d_stage.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
 class RoundPlayPanel extends StatefulWidget {
@@ -56,6 +57,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
     with SingleTickerProviderStateMixin {
   late final StopwatchFlameGame _stopwatchGame;
   AnimationController? _ringRotationController;
+  double? _lastGameDiameter;
+  bool? _lastGameIsRunning;
 
   @override
   void initState() {
@@ -149,16 +152,20 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                             ],
                           ),
                           const SizedBox(height: 8),
-                          _TargetTimeBadge(
-                            targetTimeLabel: widget.targetTimeLabel,
+                          PlaySurface3DTilt(
+                            child: _TargetTimeBadge(
+                              targetTimeLabel: widget.targetTimeLabel,
+                            ),
                           ),
                         ],
                       );
                     }
                     return Row(
                       children: [
-                        _TargetTimeBadge(
-                          targetTimeLabel: widget.targetTimeLabel,
+                        PlaySurface3DTilt(
+                          child: _TargetTimeBadge(
+                            targetTimeLabel: widget.targetTimeLabel,
+                          ),
                         ),
                         const Spacer(),
                         IconButton(
@@ -203,7 +210,6 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                     final circleDiameter = responsivePreferred
                         .clamp(140.0, maxAllowedDiameter)
                         .toDouble();
-                    final circleRadius = circleDiameter / 2;
                     final progressValue = widget.targetTime.inMilliseconds <= 0
                         ? 0.0
                         : (widget.elapsed.inMilliseconds /
@@ -216,52 +222,26 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                     final timerMaxWidth = (circleDiameter * 0.56)
                         .clamp(88.0, 180.0)
                         .toDouble();
-                    _stopwatchGame.updateState(
-                      isRunning: widget.isRunning,
-                      diameter: circleDiameter,
-                    );
+                    if (_lastGameDiameter != circleDiameter ||
+                        _lastGameIsRunning != widget.isRunning) {
+                      _lastGameDiameter = circleDiameter;
+                      _lastGameIsRunning = widget.isRunning;
+                      _stopwatchGame.updateState(
+                        isRunning: widget.isRunning,
+                        diameter: circleDiameter,
+                      );
+                    }
 
                     return Column(
                       children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                          width: circleDiameter,
-                          height: circleDiameter,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.background,
-                                AppColors.secondary.withValues(alpha: 0.1),
-                              ],
-                            ),
-                            border: Border.all(
-                              color: widget.isRunning
-                                  ? AppColors.accent.withValues(alpha: 0.72)
-                                  : AppColors.secondary.withValues(alpha: 0.32),
-                              width: widget.isRunning ? 6 : 5,
-                            ),
-                            borderRadius: BorderRadius.circular(circleRadius),
-                            boxShadow: widget.isRunning
-                                ? const [
-                                    BoxShadow(
-                                      color: Color(0x2EFFD100),
-                                      blurRadius: 24,
-                                      offset: Offset(0, 8),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Center(
+                        Center(
+                          child: Stopwatch3DStage(
+                            diameter: circleDiameter,
+                            isRunning: widget.isRunning,
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                    circleRadius,
-                                  ),
+                                RepaintBoundary(
                                   child: SizedBox(
                                     width: circleDiameter,
                                     height: circleDiameter,
@@ -280,33 +260,28 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                   ),
                                 ),
                                 IgnorePointer(
-                                  child: SizedBox(
-                                    width: circleDiameter,
-                                    height: circleDiameter,
-                                    child: AnimatedBuilder(
-                                      animation: _ringRotationController ??
-                                          const AlwaysStoppedAnimation<double>(0),
-                                      builder: (context, _) {
-                                        return TweenAnimationBuilder<double>(
-                                          tween: Tween<double>(
-                                            begin: 0,
-                                            end: progressValue,
-                                          ),
-                                          duration: const Duration(milliseconds: 180),
-                                          curve: Curves.easeOutCubic,
-                                          builder: (context, animatedProgress, _) {
-                                            return CustomPaint(
-                                              painter: _RoundProgressRingPainter(
-                                                progress: animatedProgress,
-                                                rotation:
-                                                    _ringRotationController?.value ??
-                                                    0,
-                                                isRunning: widget.isRunning,
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
+                                  child: RepaintBoundary(
+                                    child: SizedBox(
+                                      width: circleDiameter,
+                                      height: circleDiameter,
+                                      child: AnimatedBuilder(
+                                        animation: _ringRotationController ??
+                                            const AlwaysStoppedAnimation<double>(
+                                              0,
+                                            ),
+                                        builder: (context, _) {
+                                          return CustomPaint(
+                                            painter: _RoundProgressRingPainter(
+                                              progress: progressValue,
+                                              rotation:
+                                                  _ringRotationController
+                                                      ?.value ??
+                                                  0,
+                                              isRunning: widget.isRunning,
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -324,24 +299,30 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: _RoundStatCard(
-                                          label: 'Target time',
-                                          value: widget.targetTimeLabel,
+                                        child: PlaySurface3DTilt(
+                                          child: _RoundStatCard(
+                                            label: 'Target time',
+                                            value: widget.targetTimeLabel,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: _RoundStatCard(
-                                          label: 'Prize coins',
-                                          value: '${widget.totalPrizeCoins}',
+                                        child: PlaySurface3DTilt(
+                                          child: _RoundStatCard(
+                                            label: 'Prize coins',
+                                            value: '${widget.totalPrizeCoins}',
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  _RoundStatCard(
-                                    label: 'Perfect stops',
-                                    value: '${widget.totalWins}',
+                                  PlaySurface3DTilt(
+                                    child: _RoundStatCard(
+                                      label: 'Perfect stops',
+                                      value: '${widget.totalWins}',
+                                    ),
                                   ),
                                 ],
                               );
@@ -349,23 +330,29 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                             return Row(
                               children: [
                                 Expanded(
-                                  child: _RoundStatCard(
-                                    label: 'Target time',
-                                    value: widget.targetTimeLabel,
+                                  child: PlaySurface3DTilt(
+                                    child: _RoundStatCard(
+                                      label: 'Target time',
+                                      value: widget.targetTimeLabel,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: _RoundStatCard(
-                                    label: 'Prize coins',
-                                    value: '${widget.totalPrizeCoins}',
+                                  child: PlaySurface3DTilt(
+                                    child: _RoundStatCard(
+                                      label: 'Prize coins',
+                                      value: '${widget.totalPrizeCoins}',
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: _RoundStatCard(
-                                    label: 'Perfect stops',
-                                    value: '${widget.totalWins}',
+                                  child: PlaySurface3DTilt(
+                                    child: _RoundStatCard(
+                                      label: 'Perfect stops',
+                                      value: '${widget.totalWins}',
+                                    ),
                                   ),
                                 ),
                               ],
@@ -473,23 +460,47 @@ class _OffsetAwareStartControl extends StatelessWidget {
         AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(
-            visualOffset.dx,
-            visualOffset.dy,
-            0,
-          ),
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0008)
+            ..rotateX(isRunning ? -0.03 : -0.05)
+            ..translate(
+              visualOffset.dx,
+              visualOffset.dy,
+              isRunning ? 4.0 : 0.0,
+            ),
           child: IgnorePointer(
             child: SizedBox.expand(
               child: AnimatedScale(
                 duration: const Duration(milliseconds: 170),
                 curve: Curves.easeOutCubic,
                 scale: isRunning ? 1.02 : 1,
-                child: ElevatedButton.icon(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(
+                          alpha: isRunning ? 0.35 : 0.22,
+                        ),
+                        blurRadius: isRunning ? 16 : 10,
+                        offset: Offset(0, isRunning ? 8 : 5),
+                      ),
+                      BoxShadow(
+                        color: AppColors.accent.withValues(
+                          alpha: isRunning ? 0.4 : 0.2,
+                        ),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
                   onPressed: isBusy ? null : () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: AppColors.onAccent,
-                    elevation: isRunning ? 3 : 1,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
                   ),
                   icon: isBusy
                       ? const SizedBox(
@@ -509,6 +520,7 @@ class _OffsetAwareStartControl extends StatelessWidget {
                       key: ValueKey<bool>(isRunning),
                     ),
                   ),
+                ),
                 ),
               ),
             ),
@@ -617,11 +629,24 @@ class _RoundStatCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             AppColors.background,
-            AppColors.secondary.withValues(alpha: 0.08),
+            AppColors.secondary.withValues(alpha: 0.14),
+            AppColors.primary.withValues(alpha: 0.06),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.9)),
+          left: BorderSide(color: Colors.white.withValues(alpha: 0.65)),
+          right: BorderSide(color: AppColors.primary.withValues(alpha: 0.12)),
+          bottom: BorderSide(color: AppColors.primary.withValues(alpha: 0.22)),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A00377D),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

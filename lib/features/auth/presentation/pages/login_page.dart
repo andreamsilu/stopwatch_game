@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
+import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_footer.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:stopwatch_game/features/game/presentation/pages/game_page.dart';
@@ -14,6 +15,7 @@ class LoginPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loginState = ref.watch(loginProvider);
     final loginNotifier = ref.read(loginProvider.notifier);
+    final isOtpStep = loginState.step == LoginStep.otp;
 
     return Scaffold(
       body: ExperienceBackground(
@@ -64,7 +66,7 @@ class LoginPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Welcome Back',
+                          isOtpStep ? 'Verify your number' : 'Welcome',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(
@@ -74,7 +76,9 @@ class LoginPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Precision is everything. Enter your details to continue.',
+                          isOtpStep
+                              ? 'Enter the 6-digit code we sent to your phone.'
+                              : 'Register to play Stopwatch Challenge.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: AppColors.onBackground.withValues(alpha: 0.74),
@@ -86,13 +90,21 @@ class LoginPage extends ConsumerWidget {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 430),
                             child: LoginFormCard(
+                              step: loginState.step,
                               phoneValue: loginState.phoneNumber,
+                              otpCode: loginState.otpCode,
+                              maskedPhone: loginState.maskedPhone,
                               isSubmitting: loginState.isSubmitting,
-                              canContinue: loginState.canContinue,
+                              isResendingOtp: loginState.isResendingOtp,
+                              canSendOtp: loginState.canSendOtp,
+                              canVerifyOtp: loginState.canVerifyOtp,
+                              errorMessage: loginState.errorMessage,
                               onPhoneChanged: loginNotifier.updatePhoneNumber,
-                              onContinue: () async {
+                              onOtpChanged: loginNotifier.updateOtpCode,
+                              onSendOtp: loginNotifier.sendOtp,
+                              onVerifyOtp: () async {
                                 final isSuccess = await loginNotifier
-                                    .submitLogin();
+                                    .verifyOtpAndRegister();
                                 if (!context.mounted || !isSuccess) return;
                                 await Navigator.of(context).push(
                                   MaterialPageRoute<void>(
@@ -100,6 +112,8 @@ class LoginPage extends ConsumerWidget {
                                   ),
                                 );
                               },
+                              onResendOtp: loginNotifier.resendOtp,
+                              onBackToDetails: loginNotifier.backToDetails,
                             ),
                           ),
                         ),

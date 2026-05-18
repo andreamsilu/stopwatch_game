@@ -50,7 +50,7 @@ class GameController extends StateNotifier<GameState> {
 
     _stopwatch.start();
     _ticker?.cancel();
-    _ticker = Timer.periodic(GameConstants.timerTickInterval, (_) {
+    _ticker = Timer.periodic(GameConstants.timerUiTickInterval, (_) {
       state = state.copyWith(elapsed: _stopwatch.elapsed);
     });
     _beginInteractionSession();

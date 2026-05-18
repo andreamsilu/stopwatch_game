@@ -39,6 +39,8 @@ dependencies:
   confetti: ^0.8.0
   audioplayers: ^6.6.0
   google_fonts: ^8.1.0
+  http: ^1.2.2
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +65,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/win-clap.mp3
     - assets/lose-music.mp3
 
