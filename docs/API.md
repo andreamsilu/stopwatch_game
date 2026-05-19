@@ -93,16 +93,18 @@ POST http://188.64.189.38:9090/api/v1/users
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `POST` | `/api/v1/auth/login` | Request OTP — body `{ "msisdn" }` |
+| `POST` | `/api/v1/auth/login` | Log in — body `{ "msisdn" }` |
 | `POST` | `/api/v1/auth/verify-otp` | Verify OTP — body `{ "msisdn", "otp" }` → JWT + `user` |
 | `POST` | `/api/v1/auth/logout` | Revoke JWT — `204 No Content` |
 
 **Verify OTP response:** `accessToken`, `tokenType`, `expiresInSeconds`, `user` (same shape as `POST /users`).
 
-**Client flows**
+**Login response**
 
-- **Sign in:** `auth/login` → `auth/verify-otp` → store Bearer token → game.
-- **Register:** `auth/login` → `auth/verify-otp` → `POST /users` with `{ "msisdn" }` only (authenticated).
+- `status: "OTP_REQUIRED"` — show OTP step; fields include `msisdn`, `expiresInSeconds`, `message` (e.g. `"OTP sent"`).
+- Any other `status` — client shows `message` / body text; if the body includes `accessToken` + `user`, treat as signed in without OTP.
+
+**Client flow:** `auth/login` → (if `OTP_REQUIRED`) `auth/verify-otp` → store Bearer token → game.
 
 Stub/dev: `auth/login` may include `otp` in the JSON response for testing.
 

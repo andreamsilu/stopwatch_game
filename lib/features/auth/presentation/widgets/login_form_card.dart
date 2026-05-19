@@ -8,44 +8,44 @@ import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone
 
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({
-    required this.intent,
     required this.step,
     required this.phoneValue,
     required this.otpCode,
     required this.maskedPhone,
     required this.isSubmitting,
     required this.isResendingOtp,
-    required this.canSendOtp,
+    required this.canSubmitPhone,
     required this.canVerifyOtp,
     required this.subscriptionAccepted,
     required this.errorMessage,
-    required this.onIntentChanged,
+    required this.infoMessage,
+    required this.otpExpiryLabel,
     required this.onPhoneChanged,
     required this.onOtpChanged,
     required this.onSubscriptionAcceptedChanged,
-    required this.onSendOtp,
+    required this.onSubmitPhone,
     required this.onVerifyOtp,
     required this.onResendOtp,
     required this.onBackToPhone,
     super.key,
   });
 
-  final AuthIntent intent;
   final LoginStep step;
   final String phoneValue;
   final String otpCode;
   final String maskedPhone;
   final bool isSubmitting;
   final bool isResendingOtp;
-  final bool canSendOtp;
+  final bool canSubmitPhone;
   final bool canVerifyOtp;
   final bool subscriptionAccepted;
   final String? errorMessage;
-  final ValueChanged<AuthIntent> onIntentChanged;
+  final String? infoMessage;
+  final String? otpExpiryLabel;
   final ValueChanged<String> onPhoneChanged;
   final ValueChanged<String> onOtpChanged;
   final ValueChanged<bool> onSubscriptionAcceptedChanged;
-  final Future<void> Function() onSendOtp;
+  final Future<void> Function() onSubmitPhone;
   final Future<void> Function() onVerifyOtp;
   final Future<void> Function() onResendOtp;
   final VoidCallback onBackToPhone;
@@ -66,26 +66,26 @@ class LoginFormCard extends StatelessWidget {
         child: step == LoginStep.phone
             ? _PhoneStep(
                 key: const ValueKey('phone'),
-                intent: intent,
                 phoneValue: phoneValue,
                 isSubmitting: isSubmitting,
-                canSendOtp: canSendOtp,
+                canSubmitPhone: canSubmitPhone,
                 subscriptionAccepted: subscriptionAccepted,
                 errorMessage: errorMessage,
-                onIntentChanged: onIntentChanged,
+                infoMessage: infoMessage,
                 onPhoneChanged: onPhoneChanged,
                 onSubscriptionAcceptedChanged: onSubscriptionAcceptedChanged,
-                onSendOtp: onSendOtp,
+                onSubmitPhone: onSubmitPhone,
               )
             : _OtpStep(
                 key: const ValueKey('otp'),
-                intent: intent,
                 maskedPhone: maskedPhone,
                 otpCode: otpCode,
                 isSubmitting: isSubmitting,
                 isResendingOtp: isResendingOtp,
                 canVerifyOtp: canVerifyOtp,
                 errorMessage: errorMessage,
+                infoMessage: infoMessage,
+                otpExpiryLabel: otpExpiryLabel,
                 onOtpChanged: onOtpChanged,
                 onVerifyOtp: onVerifyOtp,
                 onResendOtp: onResendOtp,
@@ -118,39 +118,149 @@ class _CardShell extends StatelessWidget {
   }
 }
 
-class _AuthIntentToggle extends StatelessWidget {
-  const _AuthIntentToggle({
-    required this.intent,
-    required this.enabled,
-    required this.onChanged,
-  });
+class _AuthStepIndicator extends StatelessWidget {
+  const _AuthStepIndicator({required this.step});
 
-  final AuthIntent intent;
-  final bool enabled;
-  final ValueChanged<AuthIntent> onChanged;
+  final LoginStep step;
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<AuthIntent>(
-      segments: const [
-        ButtonSegment(
-          value: AuthIntent.register,
-          label: Text('Register'),
-          icon: Icon(Icons.person_add_outlined, size: 18),
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.2,
+    );
+
+    return Row(
+      children: [
+        _StepDot(
+          label: '1',
+          title: 'Phone',
+          active: step == LoginStep.phone,
+          completed: step == LoginStep.otp,
         ),
-        ButtonSegment(
-          value: AuthIntent.login,
-          label: Text('Sign in'),
-          icon: Icon(Icons.login_rounded, size: 18),
+        Expanded(
+          child: Container(
+            height: 2,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1),
+              color: step == LoginStep.otp
+                  ? AppColors.primary
+                  : AppColors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+        ),
+        _StepDot(
+          label: '2',
+          title: 'Code',
+          active: step == LoginStep.otp,
+          completed: false,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          step == LoginStep.phone ? 'Phone number' : 'Verification',
+          style: labelStyle?.copyWith(
+            color: AppColors.primary.withValues(alpha: 0.85),
+          ),
         ),
       ],
-      selected: {intent},
-      onSelectionChanged: enabled
-          ? (selection) => onChanged(selection.first)
-          : null,
-      style: ButtonStyle(
-        visualDensity: VisualDensity.compact,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  const _StepDot({
+    required this.label,
+    required this.title,
+    required this.active,
+    required this.completed,
+  });
+
+  final String label;
+  final String title;
+  final bool active;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = completed || active ? AppColors.primary : AppColors.background;
+    final border = completed || active
+        ? AppColors.primary
+        : AppColors.primary.withValues(alpha: 0.35);
+    final textColor = completed || active
+        ? AppColors.onPrimary
+        : AppColors.primary.withValues(alpha: 0.7);
+
+    return Semantics(
+      label: '$title step',
+      selected: active,
+      child: Tooltip(
+        message: title,
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: fill,
+            shape: BoxShape.circle,
+            border: Border.all(color: border, width: 1.5),
+          ),
+          child: completed
+              ? Icon(Icons.check_rounded, size: 16, color: textColor)
+              : Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({
+    required this.message,
+    required this.icon,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
+  });
+
+  final String message;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: textColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -163,51 +273,56 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEF9A9A)),
-      ),
-      child: Text(
-        message,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFFB3261E),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+    return _MessageBanner(
+      message: message,
+      icon: Icons.error_outline_rounded,
+      backgroundColor: const Color(0xFFFFEBEE),
+      borderColor: const Color(0xFFEF9A9A),
+      textColor: const Color(0xFFB3261E),
+    );
+  }
+}
+
+class _InfoBanner extends StatelessWidget {
+  const _InfoBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MessageBanner(
+      message: message,
+      icon: Icons.info_outline_rounded,
+      backgroundColor: const Color(0xFFE8F4FD),
+      borderColor: const Color(0xFF90CAF9),
+      textColor: const Color(0xFF0D47A1),
     );
   }
 }
 
 class _PhoneStep extends StatelessWidget {
   const _PhoneStep({
-    required this.intent,
     required this.phoneValue,
     required this.isSubmitting,
-    required this.canSendOtp,
+    required this.canSubmitPhone,
     required this.subscriptionAccepted,
     required this.errorMessage,
-    required this.onIntentChanged,
+    required this.infoMessage,
     required this.onPhoneChanged,
     required this.onSubscriptionAcceptedChanged,
-    required this.onSendOtp,
+    required this.onSubmitPhone,
     super.key,
   });
 
-  final AuthIntent intent;
   final String phoneValue;
   final bool isSubmitting;
-  final bool canSendOtp;
+  final bool canSubmitPhone;
   final bool subscriptionAccepted;
   final String? errorMessage;
-  final ValueChanged<AuthIntent> onIntentChanged;
+  final String? infoMessage;
   final ValueChanged<String> onPhoneChanged;
   final ValueChanged<bool> onSubscriptionAcceptedChanged;
-  final Future<void> Function() onSendOtp;
-
-  bool get _isRegister => intent == AuthIntent.register;
+  final Future<void> Function() onSubmitPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -215,25 +330,21 @@ class _PhoneStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _AuthIntentToggle(
-            intent: intent,
-            enabled: !isSubmitting,
-            onChanged: onIntentChanged,
-          ),
+          const _AuthStepIndicator(step: LoginStep.phone),
           const SizedBox(height: 20),
           Text(
-            _isRegister ? 'Create your account' : 'Sign in',
+            'Log in',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            _isRegister
-                ? 'Enter your phone number. We will send a 6-digit verification code.'
-                : 'Enter the phone number linked to your account.',
+            'Enter your Tanzanian mobile number and tap Continue. '
+            'We will send a verification code only if required.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
+              height: 1.4,
             ),
           ),
           const SizedBox(height: 20),
@@ -253,36 +364,43 @@ class _PhoneStep extends StatelessWidget {
               textInputAction: TextInputAction.done,
               enabled: !isSubmitting,
               onChanged: onPhoneChanged,
+              onFieldSubmitted: canSubmitPhone
+                  ? (_) {
+                      onSubmitPhone();
+                    }
+                  : null,
               decoration: const InputDecoration(
                 prefixIcon: TanzaniaPhonePrefix(size: 24),
                 hintText: '712 345 678',
               ),
             ),
           ),
-          if (_isRegister) ...[
-            const SizedBox(height: 12),
-            Text(
-              RoundBillingCopy.entryFeeLabel,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
+          const SizedBox(height: 12),
+          Text(
+            RoundBillingCopy.entryFeeLabel,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            value: subscriptionAccepted,
+            onChanged: isSubmitting
+                ? null
+                : (value) => onSubscriptionAcceptedChanged(value ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              RoundBillingCopy.subscriptionConsent,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              value: subscriptionAccepted,
-              onChanged: isSubmitting
-                  ? null
-                  : (value) => onSubscriptionAcceptedChanged(value ?? false),
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(
-                RoundBillingCopy.subscriptionConsent,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  height: 1.4,
-                ),
-              ),
-            ),
+          ),
+          if (infoMessage != null && infoMessage!.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _InfoBanner(message: infoMessage!),
           ],
           if (errorMessage != null) ...[
             const SizedBox(height: 14),
@@ -292,16 +410,16 @@ class _PhoneStep extends StatelessWidget {
           SizedBox(
             height: GameConstants.minTouchTargetSize + 6,
             child: ElevatedButton.icon(
-              onPressed: canSendOtp
+              onPressed: canSubmitPhone
                   ? () async {
-                      await onSendOtp();
+                      await onSubmitPhone();
                     }
                   : null,
               iconAlignment: IconAlignment.end,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.onAccent,
-                elevation: canSendOtp ? 2 : 0,
+                elevation: canSubmitPhone ? 2 : 0,
               ),
               icon: isSubmitting
                   ? const SizedBox(
@@ -309,8 +427,8 @@ class _PhoneStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.sms_outlined),
-              label: const Text('Send verification code'),
+                  : const Icon(Icons.arrow_forward_rounded),
+              label: const Text('Continue'),
             ),
           ),
         ],
@@ -321,13 +439,14 @@ class _PhoneStep extends StatelessWidget {
 
 class _OtpStep extends StatelessWidget {
   const _OtpStep({
-    required this.intent,
     required this.maskedPhone,
     required this.otpCode,
     required this.isSubmitting,
     required this.isResendingOtp,
     required this.canVerifyOtp,
     required this.errorMessage,
+    required this.infoMessage,
+    required this.otpExpiryLabel,
     required this.onOtpChanged,
     required this.onVerifyOtp,
     required this.onResendOtp,
@@ -335,53 +454,64 @@ class _OtpStep extends StatelessWidget {
     super.key,
   });
 
-  final AuthIntent intent;
   final String maskedPhone;
   final String otpCode;
   final bool isSubmitting;
   final bool isResendingOtp;
   final bool canVerifyOtp;
   final String? errorMessage;
+  final String? infoMessage;
+  final String? otpExpiryLabel;
   final ValueChanged<String> onOtpChanged;
   final Future<void> Function() onVerifyOtp;
   final Future<void> Function() onResendOtp;
   final VoidCallback onBackToPhone;
 
-  bool get _isRegister => intent == AuthIntent.register;
-
   @override
   Widget build(BuildContext context) {
+    final otpHint = infoMessage?.trim().isNotEmpty == true
+        ? infoMessage!
+        : 'A 6-digit code was sent to $maskedPhone';
+
     return _CardShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const _AuthStepIndicator(step: LoginStep.otp),
+          const SizedBox(height: 14),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: isSubmitting ? null : onBackToPhone,
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: const Text('Back'),
+              label: const Text('Change number'),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             'Enter verification code',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'We sent a 6-digit code to $maskedPhone',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onBackground.withValues(alpha: 0.72),
+          const SizedBox(height: 8),
+          _InfoBanner(message: otpHint),
+          if (otpExpiryLabel != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              otpExpiryLabel!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.onBackground.withValues(alpha: 0.65),
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
+          ],
+          const SizedBox(height: 22),
           OtpInputBoxes(
             value: otpCode,
             enabled: !isSubmitting,
@@ -416,25 +546,26 @@ class _OtpStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Icon(_isRegister ? Icons.verified_outlined : Icons.login_rounded),
-              label: Text(_isRegister ? 'Verify & register' : 'Verify & sign in'),
+                  : const Icon(Icons.login_rounded),
+              label: const Text('Verify & continue'),
             ),
           ),
           const SizedBox(height: 12),
           Center(
-            child: TextButton(
+            child: TextButton.icon(
               onPressed: isSubmitting || isResendingOtp
                   ? null
                   : () async {
                       await onResendOtp();
                     },
-              child: isResendingOtp
+              icon: isResendingOtp
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Resend code'),
+                  : const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(isResendingOtp ? 'Sending…' : 'Resend code'),
             ),
           ),
         ],

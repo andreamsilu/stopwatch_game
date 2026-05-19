@@ -1,6 +1,9 @@
 import 'package:stopwatch_game/core/api/api_exception.dart';
+import 'package:stopwatch_game/core/api/api_json.dart';
+import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/core/config/api_config.dart';
+import 'package:stopwatch_game/features/auth/data/models/auth_login_result.dart';
 import 'package:stopwatch_game/features/auth/data/models/auth_session.dart';
 import 'package:stopwatch_game/features/auth/data/models/otp_login_response.dart';
 import 'package:stopwatch_game/features/auth/data/models/register_user_request.dart';
@@ -29,16 +32,32 @@ class AuthService {
 
   AuthSession? get currentSession => _currentSession;
 
-  /// `POST /api/v1/auth/login` — request OTP for [msisdn].
-  Future<OtpLoginResponse> requestOtp({required String msisdn}) async {
+  /// `POST /api/v1/auth/login` — used for both register and sign-in.
+  Future<AuthLoginResult> login({required String msisdn}) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.authLogin),
       body: {'msisdn': msisdn},
     );
-    return response.parse(
-      OtpLoginResponse.fromJson,
-      context: 'POST /auth/login',
-    );
+
+    final json = response.requireJson(context: 'POST /auth/login');
+    final parsed = OtpLoginResponse.fromJson(json);
+
+    if (parsed.requiresOtp) {
+      return AuthLoginResult.otpRequired(parsed);
+    }
+
+    if (json['accessToken'] is String && json['user'] is Map) {
+      final session = AuthSession.fromJson(json);
+      _applySession(session);
+      return AuthLoginResult.completed(session.user);
+    }
+
+    if (json.containsKey('id') && json['msisdn'] != null) {
+      return AuthLoginResult.completed(UserModel.fromJson(json));
+    }
+
+    final text = parsed.displayMessage ?? ApiMessages.fromMap(json) ?? '';
+    return AuthLoginResult.message(text);
   }
 
   /// `POST /api/v1/auth/verify-otp` — sign in; returns JWT + user (no `POST /users`).

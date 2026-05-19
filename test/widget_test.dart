@@ -14,8 +14,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Welcome'), findsOneWidget);
-    expect(find.text('Send verification code'), findsOneWidget);
-    expect(find.text('Register'), findsWidgets);
-    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Log in'), findsOneWidget);
   });
 }

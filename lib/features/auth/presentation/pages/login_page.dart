@@ -38,20 +38,12 @@ class LoginPage extends ConsumerWidget {
           next.errorMessage != previous?.errorMessage) {
         AppSnackBar.showError(context, next.errorMessage!);
       }
-
-      if (next.infoMessage != null &&
-          next.infoMessage!.isNotEmpty &&
-          next.infoMessage != previous?.infoMessage) {
-        AppSnackBar.showInfo(context, next.infoMessage!);
-      }
     });
 
     final headline = isOtpStep ? 'Verify your number' : 'Welcome';
-
     final subtitle = isOtpStep
-        ? (loginState.infoMessage ??
-              'Enter the 6-digit code we sent to your phone.')
-        : (loginState.isLogin ? 'Sign in' : 'Register');
+        ? 'Enter the 6-digit code sent to ${loginState.maskedPhone}'
+        : 'Log in with your mobile number to play';
 
     return Scaffold(
       body: ExperienceBackground(
@@ -124,25 +116,39 @@ class LoginPage extends ConsumerWidget {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 430),
                             child: LoginFormCard(
-                              intent: loginState.intent,
                               step: loginState.step,
                               phoneValue: loginState.phoneNumber,
                               otpCode: loginState.otpCode,
                               maskedPhone: loginState.maskedPhone,
                               isSubmitting: loginState.isSubmitting,
                               isResendingOtp: loginState.isResendingOtp,
-                              canSendOtp: loginState.canSendOtp,
+                              canSubmitPhone: loginState.canSubmitPhone,
                               canVerifyOtp: loginState.canVerifyOtp,
                               subscriptionAccepted:
                                   loginState.subscriptionAccepted,
                               errorMessage: loginState.errorMessage,
-                              onIntentChanged: loginNotifier.setAuthIntent,
+                              infoMessage: loginState.infoMessage,
+                              otpExpiryLabel: loginState.otpExpiryLabel,
                               onPhoneChanged: loginNotifier.updatePhoneNumber,
                               onOtpChanged: loginNotifier.updateOtpCode,
                               onSubscriptionAcceptedChanged:
                                   loginNotifier.setSubscriptionAccepted,
-                              onSendOtp: loginNotifier.sendOtp,
-                              onResendOtp: loginNotifier.resendOtp,
+                              onSubmitPhone: () async {
+                                final authenticated =
+                                    await loginNotifier.submitPhone();
+                                if (!context.mounted) return;
+                                if (authenticated) {
+                                  await _completeAuth(context, ref);
+                                }
+                              },
+                              onResendOtp: () async {
+                                final authenticated =
+                                    await loginNotifier.resendOtp();
+                                if (!context.mounted) return;
+                                if (authenticated) {
+                                  await _completeAuth(context, ref);
+                                }
+                              },
                               onBackToPhone: loginNotifier.backToPhone,
                               onVerifyOtp: () async {
                                 final isSuccess =
