@@ -14,7 +14,8 @@ class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
 
   Future<void> _completeAuth(BuildContext context, WidgetRef ref) async {
-    final user = ref.read(loginProvider).authenticatedUser!;
+    final loginState = ref.read(loginProvider);
+    final user = loginState.authenticatedUser!;
     ref.read(playerMsisdnProvider.notifier).state = user.msisdn;
     ref.read(playerUserProvider.notifier).state = user;
     ref.read(subscriptionActiveProvider.notifier).state = true;
@@ -33,43 +34,24 @@ class LoginPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       if (next.errorMessage != null &&
+          next.errorMessage!.isNotEmpty &&
           next.errorMessage != previous?.errorMessage) {
         AppSnackBar.showError(context, next.errorMessage!);
       }
 
-      if (previous?.isSubmitting == false &&
-          next.isSubmitting &&
-          next.step == LoginStep.phone) {
-        AppSnackBar.showInfo(context, 'Sending verification code…');
-      }
-
-      if (previous?.step == LoginStep.phone &&
-          next.step == LoginStep.otp &&
-          next.errorMessage == null) {
-        AppSnackBar.showSuccess(
-          context,
-          'Code sent to ${next.maskedPhone}.',
-        );
-      }
-
-      if (previous?.isResendingOtp == true &&
-          !next.isResendingOtp &&
-          next.errorMessage == null) {
-        AppSnackBar.showInfo(context, 'A new code has been sent.');
+      if (next.infoMessage != null &&
+          next.infoMessage!.isNotEmpty &&
+          next.infoMessage != previous?.infoMessage) {
+        AppSnackBar.showInfo(context, next.infoMessage!);
       }
     });
 
-    final headline = isOtpStep
-        ? 'Verify your number'
-        : loginState.isLogin
-        ? 'Welcome back'
-        : 'Welcome';
+    final headline = isOtpStep ? 'Verify your number' : 'Welcome';
 
     final subtitle = isOtpStep
-        ? 'Enter the 6-digit code we sent to your phone.'
-        : loginState.isLogin
-        ? 'Sign in with your phone number.'
-        : 'Register to play Stopwatch Challenge.';
+        ? (loginState.infoMessage ??
+              'Enter the 6-digit code we sent to your phone.')
+        : (loginState.isLogin ? 'Sign in' : 'Register');
 
     return Scaffold(
       body: ExperienceBackground(
@@ -163,19 +145,9 @@ class LoginPage extends ConsumerWidget {
                               onResendOtp: loginNotifier.resendOtp,
                               onBackToPhone: loginNotifier.backToPhone,
                               onVerifyOtp: () async {
-                                final isLogin = loginState.isLogin;
-                                AppSnackBar.showInfo(
-                                  context,
-                                  isLogin ? 'Signing you in…' : 'Creating your account…',
-                                );
-                                final isSuccess = await loginNotifier.verifyOtp();
+                                final isSuccess =
+                                    await loginNotifier.verifyOtp();
                                 if (!context.mounted || !isSuccess) return;
-                                AppSnackBar.showSuccess(
-                                  context,
-                                  isLogin
-                                      ? 'Welcome back! You are ready to play.'
-                                      : 'Account created. You are ready to play.',
-                                );
                                 await _completeAuth(context, ref);
                               },
                             ),

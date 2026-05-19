@@ -22,6 +22,7 @@ class RoundPlayPanel extends StatefulWidget {
     required this.isSubmitting,
     required this.isLoadingTarget,
     required this.preparePhase,
+    this.statusMessage,
     this.roundErrorMessage,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
@@ -48,6 +49,7 @@ class RoundPlayPanel extends StatefulWidget {
   final bool isSubmitting;
   final bool isLoadingTarget;
   final RoundPreparePhase preparePhase;
+  final String? statusMessage;
   final String? roundErrorMessage;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
@@ -129,7 +131,10 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
           margin: EdgeInsets.zero,
           child: Column(
             children: [
-              RoundPaymentStatusSection(phase: widget.preparePhase),
+              RoundPaymentStatusSection(
+                phase: widget.preparePhase,
+                statusMessage: widget.statusMessage,
+              ),
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallMobile ? 10 : 16,

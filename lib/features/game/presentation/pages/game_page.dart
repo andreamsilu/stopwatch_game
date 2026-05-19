@@ -31,36 +31,15 @@ class GamePage extends ConsumerWidget {
       if (!context.mounted) return;
 
       if (next.roundErrorMessage != null &&
+          next.roundErrorMessage!.isNotEmpty &&
           next.roundErrorMessage != previous?.roundErrorMessage) {
         AppSnackBar.showError(context, next.roundErrorMessage!);
       }
 
-      if (next.preparePhase == RoundPreparePhase.charging &&
-          previous?.preparePhase != RoundPreparePhase.charging) {
-        AppSnackBar.showInfo(context, RoundBillingCopy.preparingRoundCharge);
-      }
-
-      if (next.preparePhase == RoundPreparePhase.awaitingPayment &&
-          previous?.preparePhase != RoundPreparePhase.awaitingPayment) {
-        AppSnackBar.showInfo(context, RoundBillingCopy.waitingForPayment);
-      }
-
-      if (previous?.isLoadingTarget == true &&
-          !next.isLoadingTarget &&
-          next.roundErrorMessage == null &&
-          next.selectedTab == GameTab.play &&
-          next.preparePhase == RoundPreparePhase.idle) {
-        AppSnackBar.showSuccess(
-          context,
-          'Target: ${next.targetTimeLabel}. ${RoundBillingCopy.playReadyHint}',
-        );
-      }
-
-      if (previous?.isRunning != true && next.isRunning) {
-        AppSnackBar.showInfo(
-          context,
-          'Timer running — stop as close to the target as you can.',
-        );
+      if (next.statusMessage != null &&
+          next.statusMessage!.isNotEmpty &&
+          next.statusMessage != previous?.statusMessage) {
+        AppSnackBar.showInfo(context, next.statusMessage!);
       }
 
       if (previous?.isSoundEnabled != next.isSoundEnabled) {
@@ -82,13 +61,15 @@ class GamePage extends ConsumerWidget {
         await GameFeedbackService.onLose();
       }
       if (!context.mounted) return;
-      if (result.isPrizeAwarded) {
-        AppSnackBar.showSuccess(context, 'You won! ${result.prizeLabel}');
-      } else {
-        AppSnackBar.showWarning(
-          context,
-          'Round complete — ${result.deltaLabel}',
-        );
+      final resultMessage = result.isPrizeAwarded
+          ? result.prizeLabel
+          : result.deltaLabel;
+      if (resultMessage.isNotEmpty) {
+        if (result.isPrizeAwarded) {
+          AppSnackBar.showSuccess(context, resultMessage);
+        } else {
+          AppSnackBar.showWarning(context, resultMessage);
+        }
       }
       await showDialog<void>(
         context: context,
@@ -449,6 +430,7 @@ class _GameBody extends StatelessWidget {
           isSubmitting: state.isSubmitting,
           isLoadingTarget: state.isLoadingTarget,
           preparePhase: state.preparePhase,
+          statusMessage: state.statusMessage,
           canTryAgain: state.canTryAgainRound,
           roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,

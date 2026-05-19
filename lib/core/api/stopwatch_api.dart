@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:stopwatch_game/core/api/api_exception.dart';
 import 'package:stopwatch_game/core/api/api_json.dart';
+import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/api/api_response.dart';
 
@@ -34,19 +35,16 @@ class StopwatchApi {
     bool allowNotFound = false,
   }) async {
     const method = 'GET';
-    ApiLogger.logRequest(method: method, uri: uri);
+    final requestHeaders = _buildHeaders(headers);
+    ApiLogger.logRequest(method: method, uri: uri, headers: requestHeaders);
 
     final started = DateTime.now();
     try {
-      final response = await _client.get(
-        uri,
-        headers: _buildHeaders(headers),
-      );
+      final response = await _client.get(uri, headers: requestHeaders);
       _logHttpResponse(
         method: method,
         uri: uri,
-        statusCode: response.statusCode,
-        body: response.body,
+        response: response,
         started: started,
       );
       return _toApiResponse(response, allowNotFound: allowNotFound);
@@ -63,20 +61,25 @@ class StopwatchApi {
     bool allowNotFound = false,
   }) async {
     const method = 'POST';
-    ApiLogger.logRequest(method: method, uri: uri, body: body);
+    final requestHeaders = _buildHeaders(headers);
+    ApiLogger.logRequest(
+      method: method,
+      uri: uri,
+      headers: requestHeaders,
+      body: body,
+    );
 
     final started = DateTime.now();
     try {
       final response = await _client.post(
         uri,
-        headers: _buildHeaders(headers),
+        headers: requestHeaders,
         body: ApiJson.encodeBody(body),
       );
       _logHttpResponse(
         method: method,
         uri: uri,
-        statusCode: response.statusCode,
-        body: response.body,
+        response: response,
         started: started,
       );
       return _toApiResponse(response, allowNotFound: allowNotFound);
@@ -110,16 +113,16 @@ class StopwatchApi {
   void _logHttpResponse({
     required String method,
     required Uri uri,
-    required int statusCode,
-    required String body,
+    required http.Response response,
     required DateTime started,
   }) {
     ApiLogger.logResponse(
       method: method,
       uri: uri,
-      statusCode: statusCode,
-      body: body,
+      statusCode: response.statusCode,
+      body: response.body,
       durationMs: DateTime.now().difference(started).inMilliseconds,
+      responseHeaders: response.headers,
     );
   }
 
@@ -160,8 +163,13 @@ class StopwatchApi {
     }
 
     throw ApiException(
-      ApiJson.messageFromErrorBody(response.body) ??
-          'Request failed (${response.statusCode}).',
+      ApiMessages.fromResponse(
+        ApiResponse(
+          statusCode: response.statusCode,
+          body: response.body,
+          json: null,
+        ),
+      ),
       statusCode: response.statusCode,
     );
   }

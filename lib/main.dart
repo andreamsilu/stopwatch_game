@@ -10,10 +10,12 @@ import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart'
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnvConfig.load();
-  ApiLogger.enabled = EnvConfig.apiLogResponses;
-  if (ApiLogger.enabled) {
-    debugPrint('[StopwatchApi] HTTP logging ON (API_LOG_RESPONSES=true)');
-  }
+  // Always log HTTP in debug builds; release follows API_LOG_RESPONSES in .env.
+  ApiLogger.enabled = kDebugMode || EnvConfig.apiLogResponses;
+  debugPrint(
+    '[StopwatchApi] HTTP logging ${ApiLogger.enabled ? "ON" : "OFF"} '
+    '(debug=$kDebugMode, API_LOG_RESPONSES=${EnvConfig.apiLogResponses})',
+  );
 
   if (kIsWeb) {
     BrowserContextMenu.disableContextMenu();

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/features/auth/data/auth_service.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 
@@ -16,6 +17,7 @@ class LoginNotifier extends StateNotifier<LoginState> {
       step: LoginStep.phone,
       otpCode: '',
       clearError: true,
+      clearInfo: true,
       clearAuthenticatedUser: true,
       subscriptionAccepted: false,
     );
@@ -42,13 +44,14 @@ class LoginNotifier extends StateNotifier<LoginState> {
       step: LoginStep.phone,
       otpCode: '',
       clearError: true,
+      clearInfo: true,
     );
   }
 
   Future<bool> sendOtp() async {
     if (!state.canSendOtp) return false;
 
-    state = state.copyWith(isSubmitting: true, clearError: true);
+    state = state.copyWith(isSubmitting: true, clearError: true, clearInfo: true);
     try {
       final response = await _auth.requestOtp(msisdn: state.normalizedMsisdn);
       final stubOtp = response.otp?.trim();
@@ -58,6 +61,8 @@ class LoginNotifier extends StateNotifier<LoginState> {
         otpCode: stubOtp != null && stubOtp.length == LoginState.otpLength
             ? stubOtp
             : '',
+        infoMessage: response.message,
+        clearInfo: response.message == null,
       );
       return true;
     } on ApiException catch (e) {
@@ -69,14 +74,14 @@ class LoginNotifier extends StateNotifier<LoginState> {
       }
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: 'Could not send verification code. Please try again.',
+        errorMessage: ApiMessages.fromError(e),
       );
       return false;
     }
   }
 
   Future<bool> resendOtp() async {
-    state = state.copyWith(isResendingOtp: true, clearError: true);
+    state = state.copyWith(isResendingOtp: true, clearError: true, clearInfo: true);
     try {
       final response = await _auth.requestOtp(msisdn: state.normalizedMsisdn);
       final stubOtp = response.otp?.trim();
@@ -85,15 +90,17 @@ class LoginNotifier extends StateNotifier<LoginState> {
         otpCode: stubOtp != null && stubOtp.length == LoginState.otpLength
             ? stubOtp
             : state.otpCode,
+        infoMessage: response.message,
+        clearInfo: response.message == null,
       );
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(isResendingOtp: false, errorMessage: e.message);
       return false;
-    } catch (_) {
+    } catch (e) {
       state = state.copyWith(
         isResendingOtp: false,
-        errorMessage: 'Could not resend code. Try again shortly.',
+        errorMessage: ApiMessages.fromError(e),
       );
       return false;
     }
@@ -102,7 +109,7 @@ class LoginNotifier extends StateNotifier<LoginState> {
   Future<bool> verifyOtp() async {
     if (!state.canVerifyOtp) return false;
 
-    state = state.copyWith(isSubmitting: true, clearError: true);
+    state = state.copyWith(isSubmitting: true, clearError: true, clearInfo: true);
     try {
       final user = state.isRegister
           ? await _auth.registerWithOtp(
@@ -116,6 +123,8 @@ class LoginNotifier extends StateNotifier<LoginState> {
       state = state.copyWith(
         isSubmitting: false,
         authenticatedUser: user,
+        infoMessage: user.status,
+        clearInfo: user.status.isEmpty,
       );
       return true;
     } on ApiException catch (e) {
@@ -127,9 +136,7 @@ class LoginNotifier extends StateNotifier<LoginState> {
       }
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: state.isRegister
-            ? 'Registration failed. Please try again.'
-            : 'Sign in failed. Please try again.',
+        errorMessage: ApiMessages.fromError(e),
       );
       return false;
     }

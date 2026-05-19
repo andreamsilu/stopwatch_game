@@ -13,6 +13,7 @@ class LoginState {
     required this.isSubmitting,
     required this.isResendingOtp,
     required this.errorMessage,
+    required this.infoMessage,
     required this.authenticatedUser,
     required this.subscriptionAccepted,
   });
@@ -28,6 +29,7 @@ class LoginState {
       isSubmitting = false,
       isResendingOtp = false,
       errorMessage = null,
+      infoMessage = null,
       authenticatedUser = null,
       subscriptionAccepted = false;
 
@@ -38,6 +40,7 @@ class LoginState {
   final bool isSubmitting;
   final bool isResendingOtp;
   final String? errorMessage;
+  final String? infoMessage;
   final UserModel? authenticatedUser;
   final bool subscriptionAccepted;
 
@@ -73,6 +76,8 @@ class LoginState {
     bool? isResendingOtp,
     String? errorMessage,
     bool clearError = false,
+    String? infoMessage,
+    bool clearInfo = false,
     UserModel? authenticatedUser,
     bool clearAuthenticatedUser = false,
     bool? subscriptionAccepted,
@@ -85,6 +90,7 @@ class LoginState {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isResendingOtp: isResendingOtp ?? this.isResendingOtp,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      infoMessage: clearInfo ? null : (infoMessage ?? this.infoMessage),
       authenticatedUser: clearAuthenticatedUser
           ? null
           : (authenticatedUser ?? this.authenticatedUser),

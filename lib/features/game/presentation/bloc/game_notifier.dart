@@ -8,6 +8,7 @@ import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
+import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
@@ -145,11 +146,10 @@ class GameController extends StateNotifier<GameState> {
         clearActiveSession: true,
       );
       return;
-    } catch (_) {
+    } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        roundErrorMessage:
-            'Could not start the round. Use Try again to start a new charged round.',
+        roundErrorMessage: ApiMessages.fromError(e),
         clearActiveSession: true,
       );
       return;
@@ -209,13 +209,13 @@ class GameController extends StateNotifier<GameState> {
         elapsed: Duration.zero,
         roundErrorMessage: e.message,
       );
-    } catch (_) {
+    } catch (e) {
       _stopwatch.reset();
       state = state.copyWith(
         isRunning: false,
         isSubmitting: false,
         elapsed: Duration.zero,
-        roundErrorMessage: 'Could not load round result from the server.',
+        roundErrorMessage: ApiMessages.fromError(e),
       );
     }
   }
@@ -253,9 +253,7 @@ class GameController extends StateNotifier<GameState> {
   Future<void> startGame() async {
     final billingRequestId = state.billingRequestId;
     if (billingRequestId == null || billingRequestId.isEmpty) {
-      throw ApiException(
-        'Payment is not ready. Go to Home, tap Play, and wait for billing to complete.',
-      );
+      return;
     }
 
     final session = await _gameService.startGameSession(
@@ -283,37 +281,22 @@ class GameController extends StateNotifier<GameState> {
   Future<RoundResultData> fetchRoundResultFromBackend() async {
     final sessionRef = _resolveSessionLookupRef();
     if (sessionRef.isEmpty) {
-      throw ApiException('No active game session to submit your stop.');
+      throw ApiException(_activeSession?.status ?? '');
     }
 
-    GameStartResponse session;
-    try {
-      session = await _gameService.stopGameSession(sessionRef: sessionRef);
-      _activeSession = session;
-    } on ApiException {
-      rethrow;
-    } catch (_) {
-      throw ApiException('Could not submit your stop to the server.');
-    }
+    var session = await _gameService.stopGameSession(sessionRef: sessionRef);
+    _activeSession = session;
 
     final fromStop = GameSessionMapper.toRoundResult(session);
     if (fromStop != null) return fromStop;
 
-    try {
-      session = await _gameService.getGameSession(sessionRef: sessionRef);
-      _activeSession = session;
-    } on ApiException {
-      rethrow;
-    } catch (_) {
-      throw ApiException('Could not load round result from the server.');
-    }
+    session = await _gameService.getGameSession(sessionRef: sessionRef);
+    _activeSession = session;
 
     final fromGet = GameSessionMapper.toRoundResult(session);
     if (fromGet != null) return fromGet;
 
-    throw ApiException(
-      'The server has not returned a round result yet. Try again shortly.',
-    );
+    throw ApiException(session.status);
   }
 
   Future<void> _finishRoundPreparationAfterPayment(String requestId) async {
@@ -332,6 +315,7 @@ class GameController extends StateNotifier<GameState> {
       preparePhase: RoundPreparePhase.idle,
       clearPendingBilling: true,
       clearRoundError: true,
+      clearStatusMessage: true,
     );
   }
 
@@ -353,9 +337,17 @@ class GameController extends StateNotifier<GameState> {
       state = state.copyWith(
         preparePhase: RoundPreparePhase.awaitingPayment,
         pendingBillingRequestId: billing.requestId,
+        statusMessage: billing.userMessage,
+        clearStatusMessage: billing.userMessage == null,
       );
 
-      await _gameService.waitForBillingSuccess(requestId: billing.requestId);
+      final paid = await _gameService.waitForBillingSuccess(
+        requestId: billing.requestId,
+      );
+      state = state.copyWith(
+        statusMessage: paid.userMessage,
+        clearStatusMessage: paid.userMessage == null,
+      );
       await _finishRoundPreparationAfterPayment(billing.requestId);
     } on ApiException catch (e) {
       state = state.copyWith(
@@ -365,15 +357,17 @@ class GameController extends StateNotifier<GameState> {
         roundErrorMessage: e.message,
         clearActiveSession: true,
         clearPendingBilling: true,
+        clearStatusMessage: true,
       );
-    } catch (_) {
+    } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
         isLoadingTarget: false,
         preparePhase: RoundPreparePhase.idle,
-        roundErrorMessage: 'Could not start charging for this round.',
+        roundErrorMessage: ApiMessages.fromError(e),
         clearActiveSession: true,
         clearPendingBilling: true,
+        clearStatusMessage: true,
       );
     }
   }

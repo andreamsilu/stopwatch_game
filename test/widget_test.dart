@@ -15,7 +15,7 @@ void main() {
 
     expect(find.text('Welcome'), findsOneWidget);
     expect(find.text('Send verification code'), findsOneWidget);
-    expect(find.text('Register'), findsOneWidget);
+    expect(find.text('Register'), findsWidgets);
     expect(find.text('Sign in'), findsOneWidget);
   });
 }

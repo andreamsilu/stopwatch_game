@@ -35,6 +35,7 @@ class GameService {
     required String requestId,
   }) async {
     final deadline = DateTime.now().add(EnvConfig.billingPollTimeout);
+    String? lastPendingMessage;
 
     while (DateTime.now().isBefore(deadline)) {
       final transaction = await getBillingStatus(requestId: requestId);
@@ -42,17 +43,17 @@ class GameService {
       if (transaction.isBillingSuccess) return transaction;
 
       if (transaction.isBillingFailed) {
-        final detail = transaction.callbackDescription ??
-            transaction.ackDescription ??
-            'Payment was not completed.';
-        throw ApiException(detail);
+        throw ApiException(
+          transaction.userMessage ?? transaction.normalizedStatus,
+        );
       }
 
+      lastPendingMessage = transaction.userMessage;
       await Future<void>.delayed(EnvConfig.billingPollInterval);
     }
 
     throw ApiException(
-      'Payment is still pending. Confirm the charge on your phone, then try again.',
+      lastPendingMessage ?? 'pending',
     );
   }
 

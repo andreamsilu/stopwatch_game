@@ -8,22 +8,18 @@ class GameSessionMapper {
     final result = session.result;
     if (result == null) return null;
 
-    final differenceMs = result.differenceMs;
     final isWin = result.winner;
-    final absDifferenceMs = differenceMs.abs();
-    final timingDirection = differenceMs < 0 ? 'Early' : 'Late';
-    const winToleranceMs = 100;
-    final deltaLabel = isWin
-        ? 'Great timing! Within +/-$winToleranceMs ms. Prize unlocked!'
-        : '$timingDirection by $absDifferenceMs ms';
-    const perfectStopPrizeLabel = 'Perfect Stop Reward';
+    final differenceMs = result.differenceMs;
 
     return RoundResultData(
       outcomeLabel: isWin ? 'WIN' : 'LOSE',
-      deltaLabel: deltaLabel,
+      deltaLabel: result.deltaLabel ??
+          result.message ??
+          '${differenceMs >= 0 ? '+' : ''}$differenceMs ms',
       finalTimeLabel: _formatDurationMs(result.stoppedTimeMs),
       differenceMs: differenceMs,
-      prizeLabel: isWin ? perfectStopPrizeLabel : 'No prize',
+      prizeLabel: result.prizeLabel ??
+          (result.prizeAmount > 0 ? '${result.prizeAmount}' : ''),
       prizeCoins: result.prizeAmount,
       isPrizeAwarded: isWin && result.prizeAmount > 0,
     );

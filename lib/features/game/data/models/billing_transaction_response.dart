@@ -57,4 +57,16 @@ class BillingTransactionResponse {
   bool get isBillingFailed => normalizedStatus == 'failed';
 
   bool get isBillingTerminal => isBillingSuccess || isBillingFailed;
+
+  /// Best available user-facing text from the billing API.
+  String? get userMessage {
+    for (final value in [
+      callbackDescription,
+      ackDescription,
+      status,
+    ]) {
+      if (value != null && value.trim().isNotEmpty) return value.trim();
+    }
+    return null;
+  }
 }

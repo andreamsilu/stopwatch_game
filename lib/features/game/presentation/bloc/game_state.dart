@@ -54,6 +54,7 @@ class GameState {
     required this.sessionRef,
     required this.activeSessionId,
     required this.roundErrorMessage,
+    required this.statusMessage,
     required this.latestResult,
     required this.history,
     required this.totalWins,
@@ -78,6 +79,7 @@ class GameState {
       sessionRef = null,
       activeSessionId = null,
       roundErrorMessage = null,
+      statusMessage = null,
       latestResult = null,
       history = const [],
       totalWins = 0,
@@ -100,6 +102,7 @@ class GameState {
   final String? sessionRef;
   final int? activeSessionId;
   final String? roundErrorMessage;
+  final String? statusMessage;
   final RoundResultData? latestResult;
   final List<HistoryEntry> history;
   final int totalWins;
@@ -177,6 +180,8 @@ class GameState {
     int? activeSessionId,
     String? roundErrorMessage,
     bool clearRoundError = false,
+    String? statusMessage,
+    bool clearStatusMessage = false,
     bool clearActiveSession = false,
     RoundResultData? latestResult,
     bool clearLatestResult = false,
@@ -214,6 +219,9 @@ class GameState {
       roundErrorMessage: clearRoundError
           ? null
           : (roundErrorMessage ?? this.roundErrorMessage),
+      statusMessage: clearStatusMessage
+          ? null
+          : (statusMessage ?? this.statusMessage),
       latestResult: clearLatestResult
           ? null
           : (latestResult ?? this.latestResult),

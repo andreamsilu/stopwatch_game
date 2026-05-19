@@ -35,9 +35,6 @@ class AuthService {
       Uri.parse(ApiConfig.authLogin),
       body: {'msisdn': msisdn},
     );
-    if (!response.hasJson) {
-      throw ApiException('Could not send verification code.');
-    }
     return response.parse(
       OtpLoginResponse.fromJson,
       context: 'POST /auth/login',
@@ -89,10 +86,6 @@ class AuthService {
       Uri.parse(ApiConfig.authVerifyOtp),
       body: {'msisdn': msisdn, 'otp': otp},
     );
-
-    if (!response.hasJson) {
-      throw ApiException('Invalid verification code.');
-    }
 
     final session = response.parse(
       AuthSession.fromJson,
