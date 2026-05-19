@@ -10,6 +10,7 @@ import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
@@ -39,10 +40,16 @@ class GamePage extends ConsumerWidget {
         AppSnackBar.showInfo(context, RoundBillingCopy.preparingRoundCharge);
       }
 
+      if (next.preparePhase == RoundPreparePhase.awaitingPayment &&
+          previous?.preparePhase != RoundPreparePhase.awaitingPayment) {
+        AppSnackBar.showInfo(context, RoundBillingCopy.waitingForPayment);
+      }
+
       if (previous?.isLoadingTarget == true &&
           !next.isLoadingTarget &&
           next.roundErrorMessage == null &&
-          next.selectedTab == GameTab.play) {
+          next.selectedTab == GameTab.play &&
+          next.preparePhase == RoundPreparePhase.idle) {
         AppSnackBar.showSuccess(
           context,
           'Target: ${next.targetTimeLabel}. ${RoundBillingCopy.playReadyHint}',
@@ -126,6 +133,8 @@ class GamePage extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const LoggedInUserBar(),
+                      const SizedBox(height: 14),
                       Text(
                         'Navigation',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -280,7 +289,7 @@ class GamePage extends ConsumerWidget {
                                           );
                                           controller.tryAgainRound();
                                         },
-                                      onToggleSound: controller.toggleSoundEnabled,
+                                        onToggleSound: controller.toggleSoundEnabled,
                                       onStartControlPointerDown:
                                           controller.onStartControlPointerDown,
                                       onStartControlPointerMove:
@@ -437,12 +446,10 @@ class _GameBody extends StatelessWidget {
           targetTime: state.targetTime,
           isRunning: state.isRunning,
           isBusy: state.isStopwatchControlDisabled,
+          isSubmitting: state.isSubmitting,
           isLoadingTarget: state.isLoadingTarget,
           preparePhase: state.preparePhase,
-          canTryAgain:
-              !state.isRunning &&
-              !state.isPreparingRound &&
-              !state.hasBillingForRound,
+          canTryAgain: state.canTryAgainRound,
           roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,

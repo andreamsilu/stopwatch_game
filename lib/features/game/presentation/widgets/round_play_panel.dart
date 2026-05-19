@@ -7,7 +7,7 @@ import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/round_prepare_status_banner.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/round_payment_status_section.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/stopwatch_3d_stage.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
@@ -19,6 +19,7 @@ class RoundPlayPanel extends StatefulWidget {
     required this.targetTime,
     required this.isRunning,
     required this.isBusy,
+    required this.isSubmitting,
     required this.isLoadingTarget,
     required this.preparePhase,
     this.roundErrorMessage,
@@ -44,6 +45,7 @@ class RoundPlayPanel extends StatefulWidget {
   final Duration targetTime;
   final bool isRunning;
   final bool isBusy;
+  final bool isSubmitting;
   final bool isLoadingTarget;
   final RoundPreparePhase preparePhase;
   final String? roundErrorMessage;
@@ -123,27 +125,11 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
           _RoundErrorBanner(message: widget.roundErrorMessage!),
           const SizedBox(height: 10),
         ],
-        RoundPrepareStatusBanner(phase: widget.preparePhase),
-        if (widget.canTryAgain) ...[
-          SizedBox(
-            width: double.infinity,
-            height: GameConstants.minTouchTargetSize + 4,
-            child: ElevatedButton.icon(
-              onPressed: widget.isBusy ? null : widget.onTryAgain,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-              ),
-              icon: const Icon(Icons.replay_rounded),
-              label: Text(RoundBillingCopy.tryAgainButtonLabel),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
         Card(
           margin: EdgeInsets.zero,
           child: Column(
             children: [
+              RoundPaymentStatusSection(phase: widget.preparePhase),
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallMobile ? 10 : 16,
@@ -404,6 +390,18 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
           ),
         ),
         SizedBox(height: isTightMobile ? 8 : 12),
+        if (widget.canTryAgain) ...[
+          SizedBox(
+            width: double.infinity,
+            height: GameConstants.minTouchTargetSize + 4,
+            child: OutlinedButton.icon(
+              onPressed: widget.isSubmitting ? null : widget.onTryAgain,
+              icon: const Icon(Icons.replay_rounded),
+              label: Text(RoundBillingCopy.tryAgainButtonLabel),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 560;
@@ -538,18 +536,19 @@ class _OffsetAwareStartControl extends StatelessWidget {
                     ],
                   ),
                   child: ElevatedButton.icon(
-                  onPressed: isBusy ? null : () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: AppColors.onAccent,
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                  ),
-                  icon: isBusy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                  onPressed: null,
+                  style: isDisabled
+                      ? disabledStyle
+                      : ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          foregroundColor: AppColors.onAccent,
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                        ),
+                  icon: isDisabled && !isRunning
+                      ? Icon(
+                          Icons.play_arrow_rounded,
+                          color: AppColors.onAccent.withValues(alpha: 0.55),
                         )
                       : Icon(
                           isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
@@ -570,28 +569,31 @@ class _OffsetAwareStartControl extends StatelessWidget {
           ),
         ),
         Positioned.fill(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            transform: Matrix4.translationValues(
-              hitboxOffset.dx,
-              hitboxOffset.dy,
-              0,
-            ),
-            child: Listener(
-              onPointerDown: (event) => onPointerDown(
-                event.position,
-                isTrusted: PointerEventTrust.currentIsTrusted(),
+          child: IgnorePointer(
+            ignoring: isDisabled,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.translationValues(
+                hitboxOffset.dx,
+                hitboxOffset.dy,
+                0,
               ),
-              onPointerMove: (event) => onPointerMove(event.position),
-              onPointerUp: (event) => onPointerUp(
-                event.position,
-                isTrusted: PointerEventTrust.currentIsTrusted(),
-              ),
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: isBusy ? null : () => onTap(),
-                child: const SizedBox.expand(),
+              child: Listener(
+                onPointerDown: (event) => onPointerDown(
+                  event.position,
+                  isTrusted: PointerEventTrust.currentIsTrusted(),
+                ),
+                onPointerMove: (event) => onPointerMove(event.position),
+                onPointerUp: (event) => onPointerUp(
+                  event.position,
+                  isTrusted: PointerEventTrust.currentIsTrusted(),
+                ),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => onTap(),
+                  child: const SizedBox.expand(),
+                ),
               ),
             ),
           ),

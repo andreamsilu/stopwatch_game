@@ -100,6 +100,7 @@ class GameController extends StateNotifier<GameState> {
       isLoadingTarget: false,
       preparePhase: RoundPreparePhase.idle,
       clearActiveSession: true,
+      clearPendingBilling: true,
       clearRoundError: true,
       selectedTab: goHome ? GameTab.home : state.selectedTab,
     );
@@ -173,49 +174,50 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(isSubmitting: true);
     _stopwatch.stop();
     _ticker?.cancel();
-    final stoppedElapsed = _stopwatch.elapsed;
 
-    GameStartResponse? stoppedSession;
     try {
-      stoppedSession = await stopGame(
-        stoppedTimeMs: stoppedElapsed.inMilliseconds,
+      final backendResult = await fetchRoundResultFromBackend();
+      final nextHistory = [
+        HistoryEntry(
+          timestamp: DateTime.now(),
+          timeLabel: backendResult.finalTimeLabel,
+          outcome: backendResult.outcomeLabel,
+        ),
+        ...state.history,
+      ];
+      _stopwatch.reset();
+      final interactionPayload = _buildInteractionPayload();
+      await InteractionTelemetryService.submitRoundPayload(interactionPayload);
+
+      state = state.copyWith(
+        isRunning: false,
+        isSubmitting: false,
+        elapsed: Duration.zero,
+        latestResult: backendResult,
+        latestInteractionPayload: interactionPayload,
+        history: nextHistory,
+        totalWins:
+            state.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
+        totalPrizeCoins: state.totalPrizeCoins + backendResult.prizeCoins,
+        clearActiveSession: true,
       );
     } on ApiException catch (e) {
-      state = state.copyWith(roundErrorMessage: e.message);
-    } catch (_) {
+      _stopwatch.reset();
       state = state.copyWith(
-        roundErrorMessage: 'Could not submit stop time. Showing local result.',
+        isRunning: false,
+        isSubmitting: false,
+        elapsed: Duration.zero,
+        roundErrorMessage: e.message,
+      );
+    } catch (_) {
+      _stopwatch.reset();
+      state = state.copyWith(
+        isRunning: false,
+        isSubmitting: false,
+        elapsed: Duration.zero,
+        roundErrorMessage: 'Could not load round result from the server.',
       );
     }
-
-    final backendResult = await fetchRoundResultFromBackend(
-      actualElapsed: stoppedElapsed,
-      targetTime: state.targetTime,
-      stoppedSession: stoppedSession,
-    );
-    final nextHistory = [
-      HistoryEntry(
-        timestamp: DateTime.now(),
-        timeLabel: backendResult.finalTimeLabel,
-        outcome: backendResult.outcomeLabel,
-      ),
-      ...state.history,
-    ];
-    _stopwatch.reset();
-    final interactionPayload = _buildInteractionPayload();
-    await InteractionTelemetryService.submitRoundPayload(interactionPayload);
-
-    state = state.copyWith(
-      isRunning: false,
-      isSubmitting: false,
-      elapsed: Duration.zero,
-      latestResult: backendResult,
-      latestInteractionPayload: interactionPayload,
-      history: nextHistory,
-      totalWins: state.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
-      totalPrizeCoins: state.totalPrizeCoins + backendResult.prizeCoins,
-      clearActiveSession: true,
-    );
   }
 
   Future<void> onResetPressed() async {
@@ -270,18 +272,6 @@ class GameController extends StateNotifier<GameState> {
     );
   }
 
-  Future<GameStartResponse?> stopGame({required int stoppedTimeMs}) async {
-    final sessionRef = _resolveSessionLookupRef();
-    if (sessionRef.isEmpty) return null;
-
-    final session = await _gameService.stopGameSession(
-      sessionRef: sessionRef,
-      stoppedTimeMs: stoppedTimeMs,
-    );
-    _activeSession = session;
-    return session;
-  }
-
   String _resolveSessionLookupRef() {
     return state.sessionRef ??
         state.billingRequestId ??
@@ -290,58 +280,68 @@ class GameController extends StateNotifier<GameState> {
         '';
   }
 
-  Future<RoundResultData> fetchRoundResultFromBackend({
-    required Duration actualElapsed,
-    required Duration targetTime,
-    GameStartResponse? stoppedSession,
-  }) async {
-    if (stoppedSession != null) {
-      final fromStop = GameSessionMapper.toRoundResult(stoppedSession);
-      if (fromStop != null) return fromStop;
+  Future<RoundResultData> fetchRoundResultFromBackend() async {
+    final sessionRef = _resolveSessionLookupRef();
+    if (sessionRef.isEmpty) {
+      throw ApiException('No active game session to submit your stop.');
     }
 
-    final lookupRef = _resolveSessionLookupRef();
-    if (lookupRef.isNotEmpty) {
-      try {
-        final session = await _gameService.getGameSession(sessionRef: lookupRef);
-        final mapped = GameSessionMapper.toRoundResult(session);
-        if (mapped != null) return mapped;
-      } on ApiException catch (e) {
-        state = state.copyWith(roundErrorMessage: e.message);
-      } catch (_) {
-        // Fall through to local result.
-      }
+    GameStartResponse session;
+    try {
+      session = await _gameService.stopGameSession(sessionRef: sessionRef);
+      _activeSession = session;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Could not submit your stop to the server.');
     }
 
-    final differenceMs =
-        actualElapsed.inMilliseconds - targetTime.inMilliseconds;
-    // Award a win when the stop is within +/-100ms of target.
-    const winToleranceMs = 100;
-    final isWin = differenceMs.abs() <= winToleranceMs;
-    final absDifferenceMs = differenceMs.abs();
-    final timingDirection = differenceMs < 0 ? 'Early' : 'Late';
-    final deltaLabel = isWin
-        ? 'Great timing! Within +/-$winToleranceMs ms. Prize unlocked!'
-        : '$timingDirection by $absDifferenceMs ms';
-    const perfectStopPrizeCoins = 100;
-    const perfectStopPrizeLabel = 'Perfect Stop Reward';
+    final fromStop = GameSessionMapper.toRoundResult(session);
+    if (fromStop != null) return fromStop;
 
-    return RoundResultData(
-      outcomeLabel: isWin ? 'WIN' : 'LOSE',
-      deltaLabel: deltaLabel,
-      finalTimeLabel: _formatDurationWithMilliseconds(actualElapsed),
-      differenceMs: differenceMs,
-      prizeLabel: isWin ? perfectStopPrizeLabel : 'No prize',
-      prizeCoins: isWin ? perfectStopPrizeCoins : 0,
-      isPrizeAwarded: isWin,
+    try {
+      session = await _gameService.getGameSession(sessionRef: sessionRef);
+      _activeSession = session;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Could not load round result from the server.');
+    }
+
+    final fromGet = GameSessionMapper.toRoundResult(session);
+    if (fromGet != null) return fromGet;
+
+    throw ApiException(
+      'The server has not returned a round result yet. Try again shortly.',
+    );
+  }
+
+  Future<void> _finishRoundPreparationAfterPayment(String requestId) async {
+    state = state.copyWith(
+      preparePhase: RoundPreparePhase.loadingTarget,
+      isLoadingTarget: true,
+    );
+
+    final target = await _gameService.fetchTargetTime(msisdn: _effectiveMsisdn);
+
+    state = state.copyWith(
+      targetTime: Duration(milliseconds: target.targetTimeMs),
+      billingRequestId: requestId,
+      isLoadingTarget: false,
+      isSubmitting: false,
+      preparePhase: RoundPreparePhase.idle,
+      clearPendingBilling: true,
+      clearRoundError: true,
     );
   }
 
   Future<void> _chargeAndPrepareRound() async {
     state = state.copyWith(
+      isSubmitting: true,
       isLoadingTarget: true,
       preparePhase: RoundPreparePhase.charging,
       clearRoundError: true,
+      clearPendingBilling: true,
     );
 
     try {
@@ -349,44 +349,33 @@ class GameController extends StateNotifier<GameState> {
         msisdn: _effectiveMsisdn,
         amount: EnvConfig.gameEntryFee,
       );
-      await _gameService.waitForBillingSuccess(requestId: billing.requestId);
-
-      state = state.copyWith(preparePhase: RoundPreparePhase.loadingTarget);
-
-      final target = await _gameService.fetchTargetTime(msisdn: _effectiveMsisdn);
 
       state = state.copyWith(
-        targetTime: Duration(milliseconds: target.targetTimeMs),
-        billingRequestId: billing.requestId,
-        isLoadingTarget: false,
-        preparePhase: RoundPreparePhase.idle,
-        clearRoundError: true,
+        preparePhase: RoundPreparePhase.awaitingPayment,
+        pendingBillingRequestId: billing.requestId,
       );
+
+      await _gameService.waitForBillingSuccess(requestId: billing.requestId);
+      await _finishRoundPreparationAfterPayment(billing.requestId);
     } on ApiException catch (e) {
       state = state.copyWith(
+        isSubmitting: false,
         isLoadingTarget: false,
         preparePhase: RoundPreparePhase.idle,
         roundErrorMessage: e.message,
         clearActiveSession: true,
+        clearPendingBilling: true,
       );
     } catch (_) {
       state = state.copyWith(
+        isSubmitting: false,
         isLoadingTarget: false,
         preparePhase: RoundPreparePhase.idle,
-        roundErrorMessage: 'Could not charge this round or load target time.',
+        roundErrorMessage: 'Could not start charging for this round.',
         clearActiveSession: true,
+        clearPendingBilling: true,
       );
     }
-  }
-
-  String _formatDurationWithMilliseconds(Duration value) {
-    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final milliseconds = value.inMilliseconds.remainder(1000).toString().padLeft(
-      3,
-      '0',
-    );
-    return '$minutes:$seconds.$milliseconds';
   }
 
   @override

@@ -5,7 +5,6 @@ import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_request.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
-import 'package:stopwatch_game/features/game/data/models/round_preparation.dart';
 import 'package:stopwatch_game/features/game/data/models/start_game_request.dart';
 import 'package:stopwatch_game/features/game/data/models/stop_game_request.dart';
 import 'package:stopwatch_game/features/game/data/models/target_time_request.dart';
@@ -20,19 +19,6 @@ class GameService {
   factory GameService.create({StopwatchApi? api}) => GameService(api: api);
 
   final StopwatchApi _api;
-
-  Future<RoundPreparation> prepareRound({required String msisdn}) async {
-    final billing = await enqueueBilling(
-      msisdn: msisdn,
-      amount: EnvConfig.gameEntryFee,
-    );
-    await waitForBillingSuccess(requestId: billing.requestId);
-    final target = await fetchTargetTime(msisdn: msisdn);
-    return RoundPreparation(
-      billingRequestId: billing.requestId,
-      targetTimeMs: target.targetTimeMs,
-    );
-  }
 
   Future<BillingTransactionResponse> enqueueBilling({
     required String msisdn,
@@ -66,7 +52,7 @@ class GameService {
     }
 
     throw ApiException(
-      'Payment is still pending. Complete it on your phone, then tap Play again.',
+      'Payment is still pending. Confirm the charge on your phone, then try again.',
     );
   }
 
@@ -84,11 +70,8 @@ class GameService {
         channel: channel ?? EnvConfig.gameChannel,
       );
 
-  Future<GameStartResponse> stopGameSession({
-    required String sessionRef,
-    required int stoppedTimeMs,
-  }) =>
-      _postGameStop(sessionRef: sessionRef, stoppedTimeMs: stoppedTimeMs);
+  Future<GameStartResponse> stopGameSession({required String sessionRef}) =>
+      _postGameStop(sessionRef: sessionRef);
 
   Future<GameStartResponse> getGameSession({required String sessionRef}) =>
       _fetchGameSession(sessionRef);
@@ -147,10 +130,7 @@ class GameService {
     );
   }
 
-  Future<GameStartResponse> _postGameStop({
-    required String sessionRef,
-    required int stoppedTimeMs,
-  }) async {
+  Future<GameStartResponse> _postGameStop({required String sessionRef}) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.gameStop),
       body: StopGameRequest(sessionRef: sessionRef).toJson(),

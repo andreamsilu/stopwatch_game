@@ -1,55 +1,109 @@
+import 'package:stopwatch_game/core/api/api_exception.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/core/config/api_config.dart';
+import 'package:stopwatch_game/features/auth/data/models/auth_session.dart';
+import 'package:stopwatch_game/features/auth/data/models/otp_login_response.dart';
 import 'package:stopwatch_game/features/auth/data/models/register_user_request.dart';
 import 'package:stopwatch_game/features/auth/data/models/user_model.dart';
 
 export 'package:stopwatch_game/core/api/api_exception.dart' show ApiException;
 
-/// User registration and sign-in workflows.
+/// OTP auth (`/auth/login`, `/auth/verify-otp`), JWT session, and registration.
 class AuthService {
-  AuthService({StopwatchApi? api}) : _api = api ?? StopwatchApi.create();
+  AuthService({
+    StopwatchApi? api,
+    void Function(AuthSession? session)? onSessionChanged,
+  }) : _api = api ?? StopwatchApi.create(),
+       _onSessionChanged = onSessionChanged;
 
-  factory AuthService.create({StopwatchApi? api}) => AuthService(api: api);
+  factory AuthService.create({
+    StopwatchApi? api,
+    void Function(AuthSession? session)? onSessionChanged,
+  }) =>
+      AuthService(api: api, onSessionChanged: onSessionChanged);
 
   final StopwatchApi _api;
+  final void Function(AuthSession? session)? _onSessionChanged;
 
-  Future<UserModel?> lookupUserByMsisdn({required String msisdn}) =>
-      _fetchUserByMsisdn(msisdn);
+  AuthSession? _currentSession;
 
-  Future<UserModel> getUserById({required int id}) => _fetchUserById(id);
+  AuthSession? get currentSession => _currentSession;
 
-  Future<UserModel> registerOrUpdateUser({required String msisdn}) =>
-      _postUser(msisdn);
-
-  Future<UserModel?> prepareLogin({required String msisdn}) =>
-      lookupUserByMsisdn(msisdn: msisdn);
-
-  Future<UserModel> signIn({required String msisdn}) async {
-    final registered = await registerOrUpdateUser(msisdn: msisdn);
-    return getUserById(id: registered.id);
-  }
-
-  Future<UserModel?> _fetchUserByMsisdn(String msisdn) async {
-    final response = await _api.get(
-      Uri.parse(ApiConfig.users).replace(queryParameters: {'msisdn': msisdn}),
-      allowNotFound: true,
+  /// `POST /api/v1/auth/login` — request OTP for [msisdn].
+  Future<OtpLoginResponse> requestOtp({required String msisdn}) async {
+    final response = await _api.post(
+      Uri.parse(ApiConfig.authLogin),
+      body: {'msisdn': msisdn},
     );
-    if (response.isNotFound || !response.hasJson) return null;
+    if (!response.hasJson) {
+      throw ApiException('Could not send verification code.');
+    }
     return response.parse(
-      UserModel.fromJson,
-      context: 'GET /users?msisdn',
+      OtpLoginResponse.fromJson,
+      context: 'POST /auth/login',
     );
   }
 
-  Future<UserModel> _fetchUserById(int id) async {
-    final response = await _api.get(Uri.parse(ApiConfig.userById(id)));
-    return response.parse(
-      UserModel.fromJson,
-      context: 'GET /users/{id}',
-    );
+  /// `POST /api/v1/auth/verify-otp` — sign in; returns JWT + user (no `POST /users`).
+  Future<UserModel> signInWithOtp({
+    required String msisdn,
+    required String otp,
+  }) async {
+    final session = await _verifyOtpAndApplySession(msisdn: msisdn, otp: otp);
+    return session.user;
   }
 
-  Future<UserModel> _postUser(String msisdn) async {
+  /// Verify OTP, then `POST /api/v1/users` with `{ "msisdn" }` (registration only).
+  Future<UserModel> registerWithOtp({
+    required String msisdn,
+    required String otp,
+  }) async {
+    await _verifyOtpAndApplySession(msisdn: msisdn, otp: otp);
+    return registerUser(msisdn: msisdn);
+  }
+
+  /// `POST /api/v1/auth/logout` — revokes JWT and clears the local session.
+  Future<void> logout() async {
+    try {
+      await _api.post(Uri.parse(ApiConfig.authLogout));
+    } finally {
+      _clearSession();
+    }
+  }
+
+  void _clearSession() {
+    _currentSession = null;
+    _onSessionChanged?.call(null);
+  }
+
+  void _applySession(AuthSession session) {
+    _currentSession = session;
+    _onSessionChanged?.call(session);
+  }
+
+  Future<AuthSession> _verifyOtpAndApplySession({
+    required String msisdn,
+    required String otp,
+  }) async {
+    final response = await _api.post(
+      Uri.parse(ApiConfig.authVerifyOtp),
+      body: {'msisdn': msisdn, 'otp': otp},
+    );
+
+    if (!response.hasJson) {
+      throw ApiException('Invalid verification code.');
+    }
+
+    final session = response.parse(
+      AuthSession.fromJson,
+      context: 'POST /auth/verify-otp',
+    );
+    _applySession(session);
+    return session;
+  }
+
+  /// `POST /api/v1/users` — registration only; requires Bearer token from verify-otp.
+  Future<UserModel> registerUser({required String msisdn}) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.users),
       body: RegisterUserRequest(msisdn: msisdn).toJson(),
@@ -57,6 +111,14 @@ class AuthService {
     return response.parse(
       UserModel.fromJson,
       context: 'POST /users',
+    );
+  }
+
+  Future<UserModel> getUserById({required int id}) async {
+    final response = await _api.get(Uri.parse(ApiConfig.userById(id)));
+    return response.parse(
+      UserModel.fromJson,
+      context: 'GET /users/{id}',
     );
   }
 }

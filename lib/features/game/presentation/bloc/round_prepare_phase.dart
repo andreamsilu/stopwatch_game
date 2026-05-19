@@ -2,5 +2,6 @@
 enum RoundPreparePhase {
   idle,
   charging,
+  awaitingPayment,
   loadingTarget,
 }

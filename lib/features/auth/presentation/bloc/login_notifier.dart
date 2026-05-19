@@ -10,33 +10,54 @@ class LoginNotifier extends StateNotifier<LoginState> {
 
   final AuthService _auth;
 
+  void setAuthIntent(AuthIntent intent) {
+    state = state.copyWith(
+      intent: intent,
+      step: LoginStep.phone,
+      otpCode: '',
+      clearError: true,
+      clearAuthenticatedUser: true,
+      subscriptionAccepted: false,
+    );
+  }
+
   void updatePhoneNumber(String value) {
     state = state.copyWith(phoneNumber: value, clearError: true);
   }
 
-  void backToPhone() {
-    state = state.copyWith(
-      step: LoginStep.phone,
-      clearExistingUser: true,
-      clearError: true,
-      subscriptionAccepted: false,
-    );
+  void updateOtpCode(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final trimmed = digits.length > LoginState.otpLength
+        ? digits.substring(0, LoginState.otpLength)
+        : digits;
+    state = state.copyWith(otpCode: trimmed, clearError: true);
   }
 
   void setSubscriptionAccepted(bool value) {
     state = state.copyWith(subscriptionAccepted: value, clearError: true);
   }
 
-  Future<bool> continueWithPhone() async {
-    if (!state.canContinue) return false;
+  void backToPhone() {
+    state = state.copyWith(
+      step: LoginStep.phone,
+      otpCode: '',
+      clearError: true,
+    );
+  }
+
+  Future<bool> sendOtp() async {
+    if (!state.canSendOtp) return false;
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      final existing = await _auth.prepareLogin(msisdn: state.normalizedMsisdn);
+      final response = await _auth.requestOtp(msisdn: state.normalizedMsisdn);
+      final stubOtp = response.otp?.trim();
       state = state.copyWith(
         isSubmitting: false,
-        step: LoginStep.confirm,
-        existingUser: existing,
+        step: LoginStep.otp,
+        otpCode: stubOtp != null && stubOtp.length == LoginState.otpLength
+            ? stubOtp
+            : '',
       );
       return true;
     } on ApiException catch (e) {
@@ -44,28 +65,57 @@ class LoginNotifier extends StateNotifier<LoginState> {
       return false;
     } catch (e, stack) {
       if (kDebugMode) {
-        debugPrint('continueWithPhone failed: $e\n$stack');
+        debugPrint('sendOtp failed: $e\n$stack');
       }
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: _messageForUnexpectedError(
-          e,
-          fallback: 'Could not verify your number. Please try again.',
-        ),
+        errorMessage: 'Could not send verification code. Please try again.',
       );
       return false;
     }
   }
 
-  Future<bool> signIn() async {
-    if (!state.canConfirm) return false;
+  Future<bool> resendOtp() async {
+    state = state.copyWith(isResendingOtp: true, clearError: true);
+    try {
+      final response = await _auth.requestOtp(msisdn: state.normalizedMsisdn);
+      final stubOtp = response.otp?.trim();
+      state = state.copyWith(
+        isResendingOtp: false,
+        otpCode: stubOtp != null && stubOtp.length == LoginState.otpLength
+            ? stubOtp
+            : state.otpCode,
+      );
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(isResendingOtp: false, errorMessage: e.message);
+      return false;
+    } catch (_) {
+      state = state.copyWith(
+        isResendingOtp: false,
+        errorMessage: 'Could not resend code. Try again shortly.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp() async {
+    if (!state.canVerifyOtp) return false;
 
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      final user = await _auth.signIn(msisdn: state.normalizedMsisdn);
+      final user = state.isRegister
+          ? await _auth.registerWithOtp(
+              msisdn: state.normalizedMsisdn,
+              otp: state.otpCode,
+            )
+          : await _auth.signInWithOtp(
+              msisdn: state.normalizedMsisdn,
+              otp: state.otpCode,
+            );
       state = state.copyWith(
         isSubmitting: false,
-        registeredUser: user,
+        authenticatedUser: user,
       );
       return true;
     } on ApiException catch (e) {
@@ -73,23 +123,15 @@ class LoginNotifier extends StateNotifier<LoginState> {
       return false;
     } catch (e, stack) {
       if (kDebugMode) {
-        debugPrint('signIn failed: $e\n$stack');
+        debugPrint('verifyOtp failed: $e\n$stack');
       }
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: _messageForUnexpectedError(
-          e,
-          fallback: 'Could not complete registration. Please try again.',
-        ),
+        errorMessage: state.isRegister
+            ? 'Registration failed. Please try again.'
+            : 'Sign in failed. Please try again.',
       );
       return false;
     }
-  }
-
-  String _messageForUnexpectedError(Object error, {required String fallback}) {
-    if (error is TypeError || error is FormatException) {
-      return 'Server returned unexpected data. Please try again.';
-    }
-    return fallback;
   }
 }

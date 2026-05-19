@@ -50,6 +50,7 @@ class GameState {
     required this.latestInteractionPayload,
     required this.targetTime,
     required this.billingRequestId,
+    required this.pendingBillingRequestId,
     required this.sessionRef,
     required this.activeSessionId,
     required this.roundErrorMessage,
@@ -73,6 +74,7 @@ class GameState {
       latestInteractionPayload = null,
       targetTime = const Duration(milliseconds: 8200),
       billingRequestId = null,
+      pendingBillingRequestId = null,
       sessionRef = null,
       activeSessionId = null,
       roundErrorMessage = null,
@@ -94,6 +96,7 @@ class GameState {
   final Map<String, dynamic>? latestInteractionPayload;
   final Duration targetTime;
   final String? billingRequestId;
+  final String? pendingBillingRequestId;
   final String? sessionRef;
   final int? activeSessionId;
   final String? roundErrorMessage;
@@ -127,6 +130,11 @@ class GameState {
       isSubmitting || isPreparingRound || !canControlStopwatch;
 
   bool get isPreparingRound => preparePhase != RoundPreparePhase.idle;
+
+  bool get canTryAgainRound =>
+      preparePhase == RoundPreparePhase.idle &&
+      !hasBillingForRound &&
+      !isRunning;
 
   String get targetTimeLabel =>
       _formatDuration(targetTime, withMilliseconds: true);
@@ -163,6 +171,8 @@ class GameState {
     bool clearLatestInteractionPayload = false,
     Duration? targetTime,
     String? billingRequestId,
+    String? pendingBillingRequestId,
+    bool clearPendingBilling = false,
     String? sessionRef,
     int? activeSessionId,
     String? roundErrorMessage,
@@ -194,6 +204,9 @@ class GameState {
       billingRequestId: clearActiveSession
           ? null
           : (billingRequestId ?? this.billingRequestId),
+      pendingBillingRequestId: clearActiveSession || clearPendingBilling
+          ? null
+          : (pendingBillingRequestId ?? this.pendingBillingRequestId),
       sessionRef: clearActiveSession ? null : (sessionRef ?? this.sessionRef),
       activeSessionId: clearActiveSession
           ? null

@@ -10,9 +10,12 @@ void main() {
 
   testWidgets('Login page renders key elements', (WidgetTester tester) async {
     await tester.pumpWidget(const StopwatchChallengeApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Welcome'), findsOneWidget);
     expect(find.text('Send verification code'), findsOneWidget);
+    expect(find.text('Register'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 }

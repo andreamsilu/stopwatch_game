@@ -1,38 +1,48 @@
 import 'package:stopwatch_game/features/auth/data/models/user_model.dart';
 
-enum LoginStep { phone, confirm }
+enum AuthIntent { register, login }
+
+enum LoginStep { phone, otp }
 
 class LoginState {
   const LoginState({
+    required this.intent,
     required this.step,
     required this.phoneNumber,
+    required this.otpCode,
     required this.isSubmitting,
+    required this.isResendingOtp,
     required this.errorMessage,
-    required this.existingUser,
-    required this.registeredUser,
+    required this.authenticatedUser,
     required this.subscriptionAccepted,
   });
 
   static const String defaultPhoneNumber = '712345678';
+  static const int otpLength = 6;
 
   const LoginState.initial()
-    : step = LoginStep.phone,
+    : intent = AuthIntent.register,
+      step = LoginStep.phone,
       phoneNumber = defaultPhoneNumber,
+      otpCode = '',
       isSubmitting = false,
+      isResendingOtp = false,
       errorMessage = null,
-      existingUser = null,
-      registeredUser = null,
+      authenticatedUser = null,
       subscriptionAccepted = false;
 
+  final AuthIntent intent;
   final LoginStep step;
   final String phoneNumber;
+  final String otpCode;
   final bool isSubmitting;
+  final bool isResendingOtp;
   final String? errorMessage;
-  final UserModel? existingUser;
-  final UserModel? registeredUser;
+  final UserModel? authenticatedUser;
   final bool subscriptionAccepted;
 
-  bool get requiresSubscriptionConsent => existingUser == null;
+  bool get isRegister => intent == AuthIntent.register;
+  bool get isLogin => intent == AuthIntent.login;
 
   String get normalizedMsisdn {
     final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
@@ -47,36 +57,37 @@ class LoginState {
     return '+${msisdn.substring(0, 3)} *** *** ${msisdn.substring(msisdn.length - 3)}';
   }
 
-  bool get canContinue => !isSubmitting && normalizedMsisdn.length >= 12;
-
-  bool get canConfirm =>
+  bool get canSendOtp =>
       !isSubmitting &&
-      step == LoginStep.confirm &&
-      (!requiresSubscriptionConsent || subscriptionAccepted);
+      normalizedMsisdn.length >= 12 &&
+      (!isRegister || subscriptionAccepted);
+
+  bool get canVerifyOtp => !isSubmitting && otpCode.length == otpLength;
 
   LoginState copyWith({
+    AuthIntent? intent,
     LoginStep? step,
     String? phoneNumber,
+    String? otpCode,
     bool? isSubmitting,
+    bool? isResendingOtp,
     String? errorMessage,
     bool clearError = false,
-    UserModel? existingUser,
-    bool clearExistingUser = false,
-    UserModel? registeredUser,
-    bool clearRegisteredUser = false,
+    UserModel? authenticatedUser,
+    bool clearAuthenticatedUser = false,
     bool? subscriptionAccepted,
   }) {
     return LoginState(
+      intent: intent ?? this.intent,
       step: step ?? this.step,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      otpCode: otpCode ?? this.otpCode,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      isResendingOtp: isResendingOtp ?? this.isResendingOtp,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      existingUser: clearExistingUser
+      authenticatedUser: clearAuthenticatedUser
           ? null
-          : (existingUser ?? this.existingUser),
-      registeredUser: clearRegisteredUser
-          ? null
-          : (registeredUser ?? this.registeredUser),
+          : (authenticatedUser ?? this.authenticatedUser),
       subscriptionAccepted:
           subscriptionAccepted ?? this.subscriptionAccepted,
     );

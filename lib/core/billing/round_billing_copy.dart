@@ -27,7 +27,7 @@ class RoundBillingCopy {
   static const preparingRoundCharge = 'Charging this round to your number…';
 
   static const waitingForPayment =
-      'Processing payment on your phone. Complete it to continue.';
+      'Complete the payment on your phone. We will confirm it automatically.';
 
   static const loadingTarget = 'Payment received. Loading your target time…';
 

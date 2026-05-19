@@ -3,41 +3,52 @@ import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
+import 'package:stopwatch_game/features/auth/presentation/widgets/otp_input_boxes.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone_prefix.dart';
 
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({
+    required this.intent,
     required this.step,
     required this.phoneValue,
+    required this.otpCode,
     required this.maskedPhone,
     required this.isSubmitting,
-    required this.canContinue,
-    required this.canConfirm,
-    required this.isReturningUser,
+    required this.isResendingOtp,
+    required this.canSendOtp,
+    required this.canVerifyOtp,
     required this.subscriptionAccepted,
     required this.errorMessage,
+    required this.onIntentChanged,
     required this.onPhoneChanged,
-    required this.onContinue,
-    required this.onConfirm,
-    required this.onBackToPhone,
+    required this.onOtpChanged,
     required this.onSubscriptionAcceptedChanged,
+    required this.onSendOtp,
+    required this.onVerifyOtp,
+    required this.onResendOtp,
+    required this.onBackToPhone,
     super.key,
   });
 
+  final AuthIntent intent;
   final LoginStep step;
   final String phoneValue;
+  final String otpCode;
   final String maskedPhone;
   final bool isSubmitting;
-  final bool canContinue;
-  final bool canConfirm;
-  final bool isReturningUser;
+  final bool isResendingOtp;
+  final bool canSendOtp;
+  final bool canVerifyOtp;
   final bool subscriptionAccepted;
   final String? errorMessage;
+  final ValueChanged<AuthIntent> onIntentChanged;
   final ValueChanged<String> onPhoneChanged;
-  final Future<void> Function() onContinue;
-  final Future<void> Function() onConfirm;
-  final VoidCallback onBackToPhone;
+  final ValueChanged<String> onOtpChanged;
   final ValueChanged<bool> onSubscriptionAcceptedChanged;
+  final Future<void> Function() onSendOtp;
+  final Future<void> Function() onVerifyOtp;
+  final Future<void> Function() onResendOtp;
+  final VoidCallback onBackToPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -55,24 +66,30 @@ class LoginFormCard extends StatelessWidget {
         child: step == LoginStep.phone
             ? _PhoneStep(
                 key: const ValueKey('phone'),
+                intent: intent,
                 phoneValue: phoneValue,
                 isSubmitting: isSubmitting,
-                canContinue: canContinue,
-                errorMessage: errorMessage,
-                onPhoneChanged: onPhoneChanged,
-                onContinue: onContinue,
-              )
-            : _ConfirmStep(
-                key: const ValueKey('confirm'),
-                maskedPhone: maskedPhone,
-                isSubmitting: isSubmitting,
-                canConfirm: canConfirm,
-                isReturningUser: isReturningUser,
+                canSendOtp: canSendOtp,
                 subscriptionAccepted: subscriptionAccepted,
                 errorMessage: errorMessage,
-                onConfirm: onConfirm,
-                onBackToPhone: onBackToPhone,
+                onIntentChanged: onIntentChanged,
+                onPhoneChanged: onPhoneChanged,
                 onSubscriptionAcceptedChanged: onSubscriptionAcceptedChanged,
+                onSendOtp: onSendOtp,
+              )
+            : _OtpStep(
+                key: const ValueKey('otp'),
+                intent: intent,
+                maskedPhone: maskedPhone,
+                otpCode: otpCode,
+                isSubmitting: isSubmitting,
+                isResendingOtp: isResendingOtp,
+                canVerifyOtp: canVerifyOtp,
+                errorMessage: errorMessage,
+                onOtpChanged: onOtpChanged,
+                onVerifyOtp: onVerifyOtp,
+                onResendOtp: onResendOtp,
+                onBackToPhone: onBackToPhone,
               ),
       ),
     );
@@ -96,6 +113,44 @@ class _CardShell extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
         child: child,
+      ),
+    );
+  }
+}
+
+class _AuthIntentToggle extends StatelessWidget {
+  const _AuthIntentToggle({
+    required this.intent,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final AuthIntent intent;
+  final bool enabled;
+  final ValueChanged<AuthIntent> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<AuthIntent>(
+      segments: const [
+        ButtonSegment(
+          value: AuthIntent.register,
+          label: Text('Register'),
+          icon: Icon(Icons.person_add_outlined, size: 18),
+        ),
+        ButtonSegment(
+          value: AuthIntent.login,
+          label: Text('Sign in'),
+          icon: Icon(Icons.login_rounded, size: 18),
+        ),
+      ],
+      selected: {intent},
+      onSelectionChanged: enabled
+          ? (selection) => onChanged(selection.first)
+          : null,
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
@@ -128,21 +183,31 @@ class _ErrorBanner extends StatelessWidget {
 
 class _PhoneStep extends StatelessWidget {
   const _PhoneStep({
+    required this.intent,
     required this.phoneValue,
     required this.isSubmitting,
-    required this.canContinue,
+    required this.canSendOtp,
+    required this.subscriptionAccepted,
     required this.errorMessage,
+    required this.onIntentChanged,
     required this.onPhoneChanged,
-    required this.onContinue,
+    required this.onSubscriptionAcceptedChanged,
+    required this.onSendOtp,
     super.key,
   });
 
+  final AuthIntent intent;
   final String phoneValue;
   final bool isSubmitting;
-  final bool canContinue;
+  final bool canSendOtp;
+  final bool subscriptionAccepted;
   final String? errorMessage;
+  final ValueChanged<AuthIntent> onIntentChanged;
   final ValueChanged<String> onPhoneChanged;
-  final Future<void> Function() onContinue;
+  final ValueChanged<bool> onSubscriptionAcceptedChanged;
+  final Future<void> Function() onSendOtp;
+
+  bool get _isRegister => intent == AuthIntent.register;
 
   @override
   Widget build(BuildContext context) {
@@ -150,15 +215,23 @@ class _PhoneStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _AuthIntentToggle(
+            intent: intent,
+            enabled: !isSubmitting,
+            onChanged: onIntentChanged,
+          ),
+          const SizedBox(height: 20),
           Text(
-            'Create your account',
+            _isRegister ? 'Create your account' : 'Sign in',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Enter your phone number to register or sign in.',
+            _isRegister
+                ? 'Enter your phone number. We will send a 6-digit verification code.'
+                : 'Enter the phone number linked to your account.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
@@ -186,6 +259,31 @@ class _PhoneStep extends StatelessWidget {
               ),
             ),
           ),
+          if (_isRegister) ...[
+            const SizedBox(height: 12),
+            Text(
+              RoundBillingCopy.entryFeeLabel,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              value: subscriptionAccepted,
+              onChanged: isSubmitting
+                  ? null
+                  : (value) => onSubscriptionAcceptedChanged(value ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(
+                RoundBillingCopy.subscriptionConsent,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
           if (errorMessage != null) ...[
             const SizedBox(height: 14),
             _ErrorBanner(message: errorMessage!),
@@ -194,16 +292,16 @@ class _PhoneStep extends StatelessWidget {
           SizedBox(
             height: GameConstants.minTouchTargetSize + 6,
             child: ElevatedButton.icon(
-              onPressed: canContinue
+              onPressed: canSendOtp
                   ? () async {
-                      await onContinue();
+                      await onSendOtp();
                     }
                   : null,
               iconAlignment: IconAlignment.end,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.onAccent,
-                elevation: canContinue ? 2 : 0,
+                elevation: canSendOtp ? 2 : 0,
               ),
               icon: isSubmitting
                   ? const SizedBox(
@@ -211,8 +309,8 @@ class _PhoneStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Continue'),
+                  : const Icon(Icons.sms_outlined),
+              label: const Text('Send verification code'),
             ),
           ),
         ],
@@ -221,29 +319,35 @@ class _PhoneStep extends StatelessWidget {
   }
 }
 
-class _ConfirmStep extends StatelessWidget {
-  const _ConfirmStep({
+class _OtpStep extends StatelessWidget {
+  const _OtpStep({
+    required this.intent,
     required this.maskedPhone,
+    required this.otpCode,
     required this.isSubmitting,
-    required this.canConfirm,
-    required this.isReturningUser,
-    required this.subscriptionAccepted,
+    required this.isResendingOtp,
+    required this.canVerifyOtp,
     required this.errorMessage,
-    required this.onConfirm,
+    required this.onOtpChanged,
+    required this.onVerifyOtp,
+    required this.onResendOtp,
     required this.onBackToPhone,
-    required this.onSubscriptionAcceptedChanged,
     super.key,
   });
 
+  final AuthIntent intent;
   final String maskedPhone;
+  final String otpCode;
   final bool isSubmitting;
-  final bool canConfirm;
-  final bool isReturningUser;
-  final bool subscriptionAccepted;
+  final bool isResendingOtp;
+  final bool canVerifyOtp;
   final String? errorMessage;
-  final Future<void> Function() onConfirm;
+  final ValueChanged<String> onOtpChanged;
+  final Future<void> Function() onVerifyOtp;
+  final Future<void> Function() onResendOtp;
   final VoidCallback onBackToPhone;
-  final ValueChanged<bool> onSubscriptionAcceptedChanged;
+
+  bool get _isRegister => intent == AuthIntent.register;
 
   @override
   Widget build(BuildContext context) {
@@ -265,62 +369,46 @@ class _ConfirmStep extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Confirm your number',
+            'Enter verification code',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            isReturningUser
-                ? 'Welcome back! Confirm to continue with $maskedPhone.'
-                : 'Subscribe with $maskedPhone to play Stopwatch Challenge.',
+            'We sent a 6-digit code to $maskedPhone',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.onBackground.withValues(alpha: 0.72),
             ),
           ),
-          if (!isReturningUser) ...[
-            const SizedBox(height: 12),
-            Text(
-              RoundBillingCopy.entryFeeLabel,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            CheckboxListTile(
-              value: subscriptionAccepted,
-              onChanged: isSubmitting
-                  ? null
-                  : (value) => onSubscriptionAcceptedChanged(value ?? false),
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(
-                RoundBillingCopy.subscriptionConsent,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  height: 1.4,
-                ),
-              ),
-            ),
+          const SizedBox(height: 24),
+          OtpInputBoxes(
+            value: otpCode,
+            enabled: !isSubmitting,
+            onChanged: onOtpChanged,
+            onCompleted: canVerifyOtp
+                ? () {
+                    onVerifyOtp();
+                  }
+                : null,
+          ),
+          if (errorMessage != null) ...[
+            const SizedBox(height: 14),
+            _ErrorBanner(message: errorMessage!),
           ],
           const SizedBox(height: 20),
-          if (errorMessage != null) ...[
-            _ErrorBanner(message: errorMessage!),
-            const SizedBox(height: 20),
-          ],
           SizedBox(
             height: GameConstants.minTouchTargetSize + 6,
             child: ElevatedButton.icon(
-              onPressed: canConfirm
+              onPressed: canVerifyOtp
                   ? () async {
-                      await onConfirm();
+                      await onVerifyOtp();
                     }
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.onAccent,
-                elevation: canConfirm ? 2 : 0,
+                elevation: canVerifyOtp ? 2 : 0,
               ),
               icon: isSubmitting
                   ? const SizedBox(
@@ -328,10 +416,25 @@ class _ConfirmStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.verified_outlined),
-              label: Text(
-                isReturningUser ? 'Continue' : 'Subscribe & continue',
-              ),
+                  : Icon(_isRegister ? Icons.verified_outlined : Icons.login_rounded),
+              label: Text(_isRegister ? 'Verify & register' : 'Verify & sign in'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: isSubmitting || isResendingOtp
+                  ? null
+                  : () async {
+                      await onResendOtp();
+                    },
+              child: isResendingOtp
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Resend code'),
             ),
           ),
         ],

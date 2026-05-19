@@ -89,23 +89,28 @@ POST http://188.64.189.38:9090/api/v1/users
 
 ---
 
-## Users
+## Auth (OTP + JWT)
 
-Registers or upserts a player before entering the game.
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/v1/auth/login` | Request OTP — body `{ "msisdn" }` |
+| `POST` | `/api/v1/auth/verify-otp` | Verify OTP — body `{ "msisdn", "otp" }` → JWT + `user` |
+| `POST` | `/api/v1/auth/logout` | Revoke JWT — `204 No Content` |
 
-**Client:** `AuthService` — `lookupUserByMsisdn`, `registerOrUpdateUser`, `getUserById` (`login_notifier.dart`).
+**Verify OTP response:** `accessToken`, `tokenType`, `expiresInSeconds`, `user` (same shape as `POST /users`).
 
-### Get user by msisdn (live)
+**Client flows**
 
-```http
-GET /api/v1/users?msisdn=255676589824
-```
+- **Sign in:** `auth/login` → `auth/verify-otp` → store Bearer token → game.
+- **Register:** `auth/login` → `auth/verify-otp` → `POST /users` with `{ "msisdn" }` only (authenticated).
 
-**Success — `200 OK`** — `UserResponse` (same schema as register).
-
-**Client:** Called on phone **Continue** (`LoginNotifier.sendOtp` → `prepareLogin`).
+Stub/dev: `auth/login` may include `otp` in the JSON response for testing.
 
 ---
+
+## Users
+
+**Client:** `AuthService.registerUser`, `AuthService.getUserById`.
 
 ### Get user by id (live)
 
@@ -113,11 +118,13 @@ GET /api/v1/users?msisdn=255676589824
 GET /api/v1/users/{id}
 ```
 
-**Client:** Called after successful register (`getUserById`) to refresh profile into `playerUserProvider`.
+**Client:** Optional profile refresh (`getUserById`).
 
 ---
 
-### Register or update user (live)
+### Register user (live)
+
+**Registration only** — not used for sign-in.
 
 ```http
 POST /api/v1/users
@@ -149,11 +156,7 @@ curl -X 'POST' \
   'http://188.64.189.38:9090/api/v1/users' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
-  -d '{
-  "msisdn": "255676589824",
-  "channelSource": "WEB",
-  "username": "KIBABU"
-}'
+  -d '{"msisdn": "255676589824"}'
 ```
 
 **Success — `200 OK`**
@@ -199,7 +202,7 @@ curl -X 'POST' \
 |-----------|-----------|
 | Login phone input | `msisdn` |
 
-Server sets `channelSource=APP` and `status=active` for new users. Store `id` in `playerUserProvider` after login.
+Server sets `channelSource=APP` and `status=active` for new users. **Sign-in never calls `POST /users`.** Store JWT and `user.id` after `auth/verify-otp`.
 
 ---
 
