@@ -490,6 +490,13 @@ class _OffsetAwareStartControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final disabledStyle = ElevatedButton.styleFrom(
+      backgroundColor: AppColors.accent.withValues(alpha: 0.45),
+      foregroundColor: AppColors.onAccent.withValues(alpha: 0.55),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+    );
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
