@@ -186,16 +186,48 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                         child: child,
                       ),
                     ),
-                    child: Text(
-                      widget.result.finalTimeLabel,
+                    child: Column(
                       key: ValueKey<String>(widget.result.finalTimeLabel),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                      children: [
+                        Text(
+                          GameCopy.yourTime,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.result.finalTimeLabel,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _ResultInfoCard(
+                          label: GameCopy.targetTime,
+                          value: widget.result.targetTimeLabel,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ResultInfoCard(
+                          label: GameCopy.yourTime,
+                          value: widget.result.finalTimeLabel,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   _ResultInfoCard(
                     label: GameCopy.timeDifference,
                     value: '${widget.result.differenceMs} ms',

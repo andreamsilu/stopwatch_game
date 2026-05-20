@@ -7,6 +7,7 @@ class RoundResultData {
   const RoundResultData({
     required this.outcomeLabel,
     required this.deltaLabel,
+    required this.targetTimeLabel,
     required this.finalTimeLabel,
     required this.differenceMs,
     required this.prizeLabel,
@@ -16,6 +17,7 @@ class RoundResultData {
 
   final String outcomeLabel;
   final String deltaLabel;
+  final String targetTimeLabel;
   final String finalTimeLabel;
   final int differenceMs;
   final String prizeLabel;

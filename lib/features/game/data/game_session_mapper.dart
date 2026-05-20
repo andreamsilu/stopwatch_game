@@ -16,6 +16,7 @@ class GameSessionMapper {
       deltaLabel: result.deltaLabel ??
           result.message ??
           '${differenceMs >= 0 ? '+' : ''}$differenceMs ms',
+      targetTimeLabel: _formatDurationMs(session.targetTimeMs),
       finalTimeLabel: _formatDurationMs(result.stoppedTimeMs),
       differenceMs: differenceMs,
       prizeLabel: '',

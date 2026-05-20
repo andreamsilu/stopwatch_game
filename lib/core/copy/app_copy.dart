@@ -47,6 +47,7 @@ class GameCopy {
   static const soundOff = 'Sound off';
 
   static const roundSummary = 'Round Summary';
+  static const yourTime = 'Your time';
   static const timeDifference = 'Time difference';
   static const cancel = 'Cancel';
   static const tryAgain = 'Try again';
