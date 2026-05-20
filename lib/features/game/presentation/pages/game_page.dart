@@ -135,7 +135,10 @@ class GamePage extends ConsumerWidget {
         barrierDismissible: false,
         builder: (_) => RoundResultDialog(
           result: result,
-          onCancel: () => controller.cancelRound(goHome: true),
+          onCancel: () {
+            controller.dismissResultDialog();
+            controller.cancelRound(goHome: false);
+          },
           onTryAgain: () async {
             controller.dismissResultDialog();
             _showGameInfo(context, ref.read(gameControllerProvider), GameCopy.startingNewRound);
