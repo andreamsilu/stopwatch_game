@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class GameTopNavigation extends StatelessWidget {
@@ -142,13 +143,13 @@ class _TabButtonState extends State<_TabButton> {
   String _labelForTab(GameTab tab) {
     switch (tab) {
       case GameTab.home:
-        return 'Home';
+        return GameCopy.home;
       case GameTab.play:
-        return 'Play';
+        return GameCopy.playTab;
       case GameTab.history:
-        return 'History';
+        return GameCopy.historyTab;
       case GameTab.support:
-        return 'Support';
+        return GameCopy.supportTab;
     }
   }
 }

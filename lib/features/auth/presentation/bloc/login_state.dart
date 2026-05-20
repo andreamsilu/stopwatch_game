@@ -13,23 +13,20 @@ class LoginState {
     required this.infoMessage,
     required this.otpExpiresInSeconds,
     required this.authenticatedUser,
-    required this.subscriptionAccepted,
   });
 
-  static const String defaultPhoneNumber = '712345678';
   static const int otpLength = 6;
 
   const LoginState.initial()
     : step = LoginStep.phone,
-      phoneNumber = defaultPhoneNumber,
+      phoneNumber = '',
       otpCode = '',
       isSubmitting = false,
       isResendingOtp = false,
       errorMessage = null,
       infoMessage = null,
       otpExpiresInSeconds = null,
-      authenticatedUser = null,
-      subscriptionAccepted = false;
+      authenticatedUser = null;
 
   final LoginStep step;
   final String phoneNumber;
@@ -40,7 +37,6 @@ class LoginState {
   final String? infoMessage;
   final int? otpExpiresInSeconds;
   final UserModel? authenticatedUser;
-  final bool subscriptionAccepted;
 
   String get normalizedMsisdn {
     final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
@@ -56,19 +52,9 @@ class LoginState {
   }
 
   bool get canSubmitPhone =>
-      !isSubmitting &&
-      normalizedMsisdn.length >= 12 &&
-      subscriptionAccepted;
+      !isSubmitting && normalizedMsisdn.length >= 12;
 
   bool get canVerifyOtp => !isSubmitting && otpCode.length == otpLength;
-
-  String? get otpExpiryLabel {
-    final seconds = otpExpiresInSeconds;
-    if (seconds == null || seconds <= 0) return null;
-    final minutes = (seconds / 60).ceil();
-    if (minutes <= 1) return 'Code expires in about 1 minute';
-    return 'Code expires in about $minutes minutes';
-  }
 
   LoginState copyWith({
     LoginStep? step,
@@ -84,7 +70,6 @@ class LoginState {
     bool clearOtpExpiry = false,
     UserModel? authenticatedUser,
     bool clearAuthenticatedUser = false,
-    bool? subscriptionAccepted,
   }) {
     return LoginState(
       step: step ?? this.step,
@@ -100,8 +85,6 @@ class LoginState {
       authenticatedUser: clearAuthenticatedUser
           ? null
           : (authenticatedUser ?? this.authenticatedUser),
-      subscriptionAccepted:
-          subscriptionAccepted ?? this.subscriptionAccepted,
     );
   }
 }

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
-import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class RoundResultDialog extends StatefulWidget {
   const RoundResultDialog({
     required this.result,
-    required this.onPlayAgain,
     required this.onCancel,
+    required this.onTryAgain,
     super.key,
   });
 
   final RoundResultData result;
-  final VoidCallback onPlayAgain;
   final VoidCallback onCancel;
+  final Future<void> Function() onTryAgain;
 
   @override
   State<RoundResultDialog> createState() => _RoundResultDialogState();
@@ -26,6 +26,7 @@ class _RoundResultDialogState extends State<RoundResultDialog>
   late final AnimationController _emojiAnimationController;
   late final Animation<double> _winEmojiScale;
   late final Animation<Offset> _loseEmojiShake;
+  bool _isTryingAgain = false;
 
   @override
   void initState() {
@@ -75,6 +76,23 @@ class _RoundResultDialogState extends State<RoundResultDialog>
     super.dispose();
   }
 
+  Future<void> _handleTryAgain() async {
+    if (_isTryingAgain) return;
+    setState(() => _isTryingAgain = true);
+    try {
+      if (mounted) Navigator.of(context).pop();
+      await widget.onTryAgain();
+    } finally {
+      if (mounted) setState(() => _isTryingAgain = false);
+    }
+  }
+
+  void _handleCancel() {
+    if (_isTryingAgain) return;
+    Navigator.of(context).pop();
+    widget.onCancel();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -94,16 +112,16 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                     children: [
                       const Spacer(),
                       Text(
-                        'Round Summary',
+                        GameCopy.roundSummary,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const Spacer(),
                       IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: _isTryingAgain ? null : _handleCancel,
                         icon: const Icon(Icons.close_rounded),
-                        tooltip: 'Close result dialog',
+                        tooltip: GameCopy.closeResultDialog,
                       ),
                     ],
                   ),
@@ -178,58 +196,42 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ResultInfoCard(
-                          label: 'Time difference',
-                          value: '${widget.result.differenceMs} ms',
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ResultInfoCard(
-                          label: 'Prize',
-                          value: widget.result.isPrizeAwarded
-                              ? '+${widget.result.prizeCoins} coins'
-                              : 'No prize',
-                        ),
-                      ),
-                    ],
+                  _ResultInfoCard(
+                    label: GameCopy.timeDifference,
+                    value: '${widget.result.differenceMs} ms',
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    RoundBillingCopy.tryAgainCharges,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.onBackground.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   SizedBox(
                     height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        widget.onPlayAgain();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: AppColors.onAccent,
-                      ),
-                      icon: const Icon(Icons.replay_rounded),
-                      label: Text(RoundBillingCopy.tryAgainButtonLabel),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        widget.onCancel();
-                      },
-                      child: const Text('Cancel'),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _isTryingAgain ? null : _handleCancel,
+                            child: const Text(GameCopy.cancel),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isTryingAgain ? null : _handleTryAgain,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              foregroundColor: AppColors.onAccent,
+                            ),
+                            child: _isTryingAgain
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: AppColors.onAccent,
+                                    ),
+                                  )
+                                : const Text(GameCopy.tryAgain),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:stopwatch_game/core/api/api_exception.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/core/config/api_config.dart';
@@ -22,22 +24,32 @@ class GameService {
 
   Future<BillingTransactionResponse> enqueueBilling({
     required String msisdn,
-    required double amount,
   }) =>
-      _postBillingTransaction(msisdn: msisdn, amount: amount);
+      _postBillingTransaction(msisdn: msisdn);
 
   Future<BillingTransactionResponse> getBillingStatus({
     required String requestId,
   }) =>
       _fetchBillingStatus(requestId);
 
+  /// Polls until billing succeeds, fails, or [EnvConfig.billingPollTimeout] elapses.
+  ///
+  /// Uses **exponential backoff with jitter** between attempts (starts at
+  /// [EnvConfig.billingPollInterval], capped by [EnvConfig.billingPollBackoffMax])
+  /// instead of a fixed interval — fewer requests while the charge is pending.
   Future<BillingTransactionResponse> waitForBillingSuccess({
     required String requestId,
   }) async {
     final deadline = DateTime.now().add(EnvConfig.billingPollTimeout);
+    final random = math.Random();
     String? lastPendingMessage;
+    var backoff = EnvConfig.billingPollInterval;
 
-    while (DateTime.now().isBefore(deadline)) {
+    while (true) {
+      if (DateTime.now().isAfter(deadline)) {
+        throw ApiException(lastPendingMessage ?? 'pending');
+      }
+
       final transaction = await getBillingStatus(requestId: requestId);
 
       if (transaction.isBillingSuccess) return transaction;
@@ -49,12 +61,31 @@ class GameService {
       }
 
       lastPendingMessage = transaction.userMessage;
-      await Future<void>.delayed(EnvConfig.billingPollInterval);
-    }
 
-    throw ApiException(
-      lastPendingMessage ?? 'pending',
-    );
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        throw ApiException(lastPendingMessage ?? 'pending');
+      }
+
+      final capMs = math.min(
+        remaining.inMilliseconds,
+        backoff.inMilliseconds,
+      );
+      if (capMs > 0) {
+        const jitterLow = 0.85;
+        const jitterHigh = 1.15;
+        final factor = jitterLow + random.nextDouble() * (jitterHigh - jitterLow);
+        final sleepMs = math.max(0, (capMs * factor).round());
+        await Future<void>.delayed(Duration(milliseconds: sleepMs));
+      }
+
+      final nextMs = (backoff.inMilliseconds * EnvConfig.billingPollBackoffMultiplier)
+          .round();
+      final maxMs = EnvConfig.billingPollBackoffMax.inMilliseconds;
+      backoff = Duration(
+        milliseconds: math.min(maxMs, math.max(nextMs, 1)),
+      );
+    }
   }
 
   Future<TargetTimeResponse> fetchTargetTime({required String msisdn}) =>
@@ -79,11 +110,10 @@ class GameService {
 
   Future<BillingTransactionResponse> _postBillingTransaction({
     required String msisdn,
-    required double amount,
   }) async {
     final response = await _api.post(
       Uri.parse(ApiConfig.billingTransactions),
-      body: BillingTransactionRequest(msisdn: msisdn, amount: amount).toJson(),
+      body: BillingTransactionRequest(msisdn: msisdn).toJson(),
     );
     return response.parse(
       BillingTransactionResponse.fromJson,

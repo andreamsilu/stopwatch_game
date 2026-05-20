@@ -67,7 +67,10 @@ POST http://188.64.189.38:9090/api/v1/users
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes (JSON bodies) | `application/json` |
-| `Authorization` | TBD (game endpoints) | `Bearer <access_token>` — not returned by `POST /api/v1/users` today |
+| `Authorization` | Yes (game + billing) | `Bearer <access_token>` from `POST /api/v1/auth/verify-otp` |
+| `X-TIMESTAMP` | When HMAC enabled | ISO-8601 UTC, e.g. `2026-05-19T14:00:00.000Z` |
+| `X-NONCE` | When HMAC enabled | Unique per request (UUID) |
+| `X-SIGNATURE` | When HMAC enabled | Lowercase hex HMAC-SHA256 of signing payload |
 | `Accept` | Recommended | `application/json` |
 | `X-Client-Version` | Recommended | App version, e.g. `1.0.0+1` |
 | `X-Platform` | Recommended | `web`, `android`, `ios`, `windows`, `linux`, `macos` |
@@ -231,6 +234,13 @@ POST /api/v1/billing/transactions
 }
 ```
 
+| Field | Required | Notes |
+|-------|----------|--------|
+| `msisdn` | Yes | Player mobile number |
+| `amount` | Yes (OpenAPI) | Must be ≥ `0.01`; **ignored** for charging — server uses `stopwatch.billing.entry-fee` |
+
+The app sends placeholder `amount: 0.01` only to satisfy validation.
+
 **Success — `200 OK`**
 
 ```json
@@ -246,7 +256,7 @@ POST /api/v1/billing/transactions
 }
 ```
 
-**Client:** `GameService.enqueueBilling` — amount from `GAME_ENTRY_FEE` in `.env` (default `0.01`).
+**Client:** `GameService.enqueueBilling` — sends `msisdn` + placeholder `amount`; `amount` in the response reflects the server-side fee.
 
 After enqueue, the app polls **Get billing transaction status** until `success` or `failed` (Yas updates the record via the callback webhook below).
 
@@ -270,7 +280,7 @@ GET /api/v1/billing/transactions/{requestId}
 
 Same schema as **Enqueue billing** (`BillingTransactionResponse`), with `status` updated as Yas ACK/callback events arrive.
 
-**Client:** `GameService.waitForBillingSuccess` — polls every `BILLING_POLL_INTERVAL_MS` (default `2000`) until terminal status or `BILLING_POLL_TIMEOUT_MS` (default `120000`).
+**Client:** `GameService.waitForBillingSuccess` — exponential backoff between polls starting at `BILLING_POLL_INTERVAL_MS` (default `2000`), multiplier `BILLING_POLL_BACKOFF_MULTIPLIER` (default `1.5`), cap `BILLING_POLL_BACKOFF_MAX_MS` (default `12000`), with jitter ±15% on each wait. Stops when status is terminal or `BILLING_POLL_TIMEOUT_MS` (default `30000`) elapses.
 
 ---
 
@@ -805,8 +815,36 @@ The client should surface `message` to users for auth failures; game errors may 
 
 ## Security & integrity
 
+### HMAC request signing (Flutter client)
+
+When the backend has `STOPWATCH_SECURITY_HMAC_ENABLED=true`, the app must send HMAC headers on most `/api/v1/**` routes (JWT still required).
+
+| `.env` key | Default | Description |
+|------------|---------|-------------|
+| `STOPWATCH_SECURITY_HMAC_ENABLED` | `false` | Enable signing in `StopwatchApi` |
+| `STOPWATCH_SECURITY_HMAC_SECRET` | (empty) | Must match backend `stopwatch.security.hmac.secret` |
+
+**Implementation:** `lib/core/api/stopwatch_hmac.dart` + `StopwatchApi`.
+
+**Signing payload** (no separators):
+
+```
+METHOD + requestURI + body + timestamp + nonce
+```
+
+- `METHOD` — uppercase (`GET`, `POST`, …)
+- `requestURI` — path only, e.g. `/api/v1/billing/transactions` (from `Uri.path`)
+- `body` — exact bytes sent; empty string for GET
+- `X-SIGNATURE` — `HMAC-SHA256(payload, secret)` as lowercase hex
+
+**Excluded from HMAC** (even when enabled): `/api/v1/auth/login`, `/api/v1/auth/verify-otp`, billing/disbursement callbacks, `/actuator/**`, Swagger/OpenAPI.
+
+**Troubleshooting:** `401 Missing HMAC headers` → enable signing in `.env`; `Invalid request signature` → wrong secret or body/path mismatch; `Timestamp outside allowed window` → sync device clock.
+
+> **Note:** The HMAC secret in a mobile/desktop `.env` can be extracted from the app bundle. For maximum secrecy, use a server-side proxy (as in the Next.js BFF pattern).
+
 1. **Server-owned outcomes** — Win/lose and prizes must be computed from server timestamps, not client stopwatch alone.
-2. **User identity** — Persist `User.id` from `POST /api/v1/users` for downstream game calls. Add `Authorization` headers here once session/JWT endpoints are documented.
+2. **User identity** — Persist `User.id` from auth/registration for downstream game calls; send `Authorization: Bearer …` on protected routes.
 3. **Rate limits** — Apply per-IP and per-user limits on OTP, round creation, and stop.
 4. **Telemetry** — Treat `isTrusted: false` on web as a risk signal (synthetic events).
 5. **HTTPS only** in production.

@@ -25,8 +25,9 @@ class LoginNotifier extends StateNotifier<LoginState> {
     state = state.copyWith(otpCode: trimmed, clearError: true);
   }
 
-  void setSubscriptionAccepted(bool value) {
-    state = state.copyWith(subscriptionAccepted: value, clearError: true);
+  /// Clears auth form state after sign-out from the game.
+  void reset() {
+    state = const LoginState.initial();
   }
 
   void backToPhone() {

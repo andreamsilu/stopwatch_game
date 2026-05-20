@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/providers/auth_providers.dart';
+import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
+import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
+import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
-import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
@@ -16,6 +19,56 @@ import 'package:stopwatch_game/features/game/presentation/widgets/help_support_p
 import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_result_dialog.dart';
+
+/// No centered toasts while the stopwatch is running (focus mode).
+bool _allowGameToasts(GameState state) => !state.isRunning;
+
+void _showGameInfo(BuildContext context, GameState state, String message) {
+  if (!_allowGameToasts(state)) return;
+  AppSnackBar.showInfo(context, message);
+}
+
+void _showGameError(BuildContext context, GameState state, String message) {
+  if (!_allowGameToasts(state)) return;
+  AppSnackBar.showError(context, message);
+}
+
+void _showGameSuccess(BuildContext context, GameState state, String message) {
+  if (!_allowGameToasts(state)) return;
+  AppSnackBar.showSuccess(context, message);
+}
+
+void _showGameWarning(BuildContext context, GameState state, String message) {
+  if (!_allowGameToasts(state)) return;
+  AppSnackBar.showWarning(context, message);
+}
+
+Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
+  ref.read(gameControllerProvider.notifier).invalidatePendingWork();
+  await ref.read(gameControllerProvider.notifier).cancelRound();
+
+  try {
+    await ref.read(authServiceProvider).logout();
+  } catch (_) {
+    if (context.mounted) {
+      AppSnackBar.showWarning(
+        context,
+        GameCopy.logoutOffline,
+      );
+    }
+  }
+
+  ref.read(playerUserProvider.notifier).state = null;
+  ref.read(playerMsisdnProvider.notifier).state = '';
+  ref.read(subscriptionActiveProvider.notifier).state = false;
+  ref.read(loginProvider.notifier).reset();
+
+  if (!context.mounted) return;
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute<void>(builder: (_) => const LoginPage()),
+    (_) => false,
+  );
+}
 
 class GamePage extends ConsumerWidget {
   const GamePage({super.key});
@@ -30,22 +83,28 @@ class GamePage extends ConsumerWidget {
     ref.listen<GameState>(gameControllerProvider, (previous, next) {
       if (!context.mounted) return;
 
+      if (next.isRunning) {
+        AppSnackBar.dismiss();
+        return;
+      }
+
       if (next.roundErrorMessage != null &&
           next.roundErrorMessage!.isNotEmpty &&
           next.roundErrorMessage != previous?.roundErrorMessage) {
-        AppSnackBar.showError(context, next.roundErrorMessage!);
+        _showGameError(context, next, next.roundErrorMessage!);
       }
 
       if (next.statusMessage != null &&
           next.statusMessage!.isNotEmpty &&
           next.statusMessage != previous?.statusMessage) {
-        AppSnackBar.showInfo(context, next.statusMessage!);
+        _showGameInfo(context, next, next.statusMessage!);
       }
 
       if (previous?.isSoundEnabled != next.isSoundEnabled) {
-        AppSnackBar.showInfo(
+        _showGameInfo(
           context,
-          next.isSoundEnabled ? 'Sound effects on' : 'Sound effects off',
+          next,
+          next.isSoundEnabled ? GameCopy.soundOn : GameCopy.soundOff,
         );
       }
     });
@@ -53,7 +112,7 @@ class GamePage extends ConsumerWidget {
     ref.listen<GameState>(gameControllerProvider, (previous, next) async {
       final hadDialog = previous?.latestResult != null;
       final shouldShowDialog = next.latestResult != null && !hadDialog;
-      if (!shouldShowDialog || !context.mounted) return;
+      if (!shouldShowDialog || !context.mounted || next.isRunning) return;
       final result = next.latestResult!;
       if (result.isPrizeAwarded) {
         await GameFeedbackService.onWin();
@@ -62,24 +121,26 @@ class GamePage extends ConsumerWidget {
       }
       if (!context.mounted) return;
       final resultMessage = result.isPrizeAwarded
-          ? result.prizeLabel
+          ? GameCopy.perfectStop
           : result.deltaLabel;
       if (resultMessage.isNotEmpty) {
         if (result.isPrizeAwarded) {
-          AppSnackBar.showSuccess(context, resultMessage);
+          _showGameSuccess(context, next, resultMessage);
         } else {
-          AppSnackBar.showWarning(context, resultMessage);
+          _showGameWarning(context, next, resultMessage);
         }
       }
       await showDialog<void>(
         context: context,
+        barrierDismissible: false,
         builder: (_) => RoundResultDialog(
           result: result,
-          onPlayAgain: () {
-            AppSnackBar.showInfo(context, RoundBillingCopy.tryAgainSnack);
-            controller.tryAgainRound();
-          },
           onCancel: () => controller.cancelRound(goHome: true),
+          onTryAgain: () async {
+            controller.dismissResultDialog();
+            _showGameInfo(context, ref.read(gameControllerProvider), GameCopy.startingNewRound);
+            await controller.prepareNewPaidRound();
+          },
         ),
       );
       if (!context.mounted) return;
@@ -98,7 +159,7 @@ class GamePage extends ConsumerWidget {
                     padding: const EdgeInsets.only(right: 8),
                     child: IconButton.filledTonal(
                       onPressed: () => Scaffold.of(context).openEndDrawer(),
-                      tooltip: 'Open navigation menu',
+                      tooltip: GameCopy.openMenu,
                       icon: const Icon(Icons.menu_rounded),
                     ),
                   ),
@@ -114,10 +175,12 @@ class GamePage extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const LoggedInUserBar(),
+                      LoggedInUserBar(
+                        onLogout: () => performLogoutFromGame(context, ref),
+                      ),
                       const SizedBox(height: 14),
                       Text(
-                        'Navigation',
+                        GameCopy.navigation,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -127,7 +190,7 @@ class GamePage extends ConsumerWidget {
                         child: ListView(
                           children: [
                             _DrawerNavTile(
-                              label: 'Home',
+                              label: GameCopy.home,
                               icon: Icons.home_outlined,
                               isActive: gameState.selectedTab == GameTab.home,
                               onTap: () {
@@ -136,7 +199,7 @@ class GamePage extends ConsumerWidget {
                               },
                             ),
                             _DrawerNavTile(
-                              label: 'Play',
+                              label: GameCopy.playTab,
                               icon: Icons.play_arrow_rounded,
                               isActive: gameState.selectedTab == GameTab.play,
                               onTap: () {
@@ -145,7 +208,7 @@ class GamePage extends ConsumerWidget {
                               },
                             ),
                             _DrawerNavTile(
-                              label: 'History',
+                              label: GameCopy.historyTab,
                               icon: Icons.history,
                               isActive: gameState.selectedTab == GameTab.history,
                               onTap: () {
@@ -154,7 +217,7 @@ class GamePage extends ConsumerWidget {
                               },
                             ),
                             _DrawerNavTile(
-                              label: 'Support',
+                              label: GameCopy.supportTab,
                               icon: Icons.support_agent_outlined,
                               isActive: gameState.selectedTab == GameTab.support,
                               onTap: () {
@@ -164,6 +227,17 @@ class GamePage extends ConsumerWidget {
                             ),
                           ],
                         ),
+                      ),
+                      ListTile(
+                        leading: Icon(
+                          Icons.logout_rounded,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        title: const Text(GameCopy.logOut),
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          await performLogoutFromGame(context, ref);
+                        },
                       ),
                     ],
                   ),
@@ -210,18 +284,27 @@ class GamePage extends ConsumerWidget {
                             onTabSelected: controller.selectTab,
                           ),
                           const SizedBox(height: 6),
+                          LoggedInUserBar(
+                            onLogout: () => performLogoutFromGame(context, ref),
+                          ),
+                          const SizedBox(height: 6),
                         ],
                         Expanded(
                           child: RefreshIndicator(
                             onRefresh: () async {
-                              AppSnackBar.showInfo(context, 'Refreshing round…');
+                              final before = ref.read(gameControllerProvider);
+                              _showGameInfo(
+                                context,
+                                before,
+                                GameCopy.refreshingRound,
+                              );
                               await controller.onPullToRefresh();
-                              if (context.mounted) {
-                                AppSnackBar.showSuccess(
-                                  context,
-                                  'Round refreshed.',
-                                );
-                              }
+                              if (!context.mounted) return;
+                              _showGameSuccess(
+                                context,
+                                ref.read(gameControllerProvider),
+                                GameCopy.roundRefreshed,
+                              );
                             },
                             child: SingleChildScrollView(
                               physics: const AlwaysScrollableScrollPhysics(),
@@ -252,9 +335,10 @@ class GamePage extends ConsumerWidget {
                                         key: ValueKey<GameTab>(gameState.selectedTab),
                                         state: gameState,
                                         onPlayPressed: () {
-                                          AppSnackBar.showInfo(
+                                          _showGameInfo(
                                             context,
-                                            'Starting a new round…',
+                                            gameState,
+                                            GameCopy.startingNewRound,
                                           );
                                           controller.openRoundBoard();
                                         },
@@ -262,13 +346,6 @@ class GamePage extends ConsumerWidget {
                                             controller.selectTab(GameTab.history),
                                         onResetRound: () {
                                           controller.onResetPressed();
-                                        },
-                                        onTryAgainRound: () {
-                                          AppSnackBar.showInfo(
-                                            context,
-                                            RoundBillingCopy.tryAgainSnack,
-                                          );
-                                          controller.tryAgainRound();
                                         },
                                         onToggleSound: controller.toggleSoundEnabled,
                                       onStartControlPointerDown:
@@ -283,19 +360,9 @@ class GamePage extends ConsumerWidget {
                                             return;
                                           }
                                           if (gameState.isRunning) {
-                                            AppSnackBar.showInfo(
-                                              context,
-                                              'Stopping timer…',
-                                            );
                                             await controller.onStopPressed();
                                           } else {
-                                            if (!gameState.canStartRound) {
-                                              return;
-                                            }
-                                            AppSnackBar.showInfo(
-                                              context,
-                                              'Starting round…',
-                                            );
+                                            AppSnackBar.dismiss();
                                             await controller.onStartPressed();
                                           }
                                         },
@@ -392,7 +459,6 @@ class _GameBody extends StatelessWidget {
     required this.onPlayPressed,
     required this.onOpenHistory,
     required this.onResetRound,
-    required this.onTryAgainRound,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
     required this.onStartControlPointerMove,
@@ -404,7 +470,6 @@ class _GameBody extends StatelessWidget {
   final VoidCallback onPlayPressed;
   final VoidCallback onOpenHistory;
   final VoidCallback onResetRound;
-  final VoidCallback onTryAgainRound;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerDown;
   final ValueChanged<Offset> onStartControlPointerMove;
@@ -431,20 +496,17 @@ class _GameBody extends StatelessWidget {
           isLoadingTarget: state.isLoadingTarget,
           preparePhase: state.preparePhase,
           statusMessage: state.statusMessage,
-          canTryAgain: state.canTryAgainRound,
           roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,
           startButtonHitboxOffset: state.startButtonHitboxOffset,
           onReset: onResetRound,
-          onTryAgain: onTryAgainRound,
           onToggleSound: onToggleSound,
           onStartControlPointerDown: onStartControlPointerDown,
           onStartControlPointerMove: onStartControlPointerMove,
           onStartControlPointerUp: onStartControlPointerUp,
           onStartOrStopRound: onStartOrStopRound,
           totalWins: state.totalWins,
-          totalPrizeCoins: state.totalPrizeCoins,
         );
       case GameTab.history:
         return HistoryPanel(history: state.history);

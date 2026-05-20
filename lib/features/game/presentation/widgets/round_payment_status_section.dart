@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
@@ -19,8 +20,8 @@ class RoundPaymentStatusSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final message = statusMessage?.trim();
-    final showMessage = message != null && message.isNotEmpty;
+    final message = _resolveStatusMessage(phase, statusMessage);
+    final showMessage = message.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -68,4 +69,10 @@ class RoundPaymentStatusSection extends StatelessWidget {
       ),
     );
   }
+}
+
+String _resolveStatusMessage(RoundPreparePhase phase, String? statusMessage) {
+  final trimmed = statusMessage?.trim();
+  if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+  return RoundBillingCopy.messageForPhase(phase);
 }

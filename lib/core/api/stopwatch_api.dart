@@ -5,8 +5,10 @@ import 'package:stopwatch_game/core/api/api_json.dart';
 import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/api/api_response.dart';
+import 'package:stopwatch_game/core/api/stopwatch_hmac.dart';
+import 'package:stopwatch_game/core/config/env_config.dart';
 
-/// HTTP transport — JSON request bodies and JSON response decoding.
+/// HTTP transport — JSON request bodies, optional HMAC signing, response decoding.
 class StopwatchApi {
   StopwatchApi({
     http.Client? client,
@@ -29,18 +31,80 @@ class StopwatchApi {
     return headers;
   }
 
+  Map<String, String> _hmacHeaders({
+    required String method,
+    required Uri uri,
+    required String body,
+  }) {
+    if (!EnvConfig.hmacEnabled) return const {};
+
+    final requestUri = uri.path;
+    if (StopwatchHmac.isExcluded(requestUri)) return const {};
+
+    return StopwatchHmac.sign(
+      method: method,
+      requestUri: requestUri,
+      body: body,
+      secret: EnvConfig.hmacSecret,
+    );
+  }
+
   Future<ApiResponse> get(
     Uri uri, {
     Map<String, String>? headers,
     bool allowNotFound = false,
   }) async {
-    const method = 'GET';
-    final requestHeaders = _buildHeaders(headers);
-    ApiLogger.logRequest(method: method, uri: uri, headers: requestHeaders);
+    return _send(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+      allowNotFound: allowNotFound,
+    );
+  }
+
+  Future<ApiResponse> post(
+    Uri uri, {
+    Map<String, dynamic> body = const {},
+    Map<String, String>? headers,
+    bool allowNotFound = false,
+  }) async {
+    return _send(
+      method: 'POST',
+      uri: uri,
+      body: body,
+      headers: headers,
+      allowNotFound: allowNotFound,
+    );
+  }
+
+  Future<ApiResponse> _send({
+    required String method,
+    required Uri uri,
+    Map<String, dynamic> body = const {},
+    Map<String, String>? headers,
+    bool allowNotFound = false,
+  }) async {
+    final bodyText = method == 'GET' ? '' : ApiJson.encodeBody(body);
+    final requestHeaders = {
+      ..._buildHeaders(headers),
+      ..._hmacHeaders(method: method, uri: uri, body: bodyText),
+    };
+
+    ApiLogger.logRequest(
+      method: method,
+      uri: uri,
+      headers: requestHeaders,
+      body: method == 'GET' ? null : body,
+    );
 
     final started = DateTime.now();
     try {
-      final response = await _client.get(uri, headers: requestHeaders);
+      final response = await _dispatch(
+        method: method,
+        uri: uri,
+        headers: requestHeaders,
+        body: bodyText,
+      );
       _logHttpResponse(
         method: method,
         uri: uri,
@@ -54,38 +118,19 @@ class StopwatchApi {
     }
   }
 
-  Future<ApiResponse> post(
-    Uri uri, {
-    Map<String, dynamic> body = const {},
-    Map<String, String>? headers,
-    bool allowNotFound = false,
-  }) async {
-    const method = 'POST';
-    final requestHeaders = _buildHeaders(headers);
-    ApiLogger.logRequest(
-      method: method,
-      uri: uri,
-      headers: requestHeaders,
-      body: body,
-    );
-
-    final started = DateTime.now();
-    try {
-      final response = await _client.post(
-        uri,
-        headers: requestHeaders,
-        body: ApiJson.encodeBody(body),
-      );
-      _logHttpResponse(
-        method: method,
-        uri: uri,
-        response: response,
-        started: started,
-      );
-      return _toApiResponse(response, allowNotFound: allowNotFound);
-    } catch (e, stack) {
-      _logHttpError(method: method, uri: uri, error: e, started: started);
-      _rethrowTransportError(e, stack);
+  Future<http.Response> _dispatch({
+    required String method,
+    required Uri uri,
+    required Map<String, String> headers,
+    required String body,
+  }) {
+    switch (method) {
+      case 'GET':
+        return _client.get(uri, headers: headers);
+      case 'POST':
+        return _client.post(uri, headers: headers, body: body);
+      default:
+        throw ArgumentError('Unsupported HTTP method: $method');
     }
   }
 

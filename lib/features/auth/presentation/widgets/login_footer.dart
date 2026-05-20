@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class LoginFooter extends StatelessWidget {
   const LoginFooter({super.key});
@@ -14,14 +15,14 @@ class LoginFooter extends StatelessWidget {
           spacing: 10,
           runSpacing: 10,
           children: const [
-            _FooterLink(label: 'Privacy Policy'),
-            _FooterLink(label: 'Terms of Service'),
-            _FooterLink(label: 'Contact Support'),
+            _FooterLink(label: AuthCopy.privacyPolicy),
+            _FooterLink(label: AuthCopy.termsOfService),
+            _FooterLink(label: AuthCopy.contactSupport),
           ],
         ),
         const SizedBox(height: 12),
         Text(
-          '© ${DateTime.now().year} Chrono Precision. All rights reserved.',
+          AuthCopy.copyright(DateTime.now().year),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: mutedColor.withValues(alpha: 0.62),

@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/utils/msisdn_format.dart';
 
-/// Shows the logged-in subscriber and their MSISDN.
-class LoggedInUserBar extends ConsumerWidget {
-  const LoggedInUserBar({super.key});
+/// Shows the logged-in subscriber and their MSISDN, plus sign out.
+class LoggedInUserBar extends ConsumerStatefulWidget {
+  const LoggedInUserBar({
+    required this.onLogout,
+    super.key,
+  });
+
+  final Future<void> Function() onLogout;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoggedInUserBar> createState() => _LoggedInUserBarState();
+}
+
+class _LoggedInUserBarState extends ConsumerState<LoggedInUserBar> {
+  bool _loggingOut = false;
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(playerUserProvider);
     final msisdn = ref.watch(playerMsisdnProvider);
     final displayMsisdn = MsisdnFormat.display(user?.msisdn ?? msisdn);
@@ -45,7 +58,7 @@ class LoggedInUserBar extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Logged in',
+                    GameCopy.loggedIn,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppColors.onBackground.withValues(alpha: 0.65),
                       fontWeight: FontWeight.w600,
@@ -76,6 +89,31 @@ class LoggedInUserBar extends ConsumerWidget {
               Icons.verified_user_outlined,
               size: 20,
               color: AppColors.primary.withValues(alpha: 0.55),
+            ),
+            const SizedBox(width: 4),
+            IconButton.filledTonal(
+              onPressed: _loggingOut
+                  ? null
+                  : () async {
+                      setState(() => _loggingOut = true);
+                      try {
+                        await widget.onLogout();
+                      } finally {
+                        if (mounted) setState(() => _loggingOut = false);
+                      }
+                    },
+              tooltip: GameCopy.logOut,
+              style: IconButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: AppColors.primary,
+              ),
+              icon: _loggingOut
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.logout_rounded),
             ),
           ],
         ),

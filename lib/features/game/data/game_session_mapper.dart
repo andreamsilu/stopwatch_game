@@ -18,8 +18,7 @@ class GameSessionMapper {
           '${differenceMs >= 0 ? '+' : ''}$differenceMs ms',
       finalTimeLabel: _formatDurationMs(result.stoppedTimeMs),
       differenceMs: differenceMs,
-      prizeLabel: result.prizeLabel ??
-          (result.prizeAmount > 0 ? '${result.prizeAmount}' : ''),
+      prizeLabel: '',
       prizeCoins: result.prizeAmount,
       isPrizeAwarded: isWin && result.prizeAmount > 0,
     );

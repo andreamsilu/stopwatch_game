@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class HelpSupportPanel extends StatelessWidget {
   const HelpSupportPanel({super.key});
@@ -14,30 +15,30 @@ class HelpSupportPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Help & Support',
+              GameCopy.helpTitle,
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              'Need assistance with Stopwatch Challenge? Use these quick support channels.',
+              GameCopy.helpIntro,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             const _SupportItem(
-              title: 'How to play',
-              subtitle: 'Start the round, stop near target time, and improve precision.',
+              title: GameCopy.helpHowToPlayTitle,
+              subtitle: GameCopy.helpHowToPlayBody,
             ),
             const SizedBox(height: 10),
             const _SupportItem(
-              title: 'Report an issue',
-              subtitle: 'Send game bugs or unexpected behavior to support team.',
+              title: GameCopy.helpReportTitle,
+              subtitle: GameCopy.helpReportBody,
             ),
             const SizedBox(height: 10),
             const _SupportItem(
-              title: 'Contact support',
-              subtitle: 'Email: support@stopwatchchallenge.app',
+              title: GameCopy.helpContactTitle,
+              subtitle: GameCopy.helpContactBody,
             ),
           ],
         ),

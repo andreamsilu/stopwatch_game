@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
-import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
@@ -36,12 +35,7 @@ class GameController extends StateNotifier<GameState> {
   final bool _isSubscribed;
   final GameService _gameService;
 
-  String get _effectiveMsisdn {
-    if (_msisdn.isNotEmpty) return _msisdn;
-    final digits = LoginState.defaultPhoneNumber.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('255')) return digits;
-    return '255$digits';
-  }
+  String get _effectiveMsisdn => _msisdn;
 
   final Stopwatch _stopwatch = Stopwatch();
   final Random _random = Random();
@@ -50,6 +44,20 @@ class GameController extends StateNotifier<GameState> {
   final List<double> _reactionHistoryMs = [];
   final List<double> _clickVarianceHistory = [];
   GameStartResponse? _activeSession;
+  int _roundOperationId = 0;
+
+  /// Stops in-flight billing/target prep from updating state after dispose/logout.
+  void invalidatePendingWork() => _roundOperationId++;
+
+  void _patchState(GameState Function(GameState current) patch) {
+    if (!mounted) return;
+    state = patch(state);
+  }
+
+  bool _isActiveRoundOp(int operationId) =>
+      mounted && operationId == _roundOperationId;
+
+  int _beginRoundOperation() => ++_roundOperationId;
 
   void selectTab(GameTab tab) {
     state = state.copyWith(selectedTab: tab);
@@ -65,7 +73,7 @@ class GameController extends StateNotifier<GameState> {
     if (!_isSubscribed) {
       state = state.copyWith(
         selectedTab: GameTab.play,
-        roundErrorMessage: RoundBillingCopy.notSubscribed,
+        roundErrorMessage: RoundBillingCopy.loginRequired,
       );
       return;
     }
@@ -82,13 +90,12 @@ class GameController extends StateNotifier<GameState> {
     await _chargeAndPrepareRound();
   }
 
-  /// New round after a result or retry — always charges again.
-  Future<void> tryAgainRound() => prepareNewPaidRound();
-
   /// Clears the current round UI without charging (subscription already active).
   Future<void> cancelRound({bool goHome = false}) async {
+    if (!mounted) return;
     if (state.isSubmitting && state.isRunning) return;
 
+    invalidatePendingWork();
     _stopwatch.stop();
     _stopwatch.reset();
     _ticker?.cancel();
@@ -110,47 +117,58 @@ class GameController extends StateNotifier<GameState> {
   /// New paid round: charge subscription fee, then allocate target time.
   Future<void> prepareNewPaidRound() async {
     if (!_isSubscribed) {
-      state = state.copyWith(roundErrorMessage: RoundBillingCopy.notSubscribed);
+      _patchState(
+        (s) => s.copyWith(roundErrorMessage: RoundBillingCopy.loginRequired),
+      );
       return;
     }
     if (state.isSubmitting || state.isPreparingRound) return;
 
     await cancelRound();
+    if (!mounted) return;
+
     _beginInteractionSession();
     _activeSession = null;
-    state = state.copyWith(
-      selectedTab: GameTab.play,
-      clearLatestResult: true,
-      clearLatestInteractionPayload: true,
-      clearActiveSession: true,
-      clearRoundError: true,
+    _patchState(
+      (s) => s.copyWith(
+        selectedTab: GameTab.play,
+        clearLatestResult: true,
+        clearLatestInteractionPayload: true,
+        clearActiveSession: true,
+        clearRoundError: true,
+      ),
     );
     await _chargeAndPrepareRound();
   }
 
   Future<void> onStartPressed() async {
-    if (state.isRunning ||
-        state.isSubmitting ||
-        state.isPreparingRound ||
-        !state.canStartRound) {
+    if (state.isRunning || state.isSubmitting || state.isPreparingRound) {
       return;
     }
 
-    state = state.copyWith(isSubmitting: true, clearRoundError: true);
+    if (!await _ensureBillingForRound()) return;
+    if (!mounted || !state.canStartRound) return;
+
+    _patchState((s) => s.copyWith(isSubmitting: true, clearRoundError: true));
     try {
       await startGame();
+      if (!mounted) return;
     } on ApiException catch (e) {
-      state = state.copyWith(
-        isSubmitting: false,
-        roundErrorMessage: e.message,
-        clearActiveSession: true,
+      _patchState(
+        (s) => s.copyWith(
+          isSubmitting: false,
+          roundErrorMessage: e.message,
+          clearActiveSession: true,
+        ),
       );
       return;
     } catch (e) {
-      state = state.copyWith(
-        isSubmitting: false,
-        roundErrorMessage: ApiMessages.fromError(e),
-        clearActiveSession: true,
+      _patchState(
+        (s) => s.copyWith(
+          isSubmitting: false,
+          roundErrorMessage: ApiMessages.fromError(e),
+          clearActiveSession: true,
+        ),
       );
       return;
     }
@@ -158,13 +176,16 @@ class GameController extends StateNotifier<GameState> {
     _stopwatch.start();
     _ticker?.cancel();
     _ticker = Timer.periodic(GameConstants.timerUiTickInterval, (_) {
-      state = state.copyWith(elapsed: _stopwatch.elapsed);
+      if (!mounted) return;
+      _patchState((s) => s.copyWith(elapsed: _stopwatch.elapsed));
     });
     _beginInteractionSession();
-    state = state.copyWith(
-      isRunning: true,
-      isSubmitting: false,
-      elapsed: _stopwatch.elapsed,
+    _patchState(
+      (s) => s.copyWith(
+        isRunning: true,
+        isSubmitting: false,
+        elapsed: _stopwatch.elapsed,
+      ),
     );
   }
 
@@ -177,45 +198,54 @@ class GameController extends StateNotifier<GameState> {
 
     try {
       final backendResult = await fetchRoundResultFromBackend();
+      if (!mounted) return;
+
+      final priorHistory = state.history;
       final nextHistory = [
         HistoryEntry(
           timestamp: DateTime.now(),
           timeLabel: backendResult.finalTimeLabel,
           outcome: backendResult.outcomeLabel,
         ),
-        ...state.history,
+        ...priorHistory,
       ];
       _stopwatch.reset();
       final interactionPayload = _buildInteractionPayload();
       await InteractionTelemetryService.submitRoundPayload(interactionPayload);
+      if (!mounted) return;
 
-      state = state.copyWith(
-        isRunning: false,
-        isSubmitting: false,
-        elapsed: Duration.zero,
-        latestResult: backendResult,
-        latestInteractionPayload: interactionPayload,
-        history: nextHistory,
-        totalWins:
-            state.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
-        totalPrizeCoins: state.totalPrizeCoins + backendResult.prizeCoins,
-        clearActiveSession: true,
+      _patchState(
+        (s) => s.copyWith(
+          isRunning: false,
+          isSubmitting: false,
+          elapsed: Duration.zero,
+          latestResult: backendResult,
+          latestInteractionPayload: interactionPayload,
+          history: nextHistory,
+          totalWins:
+              s.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
+          clearActiveSession: true,
+        ),
       );
     } on ApiException catch (e) {
       _stopwatch.reset();
-      state = state.copyWith(
-        isRunning: false,
-        isSubmitting: false,
-        elapsed: Duration.zero,
-        roundErrorMessage: e.message,
+      _patchState(
+        (s) => s.copyWith(
+          isRunning: false,
+          isSubmitting: false,
+          elapsed: Duration.zero,
+          roundErrorMessage: e.message,
+        ),
       );
     } catch (e) {
       _stopwatch.reset();
-      state = state.copyWith(
-        isRunning: false,
-        isSubmitting: false,
-        elapsed: Duration.zero,
-        roundErrorMessage: ApiMessages.fromError(e),
+      _patchState(
+        (s) => s.copyWith(
+          isRunning: false,
+          isSubmitting: false,
+          elapsed: Duration.zero,
+          roundErrorMessage: ApiMessages.fromError(e),
+        ),
       );
     }
   }
@@ -227,7 +257,8 @@ class GameController extends StateNotifier<GameState> {
   Future<void> onPullToRefresh() async {
     if (state.isSubmitting || state.isPreparingRound) return;
     await prepareNewPaidRound();
-    state = state.copyWith(clearLatestResult: true);
+    if (!mounted) return;
+    _patchState((s) => s.copyWith(clearLatestResult: true));
     await Future<void>.delayed(const Duration(milliseconds: 260));
   }
 
@@ -262,11 +293,13 @@ class GameController extends StateNotifier<GameState> {
       channel: EnvConfig.gameChannel,
     );
     _activeSession = session;
-    state = state.copyWith(
-      targetTime: Duration(milliseconds: session.targetTimeMs),
-      billingRequestId: session.billingRequestId,
-      sessionRef: session.sessionRef,
-      activeSessionId: session.id,
+    _patchState(
+      (s) => s.copyWith(
+        targetTime: Duration(milliseconds: session.targetTimeMs),
+        billingRequestId: session.billingRequestId,
+        sessionRef: session.sessionRef,
+        activeSessionId: session.id,
+      ),
     );
   }
 
@@ -299,81 +332,141 @@ class GameController extends StateNotifier<GameState> {
     throw ApiException(session.status);
   }
 
-  Future<void> _finishRoundPreparationAfterPayment(String requestId) async {
-    state = state.copyWith(
-      preparePhase: RoundPreparePhase.loadingTarget,
-      isLoadingTarget: true,
+  /// Bills and loads target time when the player has no active billing for this round.
+  Future<bool> _ensureBillingForRound() async {
+    if (!_isSubscribed) {
+      state = state.copyWith(
+        selectedTab: GameTab.play,
+        roundErrorMessage: RoundBillingCopy.loginRequired,
+      );
+      return false;
+    }
+
+    if (state.canStartRound) return true;
+    if (state.isPreparingRound || state.isSubmitting) return false;
+
+    await _chargeAndPrepareRound();
+    if (!mounted) return false;
+    return state.canStartRound &&
+        (state.roundErrorMessage == null || state.roundErrorMessage!.isEmpty);
+  }
+
+  Future<void> _finishRoundPreparationAfterPayment(
+    String requestId, {
+    required int operationId,
+  }) async {
+    _patchState(
+      (s) => s.copyWith(
+        preparePhase: RoundPreparePhase.loadingTarget,
+        isLoadingTarget: true,
+      ),
     );
 
     final target = await _gameService.fetchTargetTime(msisdn: _effectiveMsisdn);
+    if (!_isActiveRoundOp(operationId)) return;
 
-    state = state.copyWith(
-      targetTime: Duration(milliseconds: target.targetTimeMs),
-      billingRequestId: requestId,
-      isLoadingTarget: false,
-      isSubmitting: false,
-      preparePhase: RoundPreparePhase.idle,
-      clearPendingBilling: true,
-      clearRoundError: true,
-      clearStatusMessage: true,
+    _patchState(
+      (s) => s.copyWith(
+        targetTime: Duration(milliseconds: target.targetTimeMs),
+        billingRequestId: requestId,
+        isLoadingTarget: false,
+        isSubmitting: false,
+        preparePhase: RoundPreparePhase.idle,
+        clearPendingBilling: true,
+        clearRoundError: true,
+        clearStatusMessage: true,
+      ),
     );
   }
 
   Future<void> _chargeAndPrepareRound() async {
-    state = state.copyWith(
-      isSubmitting: true,
-      isLoadingTarget: true,
-      preparePhase: RoundPreparePhase.charging,
-      clearRoundError: true,
-      clearPendingBilling: true,
+    final operationId = _beginRoundOperation();
+
+    _patchState(
+      (s) => s.copyWith(
+        isSubmitting: true,
+        isLoadingTarget: true,
+        preparePhase: RoundPreparePhase.charging,
+        statusMessage: RoundBillingCopy.preparingRoundCharge,
+        clearRoundError: true,
+        clearPendingBilling: true,
+      ),
     );
 
     try {
+      if (_effectiveMsisdn.trim().isEmpty) {
+        if (!_isActiveRoundOp(operationId)) return;
+        _patchState(
+          (s) => s.copyWith(
+            isSubmitting: false,
+            isLoadingTarget: false,
+            preparePhase: RoundPreparePhase.idle,
+            roundErrorMessage: RoundBillingCopy.loginRequired,
+          ),
+        );
+        return;
+      }
+
       final billing = await _gameService.enqueueBilling(
         msisdn: _effectiveMsisdn,
-        amount: EnvConfig.gameEntryFee,
+      );
+      if (!_isActiveRoundOp(operationId)) return;
+
+      _patchState(
+        (s) => s.copyWith(
+          preparePhase: RoundPreparePhase.awaitingPayment,
+          pendingBillingRequestId: billing.requestId,
+          statusMessage: RoundBillingCopy.waitingForPayment,
+        ),
       );
 
-      state = state.copyWith(
-        preparePhase: RoundPreparePhase.awaitingPayment,
-        pendingBillingRequestId: billing.requestId,
-        statusMessage: billing.userMessage,
-        clearStatusMessage: billing.userMessage == null,
-      );
-
-      final paid = await _gameService.waitForBillingSuccess(
+      await _gameService.waitForBillingSuccess(
         requestId: billing.requestId,
       );
-      state = state.copyWith(
-        statusMessage: paid.userMessage,
-        clearStatusMessage: paid.userMessage == null,
+      if (!_isActiveRoundOp(operationId)) return;
+
+      _patchState(
+        (s) => s.copyWith(
+          preparePhase: RoundPreparePhase.loadingTarget,
+          statusMessage: RoundBillingCopy.loadingTarget,
+        ),
       );
-      await _finishRoundPreparationAfterPayment(billing.requestId);
+      await _finishRoundPreparationAfterPayment(
+        billing.requestId,
+        operationId: operationId,
+      );
     } on ApiException catch (e) {
-      state = state.copyWith(
-        isSubmitting: false,
-        isLoadingTarget: false,
-        preparePhase: RoundPreparePhase.idle,
-        roundErrorMessage: e.message,
-        clearActiveSession: true,
-        clearPendingBilling: true,
-        clearStatusMessage: true,
+      if (!_isActiveRoundOp(operationId)) return;
+      _patchState(
+        (s) => s.copyWith(
+          isSubmitting: false,
+          isLoadingTarget: false,
+          preparePhase: RoundPreparePhase.idle,
+          roundErrorMessage: e.message,
+          clearActiveSession: true,
+          clearPendingBilling: true,
+          clearStatusMessage: true,
+        ),
       );
     } catch (e) {
-      state = state.copyWith(
-        isSubmitting: false,
-        isLoadingTarget: false,
-        preparePhase: RoundPreparePhase.idle,
-        roundErrorMessage: ApiMessages.fromError(e),
-        clearActiveSession: true,
-        clearPendingBilling: true,
-        clearStatusMessage: true,
+      if (!_isActiveRoundOp(operationId)) return;
+      _patchState(
+        (s) => s.copyWith(
+          isSubmitting: false,
+          isLoadingTarget: false,
+          preparePhase: RoundPreparePhase.idle,
+          roundErrorMessage: ApiMessages.fromError(e),
+          clearActiveSession: true,
+          clearPendingBilling: true,
+          clearStatusMessage: true,
+        ),
       );
     }
   }
 
   @override
   void dispose() {
+    invalidatePendingWork();
     _ticker?.cancel();
     _stopwatch.stop();
     super.dispose();

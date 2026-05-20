@@ -15,6 +15,6 @@ void main() {
 
     expect(find.text('Welcome'), findsOneWidget);
     expect(find.text('Continue'), findsOneWidget);
-    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Phone number'), findsOneWidget);
   });
 }

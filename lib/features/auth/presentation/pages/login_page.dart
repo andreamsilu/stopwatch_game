@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
@@ -38,12 +39,20 @@ class LoginPage extends ConsumerWidget {
           next.errorMessage != previous?.errorMessage) {
         AppSnackBar.showError(context, next.errorMessage!);
       }
+
+      if (next.infoMessage != null &&
+          next.infoMessage!.isNotEmpty &&
+          next.infoMessage != previous?.infoMessage &&
+          next.step == LoginStep.otp) {
+        AppSnackBar.showInfo(context, next.infoMessage!);
+      }
     });
 
-    final headline = isOtpStep ? 'Verify your number' : 'Welcome';
+    final headline =
+        isOtpStep ? AuthCopy.verifyTitle : AuthCopy.welcomeTitle;
     final subtitle = isOtpStep
-        ? 'Enter the 6-digit code sent to ${loginState.maskedPhone}'
-        : 'Log in with your mobile number to play';
+        ? AuthCopy.verifySubtitle(loginState.maskedPhone)
+        : AuthCopy.welcomeSubtitle;
 
     return Scaffold(
       body: ExperienceBackground(
@@ -119,20 +128,13 @@ class LoginPage extends ConsumerWidget {
                               step: loginState.step,
                               phoneValue: loginState.phoneNumber,
                               otpCode: loginState.otpCode,
-                              maskedPhone: loginState.maskedPhone,
                               isSubmitting: loginState.isSubmitting,
                               isResendingOtp: loginState.isResendingOtp,
                               canSubmitPhone: loginState.canSubmitPhone,
                               canVerifyOtp: loginState.canVerifyOtp,
-                              subscriptionAccepted:
-                                  loginState.subscriptionAccepted,
-                              errorMessage: loginState.errorMessage,
                               infoMessage: loginState.infoMessage,
-                              otpExpiryLabel: loginState.otpExpiryLabel,
                               onPhoneChanged: loginNotifier.updatePhoneNumber,
                               onOtpChanged: loginNotifier.updateOtpCode,
-                              onSubscriptionAcceptedChanged:
-                                  loginNotifier.setSubscriptionAccepted,
                               onSubmitPhone: () async {
                                 final authenticated =
                                     await loginNotifier.submitPhone();

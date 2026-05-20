@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class HomeOverviewPanel extends StatelessWidget {
   const HomeOverviewPanel({
@@ -68,7 +69,7 @@ class HomeOverviewPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Stopwatch Challenge',
+                    GameCopy.appName,
                     style: (isSmallMobile
                             ? Theme.of(context).textTheme.headlineSmall
                             : Theme.of(context).textTheme.displaySmall)
@@ -79,12 +80,12 @@ class HomeOverviewPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Hit the exact target time to win a prize',
+                    GameCopy.homeTagline,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '${RoundBillingCopy.entryFeeLabel} · ${RoundBillingCopy.chargedEveryRound}',
+                    RoundBillingCopy.homeBillingLine,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.onBackground.withValues(alpha: 0.68),
                     ),
@@ -102,7 +103,7 @@ class HomeOverviewPanel extends StatelessWidget {
                         elevation: 0,
                       ),
                       icon: const Icon(Icons.play_arrow_rounded),
-                      label: const Text('Play'),
+                      label: const Text(GameCopy.play),
                     ),
                   ),
                       ],
@@ -122,15 +123,15 @@ class HomeOverviewPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _QuickCard(
-                    title: 'History',
-                    subtitle: 'View your recent round results',
+                    title: GameCopy.historyCardTitle,
+                    subtitle: GameCopy.historyCardSubtitle,
                     icon: Icons.history,
                     onTap: onOpenHistory,
                   ),
                   const SizedBox(height: 10),
                   _QuickCard(
-                    title: 'How to play',
-                    subtitle: 'Start, follow the 1-second beat, stop near target.',
+                    title: GameCopy.howToPlayTitle,
+                    subtitle: GameCopy.howToPlayCardSubtitle,
                     icon: Icons.tips_and_updates_outlined,
                     onTap: onPlayPressed,
                   ),
@@ -141,8 +142,8 @@ class HomeOverviewPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _QuickCard(
-                    title: 'History',
-                    subtitle: 'View your recent round results',
+                    title: GameCopy.historyCardTitle,
+                    subtitle: GameCopy.historyCardSubtitle,
                     icon: Icons.history,
                     onTap: onOpenHistory,
                   ),
@@ -150,8 +151,8 @@ class HomeOverviewPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _QuickCard(
-                    title: 'How to play',
-                    subtitle: 'Start, follow the 1-second beat, stop near target.',
+                    title: GameCopy.howToPlayTitle,
+                    subtitle: GameCopy.howToPlayCardSubtitle,
                     icon: Icons.tips_and_updates_outlined,
                     onTap: onPlayPressed,
                   ),

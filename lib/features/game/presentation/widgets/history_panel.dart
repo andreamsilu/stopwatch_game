@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class HistoryPanel extends StatelessWidget {
@@ -17,20 +18,20 @@ class HistoryPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'History',
+              GameCopy.historyTitle,
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 4),
             Text(
-              'Recent attempts and outcomes',
+              GameCopy.historySubtitle,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             if (history.isEmpty)
               Text(
-                'No attempts yet. Play a round to populate your history.',
+                GameCopy.historyEmpty,
                 style: Theme.of(context).textTheme.bodyLarge,
               )
             else

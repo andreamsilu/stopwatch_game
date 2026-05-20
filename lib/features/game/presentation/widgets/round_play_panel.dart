@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart' hide Matrix4;
-import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
@@ -28,15 +28,12 @@ class RoundPlayPanel extends StatefulWidget {
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
     required this.onReset,
-    required this.onTryAgain,
-    required this.canTryAgain,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
     required this.onStartControlPointerMove,
     required this.onStartControlPointerUp,
     required this.onStartOrStopRound,
     required this.totalWins,
-    required this.totalPrizeCoins,
     super.key,
   });
 
@@ -55,8 +52,6 @@ class RoundPlayPanel extends StatefulWidget {
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
   final VoidCallback onReset;
-  final VoidCallback onTryAgain;
-  final bool canTryAgain;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted})
   onStartControlPointerDown;
@@ -64,7 +59,6 @@ class RoundPlayPanel extends StatefulWidget {
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
   final Future<void> Function() onStartOrStopRound;
   final int totalWins;
-  final int totalPrizeCoins;
 
   @override
   State<RoundPlayPanel> createState() => _RoundPlayPanelState();
@@ -150,7 +144,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                           Row(
                             children: [
                               Text(
-                                'Target time',
+                                GameCopy.targetTime,
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
                                       letterSpacing: 0.2,
@@ -166,8 +160,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                       : Icons.volume_off_outlined,
                                 ),
                                 tooltip: widget.isSoundEnabled
-                                    ? 'Disable sounds'
-                                    : 'Enable sounds',
+                                    ? GameCopy.disableSounds
+                                    : GameCopy.enableSounds,
                                 visualDensity: VisualDensity.compact,
                                 constraints: const BoxConstraints.tightFor(
                                   width: 36,
@@ -203,8 +197,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                 : Icons.volume_off_outlined,
                           ),
                           tooltip: widget.isSoundEnabled
-                              ? 'Disable sounds'
-                              : 'Enable sounds',
+                              ? GameCopy.disableSounds
+                              : GameCopy.enableSounds,
                           visualDensity: VisualDensity.compact,
                           constraints: const BoxConstraints.tightFor(
                             width: 36,
@@ -321,37 +315,11 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                           builder: (context, constraints) {
                             final compactStats = constraints.maxWidth < 420;
                             if (compactStats) {
-                              return Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: PlaySurface3DTilt(
-                                          child: _RoundStatCard(
-                                            label: 'Target time',
-                                            value: widget.targetTimeLabel,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: PlaySurface3DTilt(
-                                          child: _RoundStatCard(
-                                            label: 'Prize coins',
-                                            value: '${widget.totalPrizeCoins}',
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  PlaySurface3DTilt(
-                                    child: _RoundStatCard(
-                                      label: 'Perfect stops',
-                                      value: '${widget.totalWins}',
-                                    ),
-                                  ),
-                                ],
+                              return PlaySurface3DTilt(
+                                child: _RoundStatCard(
+                                  label: GameCopy.perfectStops,
+                                  value: '${widget.totalWins}',
+                                ),
                               );
                             }
                             return Row(
@@ -359,7 +327,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                 Expanded(
                                   child: PlaySurface3DTilt(
                                     child: _RoundStatCard(
-                                      label: 'Target time',
+                                      label: GameCopy.targetTime,
                                       value: widget.targetTimeLabel,
                                     ),
                                   ),
@@ -368,16 +336,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                 Expanded(
                                   child: PlaySurface3DTilt(
                                     child: _RoundStatCard(
-                                      label: 'Prize coins',
-                                      value: '${widget.totalPrizeCoins}',
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: PlaySurface3DTilt(
-                                    child: _RoundStatCard(
-                                      label: 'Perfect stops',
+                                      label: GameCopy.perfectStops,
                                       value: '${widget.totalWins}',
                                     ),
                                   ),
@@ -395,18 +354,6 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
           ),
         ),
         SizedBox(height: isTightMobile ? 8 : 12),
-        if (widget.canTryAgain) ...[
-          SizedBox(
-            width: double.infinity,
-            height: GameConstants.minTouchTargetSize + 4,
-            child: OutlinedButton.icon(
-              onPressed: widget.isSubmitting ? null : widget.onTryAgain,
-              icon: const Icon(Icons.replay_rounded),
-              label: Text(RoundBillingCopy.tryAgainButtonLabel),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 560;
@@ -420,7 +367,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                         widget.onReset();
                       },
                 icon: const Icon(Icons.close_rounded),
-                label: const Text('Leave round'),
+                label: const Text(GameCopy.leaveRound),
               ),
             );
             final startButton = SizedBox(
@@ -493,9 +440,20 @@ class _OffsetAwareStartControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final disabledStyle = ElevatedButton.styleFrom(
-      backgroundColor: AppColors.accent.withValues(alpha: 0.45),
-      foregroundColor: AppColors.onAccent.withValues(alpha: 0.55),
+    final enabled = !isDisabled;
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: enabled
+          ? AppColors.accent
+          : AppColors.accent.withValues(alpha: 0.45),
+      disabledBackgroundColor: enabled
+          ? AppColors.accent
+          : AppColors.accent.withValues(alpha: 0.45),
+      foregroundColor: enabled
+          ? AppColors.onAccent
+          : AppColors.onAccent.withValues(alpha: 0.55),
+      disabledForegroundColor: enabled
+          ? AppColors.onAccent
+          : AppColors.onAccent.withValues(alpha: 0.55),
       elevation: 0,
       shadowColor: Colors.transparent,
     );
@@ -542,15 +500,8 @@ class _OffsetAwareStartControl extends StatelessWidget {
                   ),
                   child: ElevatedButton.icon(
                   onPressed: null,
-                  style: isDisabled
-                      ? disabledStyle
-                      : ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: AppColors.onAccent,
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
-                        ),
-                  icon: isDisabled && !isRunning
+                  style: buttonStyle,
+                  icon: !enabled && !isRunning
                       ? Icon(
                           Icons.play_arrow_rounded,
                           color: AppColors.onAccent.withValues(alpha: 0.55),
@@ -563,7 +514,7 @@ class _OffsetAwareStartControl extends StatelessWidget {
                     transitionBuilder: (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
                     child: Text(
-                      isRunning ? 'Stop round' : 'Start round',
+                      isRunning ? GameCopy.stopRound : GameCopy.startRound,
                       key: ValueKey<bool>(isRunning),
                     ),
                   ),
@@ -670,7 +621,7 @@ class _TargetTimeBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'TARGET TIME',
+            GameCopy.targetTimeBadge,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,

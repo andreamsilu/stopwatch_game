@@ -58,7 +58,6 @@ class GameState {
     required this.latestResult,
     required this.history,
     required this.totalWins,
-    required this.totalPrizeCoins,
   });
 
   const GameState.initial()
@@ -82,8 +81,7 @@ class GameState {
       statusMessage = null,
       latestResult = null,
       history = const [],
-      totalWins = 0,
-      totalPrizeCoins = 0;
+      totalWins = 0;
 
   final GameTab selectedTab;
   final Duration elapsed;
@@ -106,7 +104,6 @@ class GameState {
   final RoundResultData? latestResult;
   final List<HistoryEntry> history;
   final int totalWins;
-  final int totalPrizeCoins;
 
   String get formattedTime {
     final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -125,19 +122,18 @@ class GameState {
       !isLoadingTarget &&
       preparePhase == RoundPreparePhase.idle;
 
-  /// Start/stop are allowed only after billing, or while a paid round is running.
-  bool get canControlStopwatch => isRunning || canStartRound;
+  /// Tap start to bill (if needed) or run the timer; disabled while billing runs.
+  bool get canTapStartRound =>
+      !isRunning && !isSubmitting && !isPreparingRound;
+
+  /// Start/stop control is active while running or when start can be tapped.
+  bool get canControlStopwatch => isRunning || canTapStartRound;
 
   /// True when start/stop (and pointer hitbox) must be inactive.
   bool get isStopwatchControlDisabled =>
       isSubmitting || isPreparingRound || !canControlStopwatch;
 
   bool get isPreparingRound => preparePhase != RoundPreparePhase.idle;
-
-  bool get canTryAgainRound =>
-      preparePhase == RoundPreparePhase.idle &&
-      !hasBillingForRound &&
-      !isRunning;
 
   String get targetTimeLabel =>
       _formatDuration(targetTime, withMilliseconds: true);
@@ -187,7 +183,6 @@ class GameState {
     bool clearLatestResult = false,
     List<HistoryEntry>? history,
     int? totalWins,
-    int? totalPrizeCoins,
   }) {
     return GameState(
       selectedTab: selectedTab ?? this.selectedTab,
@@ -227,7 +222,6 @@ class GameState {
           : (latestResult ?? this.latestResult),
       history: history ?? this.history,
       totalWins: totalWins ?? this.totalWins,
-      totalPrizeCoins: totalPrizeCoins ?? this.totalPrizeCoins,
     );
   }
 }
