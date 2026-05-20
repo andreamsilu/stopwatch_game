@@ -26,4 +26,12 @@ class ApiConfig {
 
   static String gameSession(String sessionRef) =>
       '$baseUrl$apiPrefix/game/sessions/${Uri.encodeComponent(sessionRef)}';
+
+  static String gameHistory({int page = 0, int size = 20}) {
+    final query = Uri(queryParameters: {
+      'page': '$page',
+      'size': '$size',
+    });
+    return '$baseUrl$apiPrefix/game/history${query.query.isEmpty ? '' : '?${query.query}'}';
+  }
 }

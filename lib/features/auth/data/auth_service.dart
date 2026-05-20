@@ -32,6 +32,11 @@ class AuthService {
 
   AuthSession? get currentSession => _currentSession;
 
+  /// Restores in-memory session after reading [AuthSessionStorage] on app start.
+  void restoreSession(AuthSession session) {
+    _applySession(session);
+  }
+
   /// `POST /api/v1/auth/login` — used for both register and sign-in.
   Future<AuthLoginResult> login({required String msisdn}) async {
     final response = await _api.post(

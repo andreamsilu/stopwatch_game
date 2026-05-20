@@ -66,6 +66,14 @@ class GameCopy {
   static const historySubtitle = 'Your recent rounds';
   static const historyEmpty =
       'No rounds yet. Tap Play to start your first attempt.';
+  static const historyRetry = 'Try again';
+  static const historyColPlayed = 'Played';
+  static const historyColTarget = 'Target';
+  static const historyColYourStop = 'Your stop';
+  static const historyColResult = 'Result';
+  static const historyPreviousPage = 'Previous page';
+  static const historyNextPage = 'Next page';
+  static String historyPageLabel(int page) => 'Page $page';
   static const historyCardTitle = 'History';
   static const historyCardSubtitle = 'See how your recent rounds went';
 

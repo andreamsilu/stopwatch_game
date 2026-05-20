@@ -105,6 +105,7 @@ class GameController extends StateNotifier<GameState> {
       isRunning: false,
       isSubmitting: false,
       elapsed: Duration.zero,
+      targetTime: Duration.zero,
       isLoadingTarget: false,
       preparePhase: RoundPreparePhase.idle,
       clearActiveSession: true,
@@ -200,15 +201,6 @@ class GameController extends StateNotifier<GameState> {
       final backendResult = await fetchRoundResultFromBackend();
       if (!mounted) return;
 
-      final priorHistory = state.history;
-      final nextHistory = [
-        HistoryEntry(
-          timestamp: DateTime.now(),
-          timeLabel: backendResult.finalTimeLabel,
-          outcome: backendResult.outcomeLabel,
-        ),
-        ...priorHistory,
-      ];
       _stopwatch.reset();
       final interactionPayload = _buildInteractionPayload();
       await InteractionTelemetryService.submitRoundPayload(interactionPayload);
@@ -221,7 +213,6 @@ class GameController extends StateNotifier<GameState> {
           elapsed: Duration.zero,
           latestResult: backendResult,
           latestInteractionPayload: interactionPayload,
-          history: nextHistory,
           totalWins:
               s.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
           clearActiveSession: true,

@@ -34,4 +34,15 @@ class UserModel {
   final String createdAt;
   final String updatedAt;
   final String? lastLoginAt;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'msisdn': msisdn,
+    'username': username,
+    'channelSource': channelSource,
+    'status': status,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+    if (lastLoginAt != null) 'lastLoginAt': lastLoginAt,
+  };
 }

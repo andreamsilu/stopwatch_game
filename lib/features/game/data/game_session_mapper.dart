@@ -25,11 +25,6 @@ class GameSessionMapper {
     );
   }
 
-  static String _formatDurationMs(int milliseconds) {
-    final duration = Duration(milliseconds: milliseconds);
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final ms = duration.inMilliseconds.remainder(1000).toString().padLeft(3, '0');
-    return '$minutes:$seconds.$ms';
-  }
+  static String _formatDurationMs(int milliseconds) =>
+      GameState.formatTargetTime(Duration(milliseconds: milliseconds));
 }

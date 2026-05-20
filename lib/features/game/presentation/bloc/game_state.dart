@@ -25,18 +25,6 @@ class RoundResultData {
   final bool isPrizeAwarded;
 }
 
-class HistoryEntry {
-  const HistoryEntry({
-    required this.timestamp,
-    required this.timeLabel,
-    required this.outcome,
-  });
-
-  final DateTime timestamp;
-  final String timeLabel;
-  final String outcome;
-}
-
 class GameState {
   const GameState({
     required this.selectedTab,
@@ -58,7 +46,6 @@ class GameState {
     required this.roundErrorMessage,
     required this.statusMessage,
     required this.latestResult,
-    required this.history,
     required this.totalWins,
   });
 
@@ -74,7 +61,7 @@ class GameState {
       startButtonHitboxOffset = Offset.zero,
       interactionSessionId = 'bootstrap-session',
       latestInteractionPayload = null,
-      targetTime = const Duration(milliseconds: 8200),
+      targetTime = Duration.zero,
       billingRequestId = null,
       pendingBillingRequestId = null,
       sessionRef = null,
@@ -82,7 +69,6 @@ class GameState {
       roundErrorMessage = null,
       statusMessage = null,
       latestResult = null,
-      history = const [],
       totalWins = 0;
 
   final GameTab selectedTab;
@@ -104,7 +90,6 @@ class GameState {
   final String? roundErrorMessage;
   final String? statusMessage;
   final RoundResultData? latestResult;
-  final List<HistoryEntry> history;
   final int totalWins;
 
   String get formattedTime {
@@ -137,10 +122,13 @@ class GameState {
 
   bool get isPreparingRound => preparePhase != RoundPreparePhase.idle;
 
-  String get targetTimeLabel =>
-      _formatDuration(targetTime, withMilliseconds: true);
+  String get targetTimeLabel => formatTargetTime(targetTime);
   String get elapsedTimeLabel =>
       _formatDuration(elapsed, withMilliseconds: true);
+
+  /// Target display: `mm:ss.ms` (e.g. `00:00.000`, `00:08.200`).
+  static String formatTargetTime(Duration value) =>
+      _formatDuration(value, withMilliseconds: true);
 
   static String _formatDuration(
     Duration value, {
@@ -183,7 +171,6 @@ class GameState {
     bool clearActiveSession = false,
     RoundResultData? latestResult,
     bool clearLatestResult = false,
-    List<HistoryEntry>? history,
     int? totalWins,
   }) {
     return GameState(
@@ -222,7 +209,6 @@ class GameState {
       latestResult: clearLatestResult
           ? null
           : (latestResult ?? this.latestResult),
-      history: history ?? this.history,
       totalWins: totalWins ?? this.totalWins,
     );
   }

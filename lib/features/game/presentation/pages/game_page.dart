@@ -12,6 +12,7 @@ import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
 import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
@@ -109,10 +110,18 @@ class GamePage extends ConsumerWidget {
       }
     });
 
+    ref.listen<GameState>(gameControllerProvider, (previous, next) {
+      if (next.selectedTab == GameTab.history &&
+          previous?.selectedTab != GameTab.history) {
+        ref.read(gameHistoryProvider.notifier).load(refresh: true);
+      }
+    });
+
     ref.listen<GameState>(gameControllerProvider, (previous, next) async {
       final hadDialog = previous?.latestResult != null;
       final shouldShowDialog = next.latestResult != null && !hadDialog;
       if (!shouldShowDialog || !context.mounted || next.isRunning) return;
+      ref.read(gameHistoryProvider.notifier).load(refresh: true);
       final result = next.latestResult!;
       if (result.isPrizeAwarded) {
         await GameFeedbackService.onWin();
@@ -512,7 +521,7 @@ class _GameBody extends StatelessWidget {
           totalWins: state.totalWins,
         );
       case GameTab.history:
-        return HistoryPanel(history: state.history);
+        return const HistoryPanel();
       case GameTab.support:
         return const HelpSupportPanel();
     }

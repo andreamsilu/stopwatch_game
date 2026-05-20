@@ -6,6 +6,7 @@ import 'package:stopwatch_game/core/config/api_config.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_request.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
+import 'package:stopwatch_game/features/game/data/models/game_history_response.dart';
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
 import 'package:stopwatch_game/features/game/data/models/start_game_request.dart';
 import 'package:stopwatch_game/features/game/data/models/stop_game_request.dart';
@@ -107,6 +108,20 @@ class GameService {
 
   Future<GameStartResponse> getGameSession({required String sessionRef}) =>
       _fetchGameSession(sessionRef);
+
+  /// `GET /api/v1/game/history` — paginated playing history for the logged-in user.
+  Future<GameHistoryResponse> fetchGameHistory({
+    int page = 0,
+    int size = 20,
+  }) async {
+    final response = await _api.get(
+      Uri.parse(ApiConfig.gameHistory(page: page, size: size)),
+    );
+    return response.parse(
+      GameHistoryResponse.fromJson,
+      context: 'GET /game/history',
+    );
+  }
 
   Future<BillingTransactionResponse> _postBillingTransaction({
     required String msisdn,
