@@ -278,6 +278,11 @@ class GameController extends StateNotifier<GameState> {
     state = state.copyWith(clearLatestResult: true);
   }
 
+  /// Clears transient copy shown via snackbars (not on-screen banners).
+  void clearFeedbackMessages() {
+    state = state.copyWith(clearRoundError: true, clearStatusMessage: true);
+  }
+
   void onStartControlPointerDown(Offset position, {bool? isTrusted}) {
     if (state.isStopwatchControlDisabled) return;
     _activeInteractionSession?.recordDown(position, isTrusted: isTrusted);

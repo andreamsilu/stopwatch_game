@@ -22,8 +22,6 @@ class RoundPlayPanel extends StatefulWidget {
     required this.isSubmitting,
     required this.isLoadingTarget,
     required this.preparePhase,
-    this.statusMessage,
-    this.roundErrorMessage,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
@@ -48,8 +46,6 @@ class RoundPlayPanel extends StatefulWidget {
   final bool isSubmitting;
   final bool isLoadingTarget;
   final RoundPreparePhase preparePhase;
-  final String? statusMessage;
-  final String? roundErrorMessage;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
@@ -121,18 +117,11 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.roundErrorMessage != null) ...[
-          _RoundErrorBanner(message: widget.roundErrorMessage!),
-          const SizedBox(height: 10),
-        ],
         Card(
           margin: EdgeInsets.zero,
           child: Column(
             children: [
-              RoundPaymentStatusSection(
-                phase: widget.preparePhase,
-                statusMessage: widget.statusMessage,
-              ),
+              RoundPaymentStatusSection(phase: widget.preparePhase),
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallMobile ? 10 : 16,
@@ -578,32 +567,6 @@ class _OffsetAwareStartControl extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RoundErrorBanner extends StatelessWidget {
-  const _RoundErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF1F2),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFECACA)),
-      ),
-      child: Text(
-        message,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFFB91C1C),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
     );
   }
 }

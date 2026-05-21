@@ -93,12 +93,14 @@ class GamePage extends ConsumerWidget {
           next.roundErrorMessage!.isNotEmpty &&
           next.roundErrorMessage != previous?.roundErrorMessage) {
         _showGameError(context, next, next.roundErrorMessage!);
+        controller.clearFeedbackMessages();
       }
 
       if (next.statusMessage != null &&
           next.statusMessage!.isNotEmpty &&
           next.statusMessage != previous?.statusMessage) {
         _showGameInfo(context, next, next.statusMessage!);
+        controller.clearFeedbackMessages();
       }
 
       if (previous?.isSoundEnabled != next.isSoundEnabled) {
@@ -517,8 +519,6 @@ class _GameBody extends StatelessWidget {
           isSubmitting: state.isSubmitting,
           isLoadingTarget: state.isLoadingTarget,
           preparePhase: state.preparePhase,
-          statusMessage: state.statusMessage,
-          roundErrorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,
           startButtonHitboxOffset: state.startButtonHitboxOffset,
