@@ -7,8 +7,9 @@ import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/round_payment_status_section.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/round_billing_hint.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/stopwatch_3d_stage.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/target_time_badge.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
 class RoundPlayPanel extends StatefulWidget {
@@ -22,6 +23,7 @@ class RoundPlayPanel extends StatefulWidget {
     required this.isSubmitting,
     required this.isLoadingTarget,
     required this.preparePhase,
+    this.statusMessage,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
@@ -46,6 +48,7 @@ class RoundPlayPanel extends StatefulWidget {
   final bool isSubmitting;
   final bool isLoadingTarget;
   final RoundPreparePhase preparePhase;
+  final String? statusMessage;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
@@ -121,7 +124,6 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
           margin: EdgeInsets.zero,
           child: Column(
             children: [
-              RoundPaymentStatusSection(phase: widget.preparePhase),
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallMobile ? 10 : 16,
@@ -165,7 +167,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                           ),
                           const SizedBox(height: 8),
                           PlaySurface3DTilt(
-                            child: _TargetTimeBadge(
+                            child: TargetTimeBadge(
                               targetTimeLabel: widget.targetTimeLabel,
                               isLoading: widget.isLoadingTarget,
                             ),
@@ -176,7 +178,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                     return Row(
                       children: [
                         PlaySurface3DTilt(
-                          child: _TargetTimeBadge(
+                          child: TargetTimeBadge(
                             targetTimeLabel: widget.targetTimeLabel,
                             isLoading: widget.isLoadingTarget,
                           ),
@@ -304,39 +306,16 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                           ),
                         ),
                         SizedBox(height: compactPanel ? 10 : 16),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final compactStats = constraints.maxWidth < 420;
-                            if (compactStats) {
-                              return PlaySurface3DTilt(
-                                child: _RoundStatCard(
-                                  label: GameCopy.perfectStops,
-                                  value: '${widget.totalWins}',
-                                ),
-                              );
-                            }
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: PlaySurface3DTilt(
-                                    child: _RoundStatCard(
-                                      label: GameCopy.targetTime,
-                                      value: widget.targetTimeLabel,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: PlaySurface3DTilt(
-                                    child: _RoundStatCard(
-                                      label: GameCopy.perfectStops,
-                                      value: '${widget.totalWins}',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 280),
+                            child: PlaySurface3DTilt(
+                              child: _RoundStatCard(
+                                label: GameCopy.perfectStops,
+                                value: '${widget.totalWins}',
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     );
@@ -375,7 +354,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                         await widget.onPlayRound();
                       },
                 icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text(GameCopy.play),
+                label: const Text(GameCopy.payForRound),
               ),
             );
             final startRoundButton = SizedBox(
@@ -416,6 +395,10 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               ],
             );
           },
+        ),
+        RoundBillingHint(
+          phase: widget.preparePhase,
+          statusMessage: widget.statusMessage,
         ),
       ],
     );
@@ -567,73 +550,6 @@ class _OffsetAwareStartControl extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TargetTimeBadge extends StatelessWidget {
-  const _TargetTimeBadge({
-    required this.targetTimeLabel,
-    required this.isLoading,
-  });
-
-  final String targetTimeLabel;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFF2B8), Color(0xFFFFD100)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33FFD100),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            GameCopy.targetTimeBadge,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: AppColors.onAccent.withValues(alpha: 0.9),
-            ),
-          ),
-          const SizedBox(height: 2),
-          if (isLoading)
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: AppColors.onAccent,
-              ),
-            )
-          else
-            Text(
-              targetTimeLabel,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: AppColors.onAccent,
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

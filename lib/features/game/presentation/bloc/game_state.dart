@@ -47,6 +47,8 @@ class GameState {
     required this.statusMessage,
     required this.latestResult,
     required this.totalWins,
+    required this.roundsPlayed,
+    required this.bestDifferenceAbsMs,
   });
 
   const GameState.initial()
@@ -69,7 +71,9 @@ class GameState {
       roundErrorMessage = null,
       statusMessage = null,
       latestResult = null,
-      totalWins = 0;
+      totalWins = 0,
+      roundsPlayed = 0,
+      bestDifferenceAbsMs = null;
 
   final GameTab selectedTab;
   final Duration elapsed;
@@ -91,6 +95,8 @@ class GameState {
   final String? statusMessage;
   final RoundResultData? latestResult;
   final int totalWins;
+  final int roundsPlayed;
+  final int? bestDifferenceAbsMs;
 
   String get formattedTime {
     final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -176,6 +182,9 @@ class GameState {
     RoundResultData? latestResult,
     bool clearLatestResult = false,
     int? totalWins,
+    int? roundsPlayed,
+    int? bestDifferenceAbsMs,
+    bool clearBestDifference = false,
   }) {
     return GameState(
       selectedTab: selectedTab ?? this.selectedTab,
@@ -214,6 +223,10 @@ class GameState {
           ? null
           : (latestResult ?? this.latestResult),
       totalWins: totalWins ?? this.totalWins,
+      roundsPlayed: roundsPlayed ?? this.roundsPlayed,
+      bestDifferenceAbsMs: clearBestDifference
+          ? null
+          : (bestDifferenceAbsMs ?? this.bestDifferenceAbsMs),
     );
   }
 }

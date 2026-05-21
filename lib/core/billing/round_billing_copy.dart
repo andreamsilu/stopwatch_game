@@ -4,8 +4,6 @@ import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_pha
 class RoundBillingCopy {
   RoundBillingCopy._();
 
-  static const homeBillingLine = 'Charged to your mobile number.';
-
   static const chargedEveryRound = 'Charged to your mobile number.';
 
   static const preparingRoundCharge = 'Charging this round to your number…';

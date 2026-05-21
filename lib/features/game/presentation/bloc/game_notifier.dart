@@ -228,16 +228,25 @@ class GameController extends StateNotifier<GameState> {
       if (!mounted) return;
 
       _patchState(
-        (s) => s.copyWith(
-          isRunning: false,
-          isSubmitting: false,
-          elapsed: Duration.zero,
-          latestResult: backendResult,
-          latestInteractionPayload: interactionPayload,
-          totalWins:
-              s.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
-          clearActiveSession: true,
-        ),
+        (s) {
+          final absDiff = backendResult.differenceMs.abs();
+          final prevBest = s.bestDifferenceAbsMs;
+          final newBest = prevBest == null
+              ? absDiff
+              : (absDiff < prevBest ? absDiff : prevBest);
+          return s.copyWith(
+            isRunning: false,
+            isSubmitting: false,
+            elapsed: Duration.zero,
+            latestResult: backendResult,
+            latestInteractionPayload: interactionPayload,
+            totalWins:
+                s.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
+            roundsPlayed: s.roundsPlayed + 1,
+            bestDifferenceAbsMs: newBest,
+            clearActiveSession: true,
+          );
+        },
       );
     } on ApiException catch (e) {
       _stopwatch.reset();

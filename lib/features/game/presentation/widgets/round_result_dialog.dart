@@ -95,6 +95,8 @@ class _RoundResultDialogState extends State<RoundResultDialog>
 
   @override
   Widget build(BuildContext context) {
+    final differenceLabel = _formatDifference(widget.result.differenceMs);
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
@@ -230,7 +232,7 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                   const SizedBox(height: 10),
                   _ResultInfoCard(
                     label: GameCopy.timeDifference,
-                    value: '${widget.result.differenceMs} ms',
+                    value: differenceLabel,
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -289,6 +291,12 @@ class _RoundResultDialogState extends State<RoundResultDialog>
         ),
       ),
     );
+  }
+
+  static String _formatDifference(int differenceMs) {
+    final seconds = differenceMs / 1000.0;
+    final sign = seconds >= 0 ? '+' : '';
+    return '$sign${seconds.toStringAsFixed(3)}s';
   }
 }
 

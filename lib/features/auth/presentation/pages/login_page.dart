@@ -7,7 +7,7 @@ import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
-import 'package:stopwatch_game/features/auth/presentation/widgets/login_footer.dart';
+import 'package:stopwatch_game/core/widgets/app_footer.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:stopwatch_game/features/game/presentation/pages/game_page.dart';
 
@@ -61,109 +61,136 @@ class LoginPage extends ConsumerWidget {
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 700;
               final contentWidth = isMobile ? constraints.maxWidth : 560.0;
+              final horizontalPad = isMobile ? 16.0 : 24.0;
 
-              return Center(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 16 : 24,
-                    vertical: isMobile ? 16 : 14,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: contentWidth,
-                      minHeight: constraints.maxHeight - (isMobile ? 32 : 28),
+              return Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: contentWidth,
+                  height: constraints.maxHeight,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPad,
+                      vertical: isMobile ? 12 : 16,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(height: isMobile ? 10 : 20),
-                        Align(
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.primary, Color(0xFF174EA3)],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x2600377D),
-                                  blurRadius: 20,
-                                  offset: Offset(0, 8),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight -
+                            (isMobile ? 24 : 32),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(height: isMobile ? 8 : 16),
+                              Align(
+                                child: Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        AppColors.primary,
+                                        Color(0xFF174EA3),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x2600377D),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.timer,
+                                    color: AppColors.accent,
+                                    size: 30,
+                                  ),
                                 ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.timer,
-                              color: AppColors.accent,
-                              size: 30,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          headline,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                fontSize: isMobile ? 34 : 38,
-                                height: 1.1,
                               ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          subtitle,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppColors.onBackground.withValues(alpha: 0.74),
-                            fontSize: isMobile ? 15 : 17,
+                              const SizedBox(height: 16),
+                              Text(
+                                headline,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                  fontSize: isMobile ? 34 : 38,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                subtitle,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                  color: AppColors.onBackground
+                                      .withValues(alpha: 0.74),
+                                  fontSize: isMobile ? 15 : 17,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Align(
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 430),
+                                  child: LoginFormCard(
+                                    step: loginState.step,
+                                    phoneValue: loginState.phoneNumber,
+                                    otpCode: loginState.otpCode,
+                                    isSubmitting: loginState.isSubmitting,
+                                    isResendingOtp: loginState.isResendingOtp,
+                                    canSubmitPhone: loginState.canSubmitPhone,
+                                    canVerifyOtp: loginState.canVerifyOtp,
+                                    infoMessage: loginState.infoMessage,
+                                    onPhoneChanged:
+                                        loginNotifier.updatePhoneNumber,
+                                    onOtpChanged: loginNotifier.updateOtpCode,
+                                    onSubmitPhone: () async {
+                                      final authenticated =
+                                          await loginNotifier.submitPhone();
+                                      if (!context.mounted) return;
+                                      if (authenticated) {
+                                        await _completeAuth(context, ref);
+                                      }
+                                    },
+                                    onResendOtp: () async {
+                                      final authenticated =
+                                          await loginNotifier.resendOtp();
+                                      if (!context.mounted) return;
+                                      if (authenticated) {
+                                        await _completeAuth(context, ref);
+                                      }
+                                    },
+                                    onBackToPhone: loginNotifier.backToPhone,
+                                    onVerifyOtp: () async {
+                                      final isSuccess =
+                                          await loginNotifier.verifyOtp();
+                                      if (!context.mounted || !isSuccess) {
+                                        return;
+                                      }
+                                      await _completeAuth(context, ref);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        Align(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 430),
-                            child: LoginFormCard(
-                              step: loginState.step,
-                              phoneValue: loginState.phoneNumber,
-                              otpCode: loginState.otpCode,
-                              isSubmitting: loginState.isSubmitting,
-                              isResendingOtp: loginState.isResendingOtp,
-                              canSubmitPhone: loginState.canSubmitPhone,
-                              canVerifyOtp: loginState.canVerifyOtp,
-                              infoMessage: loginState.infoMessage,
-                              onPhoneChanged: loginNotifier.updatePhoneNumber,
-                              onOtpChanged: loginNotifier.updateOtpCode,
-                              onSubmitPhone: () async {
-                                final authenticated =
-                                    await loginNotifier.submitPhone();
-                                if (!context.mounted) return;
-                                if (authenticated) {
-                                  await _completeAuth(context, ref);
-                                }
-                              },
-                              onResendOtp: () async {
-                                final authenticated =
-                                    await loginNotifier.resendOtp();
-                                if (!context.mounted) return;
-                                if (authenticated) {
-                                  await _completeAuth(context, ref);
-                                }
-                              },
-                              onBackToPhone: loginNotifier.backToPhone,
-                              onVerifyOtp: () async {
-                                final isSuccess =
-                                    await loginNotifier.verifyOtp();
-                                if (!context.mounted || !isSuccess) return;
-                                await _completeAuth(context, ref);
-                              },
-                            ),
+                          const Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: AppFooter(),
                           ),
-                        ),
-                        SizedBox(height: isMobile ? 30 : 46),
-                        const LoginFooter(),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -7,11 +7,13 @@ import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/providers/auth_providers.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
+import 'package:stopwatch_game/core/widgets/app_footer.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
 import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_header_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
@@ -29,7 +31,53 @@ void _showGameInfo(BuildContext context, GameState state, String message) {
   AppSnackBar.showInfo(context, message);
 }
 
-void _showGameError(BuildContext context, GameState state, String message) {
+bool _looksLikeSessionExpired(String message) {
+  final m = message.toLowerCase();
+  return m.contains('401') ||
+      m.contains('unauthorized') ||
+      m.contains('session expired') ||
+      m.contains('token expired') ||
+      m.contains('invalid token') ||
+      m.contains('jwt');
+}
+
+Future<void> _showSessionExpiredDialog(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final signIn = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text(GameCopy.sessionExpiredTitle),
+      content: const Text(GameCopy.sessionExpiredBody),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text(GameCopy.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text(GameCopy.sessionExpiredAction),
+        ),
+      ],
+    ),
+  );
+  if (signIn == true && context.mounted) {
+    await performLogoutFromGame(context, ref);
+  }
+}
+
+void _showGameError(
+  BuildContext context,
+  GameState state,
+  String message, {
+  WidgetRef? ref,
+}) {
+  if (_looksLikeSessionExpired(message) && ref != null) {
+    _showSessionExpiredDialog(context, ref);
+    return;
+  }
   if (!_allowGameToasts(state)) return;
   AppSnackBar.showError(context, message);
 }
@@ -92,15 +140,24 @@ class GamePage extends ConsumerWidget {
       if (next.roundErrorMessage != null &&
           next.roundErrorMessage!.isNotEmpty &&
           next.roundErrorMessage != previous?.roundErrorMessage) {
-        _showGameError(context, next, next.roundErrorMessage!);
+        _showGameError(
+          context,
+          next,
+          next.roundErrorMessage!,
+          ref: ref,
+        );
         controller.clearFeedbackMessages();
       }
 
       if (next.statusMessage != null &&
           next.statusMessage!.isNotEmpty &&
           next.statusMessage != previous?.statusMessage) {
-        _showGameInfo(context, next, next.statusMessage!);
-        controller.clearFeedbackMessages();
+        if (next.preparePhase != RoundPreparePhase.idle) {
+          controller.clearFeedbackMessages();
+        } else {
+          _showGameInfo(context, next, next.statusMessage!);
+          controller.clearFeedbackMessages();
+        }
       }
 
       if (previous?.isSoundEnabled != next.isSoundEnabled) {
@@ -152,7 +209,11 @@ class GamePage extends ConsumerWidget {
           },
           onTryAgain: () async {
             controller.dismissResultDialog();
-            _showGameInfo(context, ref.read(gameControllerProvider), GameCopy.startingNewRound);
+            _showGameInfo(
+              context,
+              ref.read(gameControllerProvider),
+              GameCopy.startingNewRound,
+            );
             await controller.prepareNewPaidRound();
           },
         ),
@@ -281,9 +342,11 @@ class GamePage extends ConsumerWidget {
                   ? width
                   : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
 
-              return Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxContentWidth),
+              return Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: width.clamp(0, maxContentWidth),
+                  height: constraints.maxHeight,
                   child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: horizontalPadding,
@@ -302,6 +365,36 @@ class GamePage extends ConsumerWidget {
                         Expanded(
                           child: RefreshIndicator(
                             onRefresh: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text(
+                                    GameCopy.refreshConfirmTitle,
+                                  ),
+                                  content: const Text(
+                                    GameCopy.refreshConfirmBody,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(dialogContext).pop(false),
+                                      child: const Text(
+                                        GameCopy.refreshConfirmCancel,
+                                      ),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.of(dialogContext).pop(true),
+                                      child: const Text(
+                                        GameCopy.refreshConfirmAction,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed != true || !context.mounted) {
+                                return;
+                              }
                               final before = ref.read(gameControllerProvider);
                               _showGameInfo(
                                 context,
@@ -324,7 +417,10 @@ class GamePage extends ConsumerWidget {
                                   constraints: BoxConstraints(
                                     maxWidth: isLargeDesktop ? 1100 : double.infinity,
                                   ),
-                                  child: AnimatedSwitcher(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 220),
                                     switchInCurve: Curves.easeOutCubic,
                                     switchOutCurve: Curves.easeInCubic,
@@ -354,6 +450,8 @@ class GamePage extends ConsumerWidget {
                                         },
                                         onOpenHistory: () =>
                                             controller.selectTab(GameTab.history),
+                                        onOpenTips: () =>
+                                            controller.selectTab(GameTab.support),
                                         onResetRound: () {
                                           controller.onResetPressed();
                                         },
@@ -366,6 +464,9 @@ class GamePage extends ConsumerWidget {
                                           controller.onStartControlPointerUp,
                                         onPlayRound: () async {
                                           AppSnackBar.dismiss();
+                                          if (gameState.latestResult != null) {
+                                            controller.dismissResultDialog();
+                                          }
                                           await controller.onPlayRoundPressed();
                                         },
                                         onStartOrStopRound: () async {
@@ -384,6 +485,20 @@ class GamePage extends ConsumerWidget {
                                             gameState.hasBillingForRound,
                                       ),
                                     ),
+                                  ),
+                                      const SizedBox(height: 12),
+                                      AppFooter(
+                                        onTerms: () =>
+                                            controller.selectTab(GameTab.support),
+                                        onPrivacy: () =>
+                                            controller.selectTab(GameTab.support),
+                                        onContactSupport: () =>
+                                            controller.selectTab(GameTab.support),
+                                      ),
+                                      SizedBox(
+                                        height: isMobile ? 8 : 12,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -474,6 +589,7 @@ class _GameBody extends StatelessWidget {
     required this.state,
     required this.onPlayPressed,
     required this.onOpenHistory,
+    required this.onOpenTips,
     required this.onResetRound,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
@@ -487,6 +603,7 @@ class _GameBody extends StatelessWidget {
   final GameState state;
   final VoidCallback onPlayPressed;
   final VoidCallback onOpenHistory;
+  final VoidCallback onOpenTips;
   final VoidCallback onResetRound;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerDown;
@@ -495,7 +612,6 @@ class _GameBody extends StatelessWidget {
   final Future<void> Function() onPlayRound;
   final bool hasBillingForRound;
   final Future<void> Function() onStartOrStopRound;
-
   @override
   Widget build(BuildContext context) {
     switch (state.selectedTab) {
@@ -503,6 +619,7 @@ class _GameBody extends StatelessWidget {
         return HomeOverviewPanel(
           onPlayPressed: onPlayPressed,
           onOpenHistory: onOpenHistory,
+          onOpenTips: onOpenTips,
         );
       case GameTab.play:
         return RoundPlayPanel(
@@ -511,10 +628,11 @@ class _GameBody extends StatelessWidget {
           elapsed: state.elapsed,
           targetTime: state.targetTime,
           isRunning: state.isRunning,
-          isBusy: state.isStopwatchControlDisabled,
+          isBusy: state.isSubmitting || state.isPreparingRound,
           isSubmitting: state.isSubmitting,
           isLoadingTarget: state.isLoadingTarget,
           preparePhase: state.preparePhase,
+          statusMessage: state.statusMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,
           startButtonHitboxOffset: state.startButtonHitboxOffset,
