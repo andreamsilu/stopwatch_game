@@ -32,6 +32,8 @@ class RoundPlayPanel extends StatefulWidget {
     required this.onStartControlPointerDown,
     required this.onStartControlPointerMove,
     required this.onStartControlPointerUp,
+    required this.hasBillingForRound,
+    required this.onPlayRound,
     required this.onStartOrStopRound,
     required this.totalWins,
     super.key,
@@ -57,6 +59,8 @@ class RoundPlayPanel extends StatefulWidget {
   onStartControlPointerDown;
   final ValueChanged<Offset> onStartControlPointerMove;
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
+  final bool hasBillingForRound;
+  final Future<void> Function() onPlayRound;
   final Future<void> Function() onStartOrStopRound;
   final int totalWins;
 
@@ -370,11 +374,29 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                 label: const Text(GameCopy.leaveRound),
               ),
             );
-            final startButton = SizedBox(
+            final playDisabled = widget.isSubmitting ||
+                widget.preparePhase != RoundPreparePhase.idle;
+            final playButton = SizedBox(
+              height: GameConstants.minTouchTargetSize + 6,
+              child: ElevatedButton.icon(
+                onPressed: playDisabled
+                    ? null
+                    : () async {
+                        await GameFeedbackService.onRoundStart();
+                        await widget.onPlayRound();
+                      },
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text(GameCopy.play),
+              ),
+            );
+            final startRoundButton = SizedBox(
               height: GameConstants.minTouchTargetSize + 6,
               child: _OffsetAwareStartControl(
                 isRunning: widget.isRunning,
                 isDisabled: widget.isBusy,
+                actionLabel: widget.isRunning
+                    ? GameCopy.stopRound
+                    : GameCopy.startRound,
                 visualOffset: widget.startButtonVisualOffset,
                 hitboxOffset: widget.startButtonHitboxOffset,
                 onPointerDown: widget.onStartControlPointerDown,
@@ -384,12 +406,16 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               ),
             );
 
+            final actionButton = widget.hasBillingForRound || widget.isRunning
+                ? startRoundButton
+                : playButton;
+
             if (compact) {
               return Row(
                 children: [
                   Expanded(child: resetButton),
                   const SizedBox(width: 10),
-                  Expanded(child: startButton),
+                  Expanded(child: actionButton),
                 ],
               );
             }
@@ -397,7 +423,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
               children: [
                 Expanded(child: resetButton),
                 const SizedBox(width: 10),
-                Expanded(child: startButton),
+                Expanded(child: actionButton),
               ],
             );
           },
@@ -421,6 +447,7 @@ class _OffsetAwareStartControl extends StatelessWidget {
   const _OffsetAwareStartControl({
     required this.isRunning,
     required this.isDisabled,
+    required this.actionLabel,
     required this.visualOffset,
     required this.hitboxOffset,
     required this.onPointerDown,
@@ -431,6 +458,7 @@ class _OffsetAwareStartControl extends StatelessWidget {
 
   final bool isRunning;
   final bool isDisabled;
+  final String actionLabel;
   final Offset visualOffset;
   final Offset hitboxOffset;
   final void Function(Offset position, {bool? isTrusted}) onPointerDown;
@@ -501,21 +529,16 @@ class _OffsetAwareStartControl extends StatelessWidget {
                   child: ElevatedButton.icon(
                   onPressed: null,
                   style: buttonStyle,
-                  icon: !enabled && !isRunning
-                      ? Icon(
-                          Icons.play_arrow_rounded,
-                          color: AppColors.onAccent.withValues(alpha: 0.55),
-                        )
-                      : Icon(
-                          isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                        ),
+                  icon: Icon(
+                    isRunning ? Icons.stop_rounded : Icons.timer_rounded,
+                  ),
                   label: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     transitionBuilder: (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
                     child: Text(
-                      isRunning ? GameCopy.stopRound : GameCopy.startRound,
-                      key: ValueKey<bool>(isRunning),
+                      actionLabel,
+                      key: ValueKey<String>(actionLabel),
                     ),
                   ),
                 ),

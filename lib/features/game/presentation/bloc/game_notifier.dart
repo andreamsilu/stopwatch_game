@@ -142,27 +142,35 @@ class GameController extends StateNotifier<GameState> {
     await _chargeAndPrepareRound();
   }
 
+  /// Charge this round and load target time (Play). Does not start the stopwatch.
+  Future<void> onPlayRoundPressed() async {
+    if (state.isRunning || state.isSubmitting || state.isPreparingRound) {
+      return;
+    }
+    if (state.canStartRound) return;
+
+    if (!_isSubscribed) {
+      _patchState(
+        (s) => s.copyWith(
+          selectedTab: GameTab.play,
+          roundErrorMessage: RoundBillingCopy.loginRequired,
+        ),
+      );
+      return;
+    }
+
+    await _chargeAndPrepareRound();
+  }
+
+  /// Start or stop the stopwatch (Start round / Stop). Requires billing first.
   Future<void> onStartPressed() async {
     if (state.isRunning || state.isSubmitting || state.isPreparingRound) {
       return;
     }
 
-    // Not billed yet: charge + load target only — never auto-start the stopwatch.
-    if (!state.canStartRound) {
-      if (!_isSubscribed) {
-        _patchState(
-          (s) => s.copyWith(
-            selectedTab: GameTab.play,
-            roundErrorMessage: RoundBillingCopy.loginRequired,
-          ),
-        );
-        return;
-      }
-      await _chargeAndPrepareRound();
-      return;
-    }
+    if (!state.canStartRound) return;
 
-    // Already billed: user explicitly starts the stopwatch.
+    // Billed: user explicitly starts the stopwatch.
     _patchState((s) => s.copyWith(isSubmitting: true, clearRoundError: true));
     try {
       await startGame();

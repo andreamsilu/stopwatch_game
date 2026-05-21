@@ -109,9 +109,13 @@ class GameState {
       !isLoadingTarget &&
       preparePhase == RoundPreparePhase.idle;
 
-  /// Start/stop tap: bill when unpaid, start timer when billed; always stoppable while running.
+  /// Start/stop tap on the billed control only.
   bool get canTapStartRound =>
-      isRunning || (!isSubmitting && !isPreparingRound);
+      isRunning || (canStartRound && !isSubmitting);
+
+  /// Play (charge round) before billing is complete.
+  bool get canTapPlayRound =>
+      !hasBillingForRound && !isSubmitting && !isPreparingRound;
 
   /// Start/stop control is active while running or when start can be tapped.
   bool get canControlStopwatch => isRunning || canTapStartRound;

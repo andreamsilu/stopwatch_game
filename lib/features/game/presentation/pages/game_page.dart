@@ -366,6 +366,10 @@ class GamePage extends ConsumerWidget {
                                           controller.onStartControlPointerMove,
                                       onStartControlPointerUp:
                                           controller.onStartControlPointerUp,
+                                        onPlayRound: () async {
+                                          AppSnackBar.dismiss();
+                                          await controller.onPlayRoundPressed();
+                                        },
                                         onStartOrStopRound: () async {
                                           if (gameState
                                               .isStopwatchControlDisabled) {
@@ -378,6 +382,8 @@ class GamePage extends ConsumerWidget {
                                             await controller.onStartPressed();
                                           }
                                         },
+                                        hasBillingForRound:
+                                            gameState.hasBillingForRound,
                                       ),
                                     ),
                                   ),
@@ -475,6 +481,8 @@ class _GameBody extends StatelessWidget {
     required this.onStartControlPointerDown,
     required this.onStartControlPointerMove,
     required this.onStartControlPointerUp,
+    required this.hasBillingForRound,
+    required this.onPlayRound,
     required this.onStartOrStopRound,
   });
 
@@ -486,6 +494,8 @@ class _GameBody extends StatelessWidget {
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerDown;
   final ValueChanged<Offset> onStartControlPointerMove;
   final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
+  final Future<void> Function() onPlayRound;
+  final bool hasBillingForRound;
   final Future<void> Function() onStartOrStopRound;
 
   @override
@@ -517,6 +527,8 @@ class _GameBody extends StatelessWidget {
           onStartControlPointerDown: onStartControlPointerDown,
           onStartControlPointerMove: onStartControlPointerMove,
           onStartControlPointerUp: onStartControlPointerUp,
+          hasBillingForRound: hasBillingForRound,
+          onPlayRound: onPlayRound,
           onStartOrStopRound: onStartOrStopRound,
           totalWins: state.totalWins,
         );
