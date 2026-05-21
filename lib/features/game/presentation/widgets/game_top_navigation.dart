@@ -8,42 +8,77 @@ class GameTopNavigation extends StatelessWidget {
   const GameTopNavigation({
     required this.activeTab,
     required this.onTabSelected,
+    this.embedded = false,
     super.key,
   });
 
   final GameTab activeTab;
   final ValueChanged<GameTab> onTabSelected;
 
+  /// When true, omits the outer [Card] (used inside [GameHeaderBar]).
+  final bool embedded;
+
   @override
   Widget build(BuildContext context) {
     final tabs = GameTab.values;
+    final content = LayoutBuilder(
+          builder: (context, constraints) {
+            final tabButtons = [
+              for (var i = 0; i < tabs.length; i++) ...[
+                _TabButton(
+                  tab: tabs[i],
+                  isActive: tabs[i] == activeTab,
+                  onPressed: () => onTabSelected(tabs[i]),
+                ),
+                if (i < tabs.length - 1) const SizedBox(width: 8),
+              ],
+            ];
+
+            // Narrow: scroll. Wide: equal-width tabs across the full bar.
+            if (constraints.maxWidth < 520) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: tabButtons,
+                ),
+              );
+            }
+
+            return Row(
+              children: [
+                for (var i = 0; i < tabs.length; i++) ...[
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: i == 0 ? 0 : 4,
+                        right: i == tabs.length - 1 ? 0 : 4,
+                      ),
+                      child: _TabButton(
+                        tab: tabs[i],
+                        isActive: tabs[i] == activeTab,
+                        onPressed: () => onTabSelected(tabs[i]),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+
+    if (embedded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: content,
+      );
+    }
+
     return Card(
       margin: EdgeInsets.zero,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Padding(
-            padding: const EdgeInsets.all(8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (final tab in tabs) ...[
-                      _TabButton(
-                        tab: tab,
-                        isActive: tab == activeTab,
-                        onPressed: () => onTabSelected(tab),
-                      ),
-                      if (tab != tabs.last) const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: content,
       ),
     );
   }
@@ -81,6 +116,7 @@ class _TabButtonState extends State<_TabButton> {
           scale: _isHovered && !widget.isActive ? 1.03 : 1,
           curve: Curves.easeOutCubic,
           child: SizedBox(
+            width: double.infinity,
             height: GameConstants.minTouchTargetSize,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -109,7 +145,7 @@ class _TabButtonState extends State<_TabButton> {
                         BoxShadow(
                           color: AppColors.accent.withValues(alpha: 0.35),
                           blurRadius: 14,
-                          offset: Offset(0, 5),
+                          offset: const Offset(0, 5),
                         ),
                       ]
                     : null,
@@ -123,8 +159,8 @@ class _TabButtonState extends State<_TabButton> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  minimumSize: const Size(86, GameConstants.minTouchTargetSize),
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  minimumSize: const Size(0, GameConstants.minTouchTargetSize),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
                 child: Text(
                   _labelForTab(widget.tab),
@@ -153,4 +189,3 @@ class _TabButtonState extends State<_TabButton> {
     }
   }
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

@@ -13,7 +13,7 @@ import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.da
 import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/game_top_navigation.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/game_header_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
@@ -292,17 +292,13 @@ class GamePage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (!useDrawerNav) ...[
-                          GameTopNavigation(
+                        if (!useDrawerNav)
+                          GameHeaderBar(
                             activeTab: gameState.selectedTab,
                             onTabSelected: controller.selectTab,
-                          ),
-                          const SizedBox(height: 6),
-                          LoggedInUserBar(
                             onLogout: () => performLogoutFromGame(context, ref),
                           ),
-                          const SizedBox(height: 6),
-                        ],
+                        if (!useDrawerNav) const SizedBox(height: 6),
                         Expanded(
                           child: RefreshIndicator(
                             onRefresh: () async {
