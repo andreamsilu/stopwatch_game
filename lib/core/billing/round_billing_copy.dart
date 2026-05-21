@@ -17,6 +17,9 @@ class RoundBillingCopy {
 
   static const playReadyHint = 'When you are ready, tap Start round.';
 
+  static const chargeRoundFirst =
+      'Tap Start round again when payment is confirmed.';
+
   static const loginRequired = 'Log in to play a round.';
 
   static String messageForPhase(RoundPreparePhase phase) {

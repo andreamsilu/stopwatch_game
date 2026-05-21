@@ -147,9 +147,22 @@ class GameController extends StateNotifier<GameState> {
       return;
     }
 
-    if (!await _ensureBillingForRound()) return;
-    if (!mounted || !state.canStartRound) return;
+    // Not billed yet: charge + load target only — never auto-start the stopwatch.
+    if (!state.canStartRound) {
+      if (!_isSubscribed) {
+        _patchState(
+          (s) => s.copyWith(
+            selectedTab: GameTab.play,
+            roundErrorMessage: RoundBillingCopy.loginRequired,
+          ),
+        );
+        return;
+      }
+      await _chargeAndPrepareRound();
+      return;
+    }
 
+    // Already billed: user explicitly starts the stopwatch.
     _patchState((s) => s.copyWith(isSubmitting: true, clearRoundError: true));
     try {
       await startGame();
@@ -323,25 +336,6 @@ class GameController extends StateNotifier<GameState> {
     throw ApiException(session.status);
   }
 
-  /// Bills and loads target time when the player has no active billing for this round.
-  Future<bool> _ensureBillingForRound() async {
-    if (!_isSubscribed) {
-      state = state.copyWith(
-        selectedTab: GameTab.play,
-        roundErrorMessage: RoundBillingCopy.loginRequired,
-      );
-      return false;
-    }
-
-    if (state.canStartRound) return true;
-    if (state.isPreparingRound || state.isSubmitting) return false;
-
-    await _chargeAndPrepareRound();
-    if (!mounted) return false;
-    return state.canStartRound &&
-        (state.roundErrorMessage == null || state.roundErrorMessage!.isEmpty);
-  }
-
   Future<void> _finishRoundPreparationAfterPayment(
     String requestId, {
     required int operationId,
@@ -365,7 +359,7 @@ class GameController extends StateNotifier<GameState> {
         preparePhase: RoundPreparePhase.idle,
         clearPendingBilling: true,
         clearRoundError: true,
-        clearStatusMessage: true,
+        statusMessage: RoundBillingCopy.playReadyHint,
       ),
     );
   }
