@@ -350,7 +350,6 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                 onPressed: playDisabled
                     ? null
                     : () async {
-                        await GameFeedbackService.onRoundStart();
                         await widget.onPlayRound();
                       },
                 icon: const Icon(Icons.play_arrow_rounded),
@@ -406,11 +405,6 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
 
   Future<void> _handleStartOrStopTap() async {
     if (widget.isBusy) return;
-    if (widget.isRunning) {
-      await GameFeedbackService.onRoundStop();
-    } else {
-      await GameFeedbackService.onRoundStart();
-    }
     await widget.onStartOrStopRound();
   }
 }

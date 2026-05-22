@@ -100,6 +100,7 @@ class GameController extends StateNotifier<GameState> {
     _stopwatch.reset();
     _ticker?.cancel();
     _activeSession = null;
+    await GameFeedbackService.onRoundReset();
 
     state = state.copyWith(
       isRunning: false,
@@ -202,6 +203,7 @@ class GameController extends StateNotifier<GameState> {
       _patchState((s) => s.copyWith(elapsed: _stopwatch.elapsed));
     });
     _beginInteractionSession();
+    await GameFeedbackService.onRoundStart();
     _patchState(
       (s) => s.copyWith(
         isRunning: true,
@@ -215,6 +217,7 @@ class GameController extends StateNotifier<GameState> {
     if (!state.isRunning || state.isSubmitting) return;
 
     state = state.copyWith(isSubmitting: true);
+    await GameFeedbackService.onRoundStop();
     _stopwatch.stop();
     _ticker?.cancel();
 
