@@ -126,4 +126,11 @@ class EnvConfig {
   /// Shared secret for HMAC-SHA256 (must match backend `stopwatch.security.hmac.secret`).
   static String get hmacSecret =>
       _optional('STOPWATCH_SECURITY_HMAC_SECRET', '');
+
+  /// Public social profile URLs (empty = hidden in UI).
+  static String get socialFacebookUrl =>
+      _optional('SOCIAL_FACEBOOK_URL', 'https://www.facebook.com/');
+  static String get socialInstagramUrl => _optional('SOCIAL_INSTAGRAM_URL', '');
+  static String get socialXUrl => _optional('SOCIAL_X_URL', '');
+  static String get socialYoutubeUrl => _optional('SOCIAL_YOUTUBE_URL', '');
 }

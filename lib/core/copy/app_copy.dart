@@ -36,6 +36,9 @@ class GameCopy {
   static const termsOfService = 'Terms of Service';
   static const privacyPolicy = 'Privacy Policy';
   static const contactSupport = 'Contact Support';
+  static const followUs = 'Follow us';
+  static String socialLinkOpenFailed(String platform) =>
+      'Could not open $platform. Check the link and try again.';
   static const homeHeadline = 'How close can you get?';
   static const homeTagline = 'Stop the timer exactly on the target time.';
   static const homeWinLine = 'Closest stop wins the round.';

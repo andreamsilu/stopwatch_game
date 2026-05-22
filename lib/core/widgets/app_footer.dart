@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
+import 'package:stopwatch_game/core/widgets/social_media_links.dart';
 
 /// Shared site footer — uses [Theme] / [AppColors] like the rest of the app.
 class AppFooter extends StatelessWidget {
@@ -57,6 +58,8 @@ class AppFooter extends StatelessWidget {
               fontSize: 11,
             ),
           ),
+          const SizedBox(height: 8),
+          const SocialMediaLinks(),
           const SizedBox(height: 6),
           Wrap(
             alignment: WrapAlignment.center,
