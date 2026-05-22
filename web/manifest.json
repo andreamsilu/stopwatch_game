@@ -1,11 +1,11 @@
 {
-    "name": "stopwatch_game",
-    "short_name": "stopwatch_game",
+    "name": "Stopwatch Challenge",
+    "short_name": "Stopwatch",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F2F6FB",
+    "theme_color": "#00377D",
+    "description": "Stop the timer as close as you can to the target time.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

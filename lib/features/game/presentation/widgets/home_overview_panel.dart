@@ -131,20 +131,6 @@ class _HeroCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: const Icon(
-                  Icons.timer_outlined,
-                  color: AppColors.primary,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
               Text(
                 GameCopy.appName,
                 textAlign: TextAlign.center,

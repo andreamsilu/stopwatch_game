@@ -86,34 +86,6 @@ class LoginPage extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               SizedBox(height: isMobile ? 8 : 16),
-                              Align(
-                                child: Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        AppColors.primary,
-                                        Color(0xFF174EA3),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x2600377D),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.timer,
-                                    color: AppColors.accent,
-                                    size: 30,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
                               Text(
                                 headline,
                                 textAlign: TextAlign.center,

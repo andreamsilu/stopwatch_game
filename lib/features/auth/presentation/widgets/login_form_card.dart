@@ -4,6 +4,7 @@ import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/otp_input_boxes.dart';
+import 'package:stopwatch_game/core/widgets/app_logo.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone_prefix.dart';
 
 class LoginFormCard extends StatelessWidget {
@@ -100,7 +101,15 @@ class _CardShell extends StatelessWidget {
       ),
       child: Padding(
         padding: _LoginCardSpacing.padding,
-        child: child,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Center(child: AppLogo(size: 56)),
+            const SizedBox(height: 20),
+            child,
+          ],
+        ),
       ),
     );
   }

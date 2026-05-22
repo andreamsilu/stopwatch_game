@@ -5,6 +5,7 @@ import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/utils/msisdn_format.dart';
+import 'package:stopwatch_game/core/widgets/app_logo.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 /// Centered nav tabs with account avatar + menu on the right.
@@ -20,7 +21,8 @@ class GameHeaderBar extends ConsumerStatefulWidget {
   final ValueChanged<GameTab> onTabSelected;
   final Future<void> Function() onLogout;
 
-  static const double _avatarSlotWidth = 48;
+  static const double _sideSlotWidth = 52;
+  static const double _logoSize = 36;
 
   @override
   ConsumerState<GameHeaderBar> createState() => _GameHeaderBarState();
@@ -66,13 +68,21 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
               onLogout: _handleLogout,
             );
 
+            const logo = AppLogo(size: GameHeaderBar._logoSize);
+
             if (constraints.maxWidth < 560) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(child: tabs),
+                  Row(
+                    children: [
+                      logo,
+                      const Spacer(),
+                      avatar,
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  Align(alignment: Alignment.centerRight, child: avatar),
+                  Center(child: tabs),
                 ],
               );
             }
@@ -81,10 +91,16 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
               height: GameConstants.minTouchTargetSize + 4,
               child: Row(
                 children: [
-                  const SizedBox(width: GameHeaderBar._avatarSlotWidth),
+                  SizedBox(
+                    width: GameHeaderBar._sideSlotWidth,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: logo,
+                    ),
+                  ),
                   Expanded(child: Center(child: tabs)),
                   SizedBox(
-                    width: GameHeaderBar._avatarSlotWidth,
+                    width: GameHeaderBar._sideSlotWidth,
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: avatar,

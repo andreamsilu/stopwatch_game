@@ -15,6 +15,7 @@ import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart'
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
+import 'package:stopwatch_game/core/widgets/app_logo.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_header_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
@@ -228,6 +229,11 @@ class GamePage extends ConsumerWidget {
               automaticallyImplyLeading: false,
               elevation: 0,
               backgroundColor: Colors.transparent,
+              titleSpacing: 0,
+              title: const Align(
+                alignment: Alignment.centerLeft,
+                child: AppLogo(size: 32),
+              ),
               actions: [
                 Builder(
                   builder: (context) => Padding(

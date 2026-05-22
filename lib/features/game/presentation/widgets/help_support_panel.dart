@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
-import 'package:stopwatch_game/core/widgets/social_media_links.dart';
-
 class HelpSupportPanel extends StatelessWidget {
   const HelpSupportPanel({super.key});
 
@@ -41,8 +39,6 @@ class HelpSupportPanel extends StatelessWidget {
               title: GameCopy.helpContactTitle,
               subtitle: GameCopy.helpContactBody,
             ),
-            const SizedBox(height: 16),
-            const Center(child: SocialMediaLinks()),
           ],
         ),
       ),

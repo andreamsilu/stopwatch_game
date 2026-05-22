@@ -44,8 +44,6 @@ dependencies:
   crypto: ^3.0.6
   uuid: ^4.5.1
   shared_preferences: ^2.5.5
-  url_launcher: ^6.3.1
-  font_awesome_flutter: ^10.8.0
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +69,7 @@ flutter:
 
   assets:
     - .env
+    - images/logo.png
     - assets/win-clap.mp3
     - assets/lose-music.mp3
 
