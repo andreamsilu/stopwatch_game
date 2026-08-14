@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stopwatch_game/core/services/api_session_trace_store.dart';
 import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
 
 void main() {
@@ -18,5 +19,21 @@ void main() {
     );
     expect((sanitized['nested'] as Map<String, dynamic>)['winner'], isTrue);
     expect(sanitized['samples'], [1, 2, 3]);
+  });
+
+  test('correlates every portal event to one access session', () async {
+    final store = ApiSessionTraceStore.instance..clear();
+    final telemetry = InteractionTelemetryService(enabled: false);
+
+    await telemetry.track('portal.session_started');
+    await telemetry.track('game.play_opened');
+
+    final sessionIds = store.records
+        .map((record) => record.request as Map<String, dynamic>)
+        .map((properties) => properties['portalSessionId'])
+        .toSet();
+    expect(sessionIds, {telemetry.portalSessionId});
+
+    store.clear();
   });
 }

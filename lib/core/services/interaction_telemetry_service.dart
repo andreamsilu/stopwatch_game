@@ -34,6 +34,7 @@ class InteractionTelemetryService {
 
   final StopwatchApi _api;
   final bool _enabled;
+  final String portalSessionId = _uuid.v4();
 
   Future<void> track(
     String eventName, {
@@ -47,7 +48,11 @@ class InteractionTelemetryService {
     }
 
     final sanitizedProperties = sanitizeProperties(properties);
-    ApiSessionTraceStore.instance.recordEvent(eventName, sanitizedProperties);
+    final correlatedProperties = <String, dynamic>{
+      'portalSessionId': portalSessionId,
+      ...sanitizedProperties,
+    };
+    ApiSessionTraceStore.instance.recordEvent(eventName, correlatedProperties);
     if (!_enabled) return;
 
     final event = <String, dynamic>{
@@ -56,7 +61,8 @@ class InteractionTelemetryService {
       'eventVersion': 1,
       'occurredAt': DateTime.now().toUtc().toIso8601String(),
       'channel': EnvConfig.gameChannel,
-      'properties': sanitizedProperties,
+      'portalSessionId': portalSessionId,
+      'properties': correlatedProperties,
     };
 
     try {
