@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/core/config/api_config.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
+import 'package:stopwatch_game/core/services/api_session_trace_store.dart';
 import 'package:uuid/uuid.dart';
 
 /// Sends privacy-safe product and game-integrity events to the backend.
@@ -38,7 +39,6 @@ class InteractionTelemetryService {
     String eventName, {
     Map<String, dynamic> properties = const {},
   }) async {
-    if (!_enabled) return;
     if (!_eventNamePattern.hasMatch(eventName)) {
       if (kDebugMode) {
         debugPrint('[Telemetry] Invalid event name ignored: $eventName');
@@ -46,13 +46,17 @@ class InteractionTelemetryService {
       return;
     }
 
+    final sanitizedProperties = sanitizeProperties(properties);
+    ApiSessionTraceStore.instance.recordEvent(eventName, sanitizedProperties);
+    if (!_enabled) return;
+
     final event = <String, dynamic>{
       'eventId': _uuid.v4(),
       'eventName': eventName,
       'eventVersion': 1,
       'occurredAt': DateTime.now().toUtc().toIso8601String(),
       'channel': EnvConfig.gameChannel,
-      'properties': sanitizeProperties(properties),
+      'properties': sanitizedProperties,
     };
 
     try {

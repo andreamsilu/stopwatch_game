@@ -13,15 +13,26 @@ void main() {
   });
 
   testWidgets('/admin opens the demo administration dashboard', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const StopwatchChallengeApp(initialRoute: '/admin'),
     );
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Admin Console'), findsOneWidget);
-    expect(find.textContaining('Demo mode'), findsOneWidget);
+    expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('Session Trace'), findsOneWidget);
+    expect(find.textContaining('Demo mode'), findsWidgets);
     expect(find.text('Active users'), findsOneWidget);
     expect(find.text('Recent activity'), findsOneWidget);
+
+    await tester.tap(find.text('Session Trace'));
+    await tester.pump();
+    expect(find.text('Current browser session'), findsOneWidget);
+    expect(find.text('Requests, responses and events'), findsOneWidget);
   });
 
   testWidgets('admin dashboard fits a mobile viewport', (tester) async {
@@ -33,7 +44,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: AdminDashboardPage()));
     await tester.pump();
 
-    expect(find.text('Admin Console'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

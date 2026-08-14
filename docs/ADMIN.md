@@ -9,6 +9,12 @@ The Flutter web application exposes a temporary administration dashboard at:
 The dashboard currently uses static sample data. It is deliberately labelled
 **Demo mode** and must not be treated as an operational reporting source.
 
+The **Session Trace** sidebar item shows up to 200 sanitized API exchanges and
+client events from the current Flutter process. It includes endpoint, status,
+latency, masked MSISDN, request and response summaries. The trace is held only
+in memory and is cleared by a browser refresh or the dashboard's Clear button.
+It is a development aid, not a replacement for server-side audit logging.
+
 ## Local access
 
 Run the web application and append `/admin` to the displayed origin.

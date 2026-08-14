@@ -7,14 +7,13 @@ import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/api/api_response.dart';
 import 'package:stopwatch_game/core/api/stopwatch_hmac.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
+import 'package:stopwatch_game/core/services/api_session_trace_store.dart';
 
 /// HTTP transport — JSON request bodies, optional HMAC signing, response decoding.
 class StopwatchApi {
-  StopwatchApi({
-    http.Client? client,
-    String? Function()? accessTokenProvider,
-  }) : _client = client ?? http.Client(),
-       _accessTokenProvider = accessTokenProvider ?? (() => null);
+  StopwatchApi({http.Client? client, String? Function()? accessTokenProvider})
+    : _client = client ?? http.Client(),
+      _accessTokenProvider = accessTokenProvider ?? (() => null);
 
   factory StopwatchApi.create({String? Function()? accessTokenProvider}) =>
       StopwatchApi(accessTokenProvider: accessTokenProvider);
@@ -90,6 +89,12 @@ class StopwatchApi {
       ..._hmacHeaders(method: method, uri: uri, body: bodyText),
     };
 
+    final traceId = ApiSessionTraceStore.instance.beginApiRequest(
+      method: method,
+      uri: uri,
+      body: body,
+    );
+
     ApiLogger.logRequest(
       method: method,
       uri: uri,
@@ -105,6 +110,11 @@ class StopwatchApi {
         headers: requestHeaders,
         body: bodyText,
       );
+      ApiSessionTraceStore.instance.completeApiRequest(
+        traceId: traceId,
+        statusCode: response.statusCode,
+        responseBody: response.body,
+      );
       _logHttpResponse(
         method: method,
         uri: uri,
@@ -113,6 +123,7 @@ class StopwatchApi {
       );
       return _toApiResponse(response, allowNotFound: allowNotFound);
     } catch (e, stack) {
+      ApiSessionTraceStore.instance.failApiRequest(traceId: traceId, error: e);
       _logHttpError(method: method, uri: uri, error: e, started: started);
       _rethrowTransportError(e, stack);
     }

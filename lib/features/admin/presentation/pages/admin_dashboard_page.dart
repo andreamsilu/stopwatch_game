@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/services/api_session_trace_store.dart';
 import 'package:stopwatch_game/core/widgets/app_logo.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 
@@ -7,51 +10,131 @@ import 'package:stopwatch_game/core/widgets/experience_background.dart';
 ///
 /// Replace [_AdminDemoData] with authenticated admin API providers before
 /// production. The `/admin` route is intentionally open during this phase.
-class AdminDashboardPage extends StatelessWidget {
+class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
+
+  @override
+  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _traceStore = ApiSessionTraceStore.instance;
+  _AdminSection _section = _AdminSection.overview;
+
+  @override
+  void initState() {
+    super.initState();
+    _traceStore.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    _traceStore.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  void _selectSection(_AdminSection section) {
+    setState(() => _section = section);
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: Drawer(
+        child: SafeArea(
+          child: _AdminSidebar(selected: _section, onSelected: _selectSection),
+        ),
+      ),
       body: ExperienceBackground(
         child: SafeArea(
-          child: Column(
-            children: [
-              const _AdminHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1240),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _DemoBanner(),
-                          SizedBox(height: 16),
-                          _SummaryGrid(),
-                          SizedBox(height: 16),
-                          _AdminDetailGrid(),
-                        ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 820;
+              final workspace = Column(
+                children: [
+                  _AdminHeader(
+                    section: _section,
+                    onOpenMenu: compact
+                        ? () => _scaffoldKey.currentState?.openDrawer()
+                        : null,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1240),
+                          child: _buildSection(),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+              if (compact) return workspace;
+              return Row(
+                children: [
+                  SizedBox(
+                    width: 248,
+                    child: _AdminSidebar(
+                      selected: _section,
+                      onSelected: _selectSection,
+                    ),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: workspace),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  Widget _buildSection() {
+    switch (_section) {
+      case _AdminSection.overview:
+        return const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _DemoBanner(),
+            SizedBox(height: 16),
+            _SummaryGrid(),
+            SizedBox(height: 16),
+            _AdminDetailGrid(),
+          ],
+        );
+      case _AdminSection.sessions:
+        return _SessionTracePanel(store: _traceStore);
+      case _AdminSection.users:
+      case _AdminSection.billing:
+      case _AdminSection.security:
+        return _DemoModulePanel(section: _section);
+    }
+  }
 }
 
 class _AdminHeader extends StatelessWidget {
-  const _AdminHeader();
+  const _AdminHeader({required this.section, this.onOpenMenu});
+
+  final _AdminSection section;
+  final VoidCallback? onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = onOpenMenu != null;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Align(
@@ -64,19 +147,29 @@ class _AdminHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
-                  const AppLogo(size: 38),
-                  const SizedBox(width: 12),
+                  if (onOpenMenu != null) ...[
+                    IconButton(
+                      onPressed: onOpenMenu,
+                      tooltip: 'Open admin navigation',
+                      icon: const Icon(Icons.menu_rounded),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  if (!isCompact) ...[
+                    const AppLogo(size: 36),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Admin Console',
+                          section.label,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         Text(
-                          'Stopwatch Challenge operations',
+                          'Admin Console · Demo mode',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: AppColors.onBackground.withValues(
@@ -87,18 +180,155 @@ class _AdminHeader extends StatelessWidget {
                       ],
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil('/', (_) => false),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                    label: const Text('Player portal'),
-                  ),
+                  if (isCompact)
+                    IconButton(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/', (_) => false),
+                      tooltip: 'Player portal',
+                      icon: const Icon(Icons.open_in_new_rounded),
+                    )
+                  else
+                    TextButton.icon(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/', (_) => false),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      label: const Text('Player portal'),
+                    ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+enum _AdminSection { overview, sessions, users, billing, security }
+
+extension on _AdminSection {
+  String get label {
+    switch (this) {
+      case _AdminSection.overview:
+        return 'Dashboard';
+      case _AdminSection.sessions:
+        return 'Session Trace';
+      case _AdminSection.users:
+        return 'Users';
+      case _AdminSection.billing:
+        return 'Billing';
+      case _AdminSection.security:
+        return 'Security';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case _AdminSection.overview:
+        return Icons.dashboard_outlined;
+      case _AdminSection.sessions:
+        return Icons.timeline_rounded;
+      case _AdminSection.users:
+        return Icons.people_outline_rounded;
+      case _AdminSection.billing:
+        return Icons.payments_outlined;
+      case _AdminSection.security:
+        return Icons.security_outlined;
+    }
+  }
+}
+
+class _AdminSidebar extends StatelessWidget {
+  const _AdminSidebar({required this.selected, required this.onSelected});
+
+  final _AdminSection selected;
+  final ValueChanged<_AdminSection> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.background.withValues(alpha: 0.94),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Row(
+              children: [
+                AppLogo(size: 38),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Stopwatch\nAdmin',
+                    style: TextStyle(fontWeight: FontWeight.w800, height: 1.1),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            for (final section in _AdminSection.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _SidebarDestination(
+                  section: section,
+                  selected: section == selected,
+                  onTap: () => onSelected(section),
+                ),
+              ),
+            const Spacer(),
+            const _SidebarPrivacyNote(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarDestination extends StatelessWidget {
+  const _SidebarDestination({
+    required this.section,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _AdminSection section;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected
+          ? AppColors.primary.withValues(alpha: 0.1)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: ListTile(
+        selected: selected,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        leading: Icon(section.icon),
+        title: Text(section.label),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _SidebarPrivacyNote extends StatelessWidget {
+  const _SidebarPrivacyNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Local session only\nSensitive values are redacted.',
+        style: TextStyle(fontSize: 12, height: 1.35),
       ),
     );
   }
@@ -434,6 +664,272 @@ class _StatusChip extends StatelessWidget {
         label,
         style: TextStyle(color: color, fontWeight: FontWeight.w700),
       ),
+    );
+  }
+}
+
+class _SessionTracePanel extends StatelessWidget {
+  const _SessionTracePanel({required this.store});
+
+  final ApiSessionTraceStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final records = store.records;
+    final apiCount = records
+        .where((record) => record.kind == SessionTraceKind.api)
+        .length;
+    final eventCount = records.length - apiCount;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _DemoBanner(),
+        const SizedBox(height: 16),
+        _Panel(
+          title: 'Current browser session',
+          subtitle: 'Cleared automatically when this Flutter app is reloaded',
+          child: Wrap(
+            spacing: 18,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _TraceSummary(label: 'Session', value: _shortId(store.sessionId)),
+              _TraceSummary(
+                label: 'MSISDN',
+                value: store.maskedMsisdn ?? 'Not observed',
+              ),
+              _TraceSummary(label: 'API calls', value: '$apiCount'),
+              _TraceSummary(label: 'Events', value: '$eventCount'),
+              OutlinedButton.icon(
+                onPressed: store.addDemoRecords,
+                icon: const Icon(Icons.science_outlined),
+                label: const Text('Add demo trace'),
+              ),
+              TextButton.icon(
+                onPressed: records.isEmpty ? null : store.clear,
+                icon: const Icon(Icons.delete_outline_rounded),
+                label: const Text('Clear'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Panel(
+          title: 'Requests, responses and events',
+          subtitle:
+              'Newest first · OTPs, tokens, signatures and full phone numbers are never shown',
+          child: records.isEmpty
+              ? const _EmptyTrace()
+              : Column(
+                  children: [
+                    for (final record in records)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _TraceRecordTile(record: record),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  static String _shortId(String value) {
+    if (value.length <= 12) return value;
+    return '${value.substring(0, 8)}…${value.substring(value.length - 4)}';
+  }
+}
+
+class _TraceSummary extends StatelessWidget {
+  const _TraceSummary({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 112),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 2),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyTrace extends StatelessWidget {
+  const _EmptyTrace();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.timeline_rounded, size: 34, color: AppColors.secondary),
+          SizedBox(height: 10),
+          Text(
+            'No activity captured in this browser session.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Use the player portal in this tab or add a demo trace.',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TraceRecordTile extends StatelessWidget {
+  const _TraceRecordTile({required this.record});
+
+  final SessionTraceRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEvent = record.kind == SessionTraceKind.event;
+    final status = record.statusCode == null ? null : '${record.statusCode}';
+    return Card(
+      margin: EdgeInsets.zero,
+      color: const Color(0xFFF8FAFC),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: (isEvent ? AppColors.secondary : AppColors.primary)
+              .withValues(alpha: 0.12),
+          foregroundColor: isEvent ? AppColors.secondary : AppColors.primary,
+          child: Icon(
+            isEvent ? Icons.bolt_rounded : Icons.http_rounded,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          record.label,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          '${_formatTime(record.occurredAt)}'
+          '${record.durationMs == null ? '' : ' · ${record.durationMs} ms'}'
+          '${record.maskedMsisdn == null ? '' : ' · ${record.maskedMsisdn}'}',
+        ),
+        trailing: status == null
+            ? const Text('EVENT')
+            : Text(
+                status,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: record.succeeded
+                      ? const Color(0xFF15803D)
+                      : const Color(0xFFB45309),
+                ),
+              ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (record.path != null)
+                  _TraceField(label: 'Path', value: record.path!),
+                if (record.request != null)
+                  _TraceField(
+                    label: isEvent ? 'Properties' : 'Request',
+                    value: _pretty(record.request),
+                  ),
+                if (record.response != null)
+                  _TraceField(
+                    label: 'Response',
+                    value: _pretty(record.response),
+                  ),
+                if (record.error != null)
+                  _TraceField(label: 'Error', value: record.error!),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatTime(DateTime value) =>
+      value.toLocal().toIso8601String().replaceFirst('T', ' ').split('.').first;
+
+  static String _pretty(Object? value) {
+    if (value is String) return value;
+    return const JsonEncoder.withIndent('  ').convert(value);
+  }
+}
+
+class _TraceField extends StatelessWidget {
+  const _TraceField({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 5),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: SelectableText(
+              value,
+              style: const TextStyle(
+                color: Color(0xFFE2E8F0),
+                fontFamily: 'monospace',
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DemoModulePanel extends StatelessWidget {
+  const _DemoModulePanel({required this.section});
+
+  final _AdminSection section;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _DemoBanner(),
+        const SizedBox(height: 16),
+        _Panel(
+          title: section.label,
+          subtitle: 'Placeholder module',
+          child: Text(
+            '${section.label} data will be connected when the protected admin API is available.',
+          ),
+        ),
+      ],
     );
   }
 }

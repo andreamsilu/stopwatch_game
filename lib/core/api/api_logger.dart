@@ -118,7 +118,6 @@ class ApiLogger {
   }
 
   /// Recursively removes credentials and masks phone-number fields.
-  @visibleForTesting
   static Object? sanitizeForLogging(Object? value, {String? key}) {
     final normalizedKey = key == null ? '' : _normalizeKey(key);
     if (_secretKeys.contains(normalizedKey)) return _redacted;
@@ -141,7 +140,6 @@ class ApiLogger {
   }
 
   /// Removes sensitive query parameters before a URI reaches the console.
-  @visibleForTesting
   static Uri sanitizeUriForLogging(Uri uri) {
     if (!uri.hasQuery) return uri;
     final sanitized = <String, String>{};
