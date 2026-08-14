@@ -33,6 +33,22 @@ void main() {
     await tester.pump();
     expect(find.text('Current browser session'), findsOneWidget);
     expect(find.text('Requests, responses and events'), findsOneWidget);
+    expect(find.text('auth.login_succeeded'), findsOneWidget);
+
+    await tester.tap(find.text('Users'));
+    await tester.pump();
+    expect(find.text('Total users'), findsOneWidget);
+    expect(find.text('User directory'), findsOneWidget);
+
+    await tester.tap(find.text('Billing'));
+    await tester.pump();
+    expect(find.text('Collected today'), findsOneWidget);
+    expect(find.text('Recent transactions'), findsOneWidget);
+
+    await tester.tap(find.text('Security'));
+    await tester.pump();
+    expect(find.text('OTP failures'), findsOneWidget);
+    expect(find.text('Access and integrity events'), findsOneWidget);
   });
 
   testWidgets('admin dashboard fits a mobile viewport', (tester) async {

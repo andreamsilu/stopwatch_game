@@ -25,6 +25,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   void initState() {
     super.initState();
+    if (_traceStore.records.isEmpty) {
+      _traceStore.addDemoRecords();
+    }
     _traceStore.addListener(_refresh);
   }
 
@@ -652,8 +655,11 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final success = label == 'Success';
-    final color = success ? const Color(0xFF15803D) : const Color(0xFFB45309);
+    final color = switch (label.toLowerCase()) {
+      'success' || 'active' || 'completed' => const Color(0xFF15803D),
+      'failed' || 'blocked' || 'inactive' => const Color(0xFFB91C1C),
+      _ => const Color(0xFFB45309),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
@@ -917,18 +923,308 @@ class _DemoModulePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final content = switch (section) {
+      _AdminSection.users => const _UsersDemoPanel(),
+      _AdminSection.billing => const _BillingDemoPanel(),
+      _AdminSection.security => const _SecurityDemoPanel(),
+      _ => const SizedBox.shrink(),
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [const _DemoBanner(), const SizedBox(height: 16), content],
+    );
+  }
+}
+
+class _UsersDemoPanel extends StatelessWidget {
+  const _UsersDemoPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _DemoBanner(),
-        const SizedBox(height: 16),
+        _ModuleMetricGrid(metrics: _AdminDemoData.userMetrics),
+        SizedBox(height: 16),
         _Panel(
-          title: section.label,
-          subtitle: 'Placeholder module',
-          child: Text(
-            '${section.label} data will be connected when the protected admin API is available.',
+          title: 'User directory',
+          subtitle: 'Sample accounts with masked subscriber numbers',
+          child: _AdminDataTable(
+            columns: ['User', 'MSISDN', 'Channel', 'Status', 'Last access'],
+            rows: [
+              ['USR-1042', '255676***824', 'WEB', 'Active', '2 min ago'],
+              ['USR-1038', '255754***091', 'WEB', 'Active', '6 min ago'],
+              ['USR-1035', '255713***668', 'APP', 'Active', '12 min ago'],
+              ['USR-1029', '255689***443', 'SMS', 'Review', '19 min ago'],
+              ['USR-1017', '255622***705', 'WEB', 'Inactive', 'Yesterday'],
+            ],
+            statusColumn: 3,
           ),
         ),
+        SizedBox(height: 16),
+        _Panel(
+          title: 'Registration activity',
+          subtitle: 'Dummy sign-ups by channel today',
+          child: _BreakdownList(
+            items: [
+              _DemoBreakdown('Web portal', 31, 0.66),
+              _DemoBreakdown('Mobile app', 12, 0.26),
+              _DemoBreakdown('SMS', 4, 0.08),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BillingDemoPanel extends StatelessWidget {
+  const _BillingDemoPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ModuleMetricGrid(metrics: _AdminDemoData.billingMetrics),
+        SizedBox(height: 16),
+        _Panel(
+          title: 'Recent transactions',
+          subtitle: 'Sample payment requests and provider responses',
+          child: _AdminDataTable(
+            columns: [
+              'Request',
+              'MSISDN',
+              'Amount',
+              'Provider',
+              'Status',
+              'Time',
+            ],
+            rows: [
+              [
+                'REQ-8F21',
+                '255676***824',
+                'TZS 1,000',
+                'Yas',
+                'Success',
+                '11:26',
+              ],
+              [
+                'REQ-8F20',
+                '255754***091',
+                'TZS 1,000',
+                'M-Pesa',
+                'Pending',
+                '11:24',
+              ],
+              [
+                'REQ-8F19',
+                '255713***668',
+                'TZS 2,000',
+                'Airtel',
+                'Success',
+                '11:17',
+              ],
+              [
+                'REQ-8F18',
+                '255689***443',
+                'TZS 1,000',
+                'Yas',
+                'Failed',
+                '11:11',
+              ],
+              [
+                'REQ-8F17',
+                '255622***705',
+                'TZS 1,000',
+                'M-Pesa',
+                'Success',
+                '11:03',
+              ],
+            ],
+            statusColumn: 4,
+          ),
+        ),
+        SizedBox(height: 16),
+        _Panel(
+          title: 'Provider performance',
+          subtitle: 'Dummy successful-payment share for the last 24 hours',
+          child: _BreakdownList(
+            items: [
+              _DemoBreakdown('Yas', 218, 0.94),
+              _DemoBreakdown('M-Pesa', 146, 0.89),
+              _DemoBreakdown('Airtel Money', 72, 0.86),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SecurityDemoPanel extends StatelessWidget {
+  const _SecurityDemoPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ModuleMetricGrid(metrics: _AdminDemoData.securityMetrics),
+        SizedBox(height: 16),
+        _Panel(
+          title: 'Access and integrity events',
+          subtitle: 'Sample security events with sensitive values masked',
+          child: _AdminDataTable(
+            columns: ['Time', 'Event', 'MSISDN', 'Session', 'Result'],
+            rows: [
+              [
+                '11:29',
+                'auth.otp_failed',
+                '255689***443',
+                'SES-91D2',
+                'Review',
+              ],
+              [
+                '11:22',
+                'request.signature_invalid',
+                '255754***091',
+                'SES-80C4',
+                'Blocked',
+              ],
+              [
+                '11:16',
+                'game.sequence_invalid',
+                '255622***705',
+                'SES-77A8',
+                'Review',
+              ],
+              [
+                '10:58',
+                'auth.login_succeeded',
+                '255676***824',
+                'SES-63F1',
+                'Success',
+              ],
+              [
+                '10:47',
+                'request.rate_limited',
+                '255713***668',
+                'SES-52B9',
+                'Blocked',
+              ],
+            ],
+            statusColumn: 4,
+          ),
+        ),
+        SizedBox(height: 16),
+        _Panel(
+          title: 'Control status',
+          subtitle: 'Dummy operational state of portal safeguards',
+          child: _AdminDataTable(
+            columns: ['Control', 'Coverage', 'Status'],
+            rows: [
+              ['Sensitive-field redaction', 'Requests and responses', 'Active'],
+              ['HMAC request validation', 'Protected API routes', 'Active'],
+              ['OTP attempt throttling', 'Authentication', 'Active'],
+              ['Admin role enforcement', 'Demo route only', 'Pending'],
+            ],
+            statusColumn: 2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ModuleMetricGrid extends StatelessWidget {
+  const _ModuleMetricGrid({required this.metrics});
+
+  final List<_DemoMetric> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1000
+            ? 4
+            : constraints.maxWidth >= 560
+            ? 2
+            : 1;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: metrics.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: columns == 1 ? 2.8 : 2.05,
+          ),
+          itemBuilder: (context, index) => _MetricCard(metric: metrics[index]),
+        );
+      },
+    );
+  }
+}
+
+class _AdminDataTable extends StatelessWidget {
+  const _AdminDataTable({
+    required this.columns,
+    required this.rows,
+    this.statusColumn,
+  });
+
+  final List<String> columns;
+  final List<List<String>> rows;
+  final int? statusColumn;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: [
+          for (final column in columns) DataColumn(label: Text(column)),
+        ],
+        rows: [
+          for (final row in rows)
+            DataRow(
+              cells: [
+                for (var index = 0; index < row.length; index++)
+                  DataCell(
+                    index == statusColumn
+                        ? _StatusChip(label: row[index])
+                        : Text(row[index]),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BreakdownList extends StatelessWidget {
+  const _BreakdownList({required this.items});
+
+  final List<_DemoBreakdown> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var index = 0; index < items.length; index++) ...[
+          _FunnelRow(
+            item: _DemoFunnelItem(
+              items[index].label,
+              items[index].count,
+              items[index].rate,
+            ),
+          ),
+          if (index != items.length - 1) const SizedBox(height: 14),
+        ],
       ],
     );
   }
@@ -1017,6 +1313,67 @@ class _AdminDemoData {
       'req…0b7',
     ),
   ];
+
+  static const userMetrics = [
+    _DemoMetric(
+      '1,284',
+      'Total users',
+      Icons.groups_outlined,
+      AppColors.primary,
+    ),
+    _DemoMetric(
+      '128',
+      'Active now',
+      Icons.online_prediction_rounded,
+      Color(0xFF15803D),
+    ),
+    _DemoMetric(
+      '47',
+      'New today',
+      Icons.person_add_alt_1_outlined,
+      AppColors.secondary,
+    ),
+    _DemoMetric(
+      '92.4%',
+      'Login success',
+      Icons.login_rounded,
+      Color(0xFFB8860B),
+    ),
+  ];
+
+  static const billingMetrics = [
+    _DemoMetric(
+      'TZS 436K',
+      'Collected today',
+      Icons.account_balance_wallet_outlined,
+      AppColors.primary,
+    ),
+    _DemoMetric(
+      '436',
+      'Successful',
+      Icons.check_circle_outline_rounded,
+      Color(0xFF15803D),
+    ),
+    _DemoMetric('18', 'Pending', Icons.schedule_rounded, Color(0xFFB8860B)),
+    _DemoMetric('12', 'Failed', Icons.error_outline_rounded, Color(0xFFB91C1C)),
+  ];
+
+  static const securityMetrics = [
+    _DemoMetric('7', 'OTP failures', Icons.password_rounded, Color(0xFFB45309)),
+    _DemoMetric(
+      '3',
+      'Invalid signatures',
+      Icons.gpp_bad_outlined,
+      Color(0xFFB91C1C),
+    ),
+    _DemoMetric('5', 'Rate limited', Icons.speed_rounded, AppColors.primary),
+    _DemoMetric(
+      '2',
+      'Sessions blocked',
+      Icons.block_rounded,
+      Color(0xFFB91C1C),
+    ),
+  ];
 }
 
 class _DemoMetric {
@@ -1056,4 +1413,12 @@ class _DemoActivity {
   final String event;
   final String result;
   final String reference;
+}
+
+class _DemoBreakdown {
+  const _DemoBreakdown(this.label, this.count, this.rate);
+
+  final String label;
+  final int count;
+  final double rate;
 }
