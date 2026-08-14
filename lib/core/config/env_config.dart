@@ -9,7 +9,6 @@ class EnvConfig {
   static bool _isLoaded = false;
   static bool? _hmacEnabledResolved;
 
-  static const String _defaultBaseUrl = 'http://188.64.189.38:9090';
   static const String _defaultApiPrefix = '/api/v1';
 
   static Future<void> load() async {
@@ -44,8 +43,19 @@ class EnvConfig {
     return value;
   }
 
+  static String _required(String key) {
+    if (!_isLoaded) {
+      throw StateError('EnvConfig.load() must be called before reading $key');
+    }
+    final value = dotenv.env[key]?.trim();
+    if (value == null || value.isEmpty) {
+      throw StateError('$key must be set in the project .env file');
+    }
+    return value;
+  }
+
   static String get apiBaseUrl {
-    final raw = _optional('API_BASE_URL', _defaultBaseUrl);
+    final raw = _required('API_BASE_URL');
     return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
   }
 

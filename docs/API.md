@@ -31,24 +31,23 @@ This document describes the HTTP API contract required by the **Stopwatch Challe
 
 **Base URL (configured backend):**
 
-```
-http://188.64.189.38:9090
-```
+Set `API_BASE_URL` in the project `.env` file. The application does not contain
+a fallback host.
 
 **Interactive API reference (Swagger UI):**
 
-[http://188.64.189.38:9090/swagger-ui/index.html](http://188.64.189.38:9090/swagger-ui/index.html)
+`${API_BASE_URL}/swagger-ui/index.html`
 
 OpenAPI: `GET /v3/api-docs` on the same host.
 
 | Environment | Base URL |
 |-------------|----------|
-| **Current (development)** | `http://188.64.189.38:9090` |
+| **Current (development)** | Value of `API_BASE_URL` in `.env` |
 
 All endpoints below are relative to this base URL. Example — register user:
 
 ```
-POST http://188.64.189.38:9090/api/v1/users
+POST ${API_BASE_URL}/api/v1/users
 ```
 
 > **Note:** This host uses plain HTTP. Use HTTPS with a proper domain before production release.
@@ -158,7 +157,7 @@ POST /api/v1/users
 
 ```bash
 curl -X 'POST' \
-  'http://188.64.189.38:9090/api/v1/users' \
+  "${API_BASE_URL}/api/v1/users" \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{"msisdn": "255676589824"}'
@@ -878,5 +877,5 @@ All endpoints from live Swagger (`/v3/api-docs`) except the Yas webhook:
 | Version | Date | Notes |
 |---------|------|-------|
 | 1.2 | 2026-05-18 | Document live `POST /api/v1/users` (msisdn, channelSource, username) |
-| 1.1 | 2026-05-18 | Set base URL to `http://188.64.189.38:9090` |
+| 1.1 | 2026-05-18 | Updated the configured development base URL. |
 | 1.0 | 2026-05-18 | Initial contract derived from `stopwatch_game` v1.0.0+1 |

@@ -148,7 +148,7 @@ class StopwatchApi {
       throw ApiException(
         'Browser blocked the API call (CORS). '
         'Run with "Windows (desktop)" in VS Code, or enable CORS on the server '
-        'for http://localhost:8080.',
+        'for the current web origin (${Uri.base.origin}).',
       );
     }
 
