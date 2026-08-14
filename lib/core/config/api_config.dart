@@ -18,6 +18,7 @@ class ApiConfig {
   static String get targetTime => '$baseUrl$apiPrefix/game/target-time';
   static String get gameStart => '$baseUrl$apiPrefix/game/start';
   static String get gameStop => '$baseUrl$apiPrefix/game/stop';
+  static String get telemetryEvents => '$baseUrl$apiPrefix/telemetry/events';
   static String get billingTransactions =>
       '$baseUrl$apiPrefix/billing/transactions';
 
@@ -28,10 +29,7 @@ class ApiConfig {
       '$baseUrl$apiPrefix/game/sessions/${Uri.encodeComponent(sessionRef)}';
 
   static String gameHistory({int page = 0, int size = 20}) {
-    final query = Uri(queryParameters: {
-      'page': '$page',
-      'size': '$size',
-    });
+    final query = Uri(queryParameters: {'page': '$page', 'size': '$size'});
     return '$baseUrl$apiPrefix/game/history${query.query.isEmpty ? '' : '?${query.query}'}';
   }
 }

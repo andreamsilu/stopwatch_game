@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/core/auth/auth_session_storage.dart';
 import 'package:stopwatch_game/core/auth/auth_token_store.dart';
+import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
 import 'package:stopwatch_game/features/auth/data/auth_service.dart';
 
 final authSessionStorageProvider = Provider<AuthSessionStorage>((ref) {
@@ -18,11 +19,15 @@ final accessTokenProvider = StateProvider<String?>((ref) => null);
 
 final stopwatchApiProvider = Provider<StopwatchApi>((ref) {
   final tokenStore = ref.watch(authTokenStoreProvider);
-  final api = StopwatchApi(
-    accessTokenProvider: () => tokenStore.accessToken,
-  );
+  final api = StopwatchApi(accessTokenProvider: () => tokenStore.accessToken);
   ref.onDispose(api.close);
   return api;
+});
+
+final interactionTelemetryProvider = Provider<InteractionTelemetryService>((
+  ref,
+) {
+  return InteractionTelemetryService(api: ref.watch(stopwatchApiProvider));
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {

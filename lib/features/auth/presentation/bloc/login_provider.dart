@@ -4,5 +4,8 @@ import 'package:stopwatch_game/features/auth/presentation/bloc/login_notifier.da
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 
 final loginProvider = StateNotifierProvider<LoginNotifier, LoginState>((ref) {
-  return LoginNotifier(auth: ref.watch(authServiceProvider));
+  return LoginNotifier(
+    auth: ref.watch(authServiceProvider),
+    telemetry: ref.watch(interactionTelemetryProvider),
+  );
 });

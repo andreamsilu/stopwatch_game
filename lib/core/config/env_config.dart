@@ -11,9 +11,10 @@ class EnvConfig {
 
   static const String _defaultApiPrefix = '/api/v1';
 
-  static Future<void> load() async {
+  static Future<void> load({Map<String, String> overrides = const {}}) async {
     await dotenv.load(fileName: '.env');
     await loadEnvFromDiskIfPresent();
+    dotenv.env.addAll(overrides);
     _isLoaded = true;
 
     _hmacEnabledResolved = _parseBool(
@@ -69,10 +70,7 @@ class EnvConfig {
       raw == 'true' || raw == '1' || raw == 'yes';
 
   static bool _parseBool(String key, {required bool defaultValue}) {
-    final raw = _optional(
-      key,
-      defaultValue ? 'true' : 'false',
-    ).toLowerCase();
+    final raw = _optional(key, defaultValue ? 'true' : 'false').toLowerCase();
     if (_isTruthy(raw)) return true;
     if (raw == 'false' || raw == '0' || raw == 'no' || raw == 'off') {
       return false;
@@ -94,18 +92,21 @@ class EnvConfig {
   }
 
   static Duration get billingPollInterval {
-    final ms = int.tryParse(_optional('BILLING_POLL_INTERVAL_MS', '2000')) ?? 2000;
+    final ms =
+        int.tryParse(_optional('BILLING_POLL_INTERVAL_MS', '2000')) ?? 2000;
     return Duration(milliseconds: ms.clamp(500, 30000));
   }
 
   static Duration get billingPollTimeout {
-    final ms = int.tryParse(_optional('BILLING_POLL_TIMEOUT_MS', '30000')) ?? 30000;
+    final ms =
+        int.tryParse(_optional('BILLING_POLL_TIMEOUT_MS', '30000')) ?? 30000;
     return Duration(milliseconds: ms.clamp(5000, 600000));
   }
 
   /// Maximum delay between billing status polls after backoff (see [billingPollBackoffMultiplier]).
   static Duration get billingPollBackoffMax {
-    final ms = int.tryParse(_optional('BILLING_POLL_BACKOFF_MAX_MS', '12000')) ??
+    final ms =
+        int.tryParse(_optional('BILLING_POLL_BACKOFF_MAX_MS', '12000')) ??
         12000;
     final intervalMs = billingPollInterval.inMilliseconds;
     return Duration(milliseconds: ms.clamp(intervalMs, 120000));
@@ -127,6 +128,12 @@ class EnvConfig {
     return _isTruthy(raw);
   }
 
+  /// Enables best-effort client telemetry delivery to the backend.
+  static bool get telemetryEnabled {
+    final raw = _optional('TELEMETRY_ENABLED', 'false').toLowerCase();
+    return _isTruthy(raw);
+  }
+
   /// When true, signed requests include `X-TIMESTAMP`, `X-NONCE`, `X-SIGNATURE`.
   static bool get hmacEnabled {
     if (_hmacEnabledResolved != null) return _hmacEnabledResolved!;
@@ -136,5 +143,4 @@ class EnvConfig {
   /// Shared secret for HMAC-SHA256 (must match backend `stopwatch.security.hmac.secret`).
   static String get hmacSecret =>
       _optional('STOPWATCH_SECURITY_HMAC_SECRET', '');
-
 }

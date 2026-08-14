@@ -653,39 +653,43 @@ GET /api/v1/game/stats
 
 ## Interaction telemetry
 
-Anti-automation metrics collected per round from pointer events. Submitted **after** the round stops, in parallel with displaying the result.
+Privacy-safe product and game-integrity events are submitted asynchronously.
+Telemetry delivery never blocks authentication, billing, or gameplay and is
+enabled with `TELEMETRY_ENABLED=true` only after the backend endpoint exists.
 
-**Client reference:** `InteractionTelemetryService.submitRoundPayload`
+**Client reference:** `InteractionTelemetryService`
 
 ```http
-POST /api/v1/game/interaction-telemetry
+POST /api/v1/telemetry/events
+Authorization: Bearer <token>
 ```
 
-**Request body**
+The backend derives the user identity from the JWT. Client payloads must not
+contain an MSISDN, OTP, access token, password, signature, or secret.
 
 ```json
 {
-  "reactionTime": 342,
-  "movementEntropy": 2.41,
-  "clickVariance": 18.6,
-  "interactionConsistency": 0.87,
-  "sessionId": "1716035520123456-48291",
-  "timestamp": "2026-05-18T14:32:09.400Z",
-  "isTrusted": true,
-  "roundId": "rnd_01HXYZ"
+  "eventId": "550e8400-e29b-41d4-a716-446655440000",
+  "eventName": "game.interaction",
+  "eventVersion": 1,
+  "occurredAt": "2026-08-14T09:32:09.400Z",
+  "channel": "WEB",
+  "properties": {
+    "reactionTime": 342,
+    "movementEntropy": 2.41,
+    "clickVariance": 18.6,
+    "interactionConsistency": 0.87,
+    "interactionSessionId": "1716035520123456-48291",
+    "sessionRef": "session-reference",
+    "isTrusted": true
+  }
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `reactionTime` | integer | Milliseconds from UI ready to first pointer down (0–60000) |
-| `movementEntropy` | number | Shannon entropy (base 2) of movement direction bins; `0` if insufficient samples |
-| `clickVariance` | number | Variance of down/up pointer distances per click pair |
-| `interactionConsistency` | number | `0.0`–`1.0`; higher = more stable interaction patterns across recent rounds |
-| `sessionId` | string | Client interaction session id |
-| `timestamp` | string | ISO-8601 when payload was built |
-| `isTrusted` | boolean \| null | On **web**, reflects `PointerEvent.isTrusted`; `null` on native platforms |
-| `roundId` | string | Recommended — link telemetry to server round |
+Implemented event names: `auth.login_succeeded`, `portal.session_started`,
+`navigation.tab_viewed`, `game.play_opened`, `billing.initiated`, `billing.succeeded`,
+`round.preparation_failed`, `game.started`, `game.interaction`, and
+`game.completed`.
 
 **Success — `202 Accepted`**
 
@@ -694,8 +698,6 @@ POST /api/v1/game/interaction-telemetry
   "received": true
 }
 ```
-
-Empty payloads are not sent by the client (`if (payload.isEmpty) return`).
 
 **Server guidance:** use telemetry for fraud scoring; do not block prize payout solely on client metrics without additional signals.
 
@@ -777,7 +779,7 @@ sequenceDiagram
     User->>App: Press Stop
     App->>API: POST /game/rounds/{id}/stop
     API-->>App: RoundResultData fields
-    App->>API: POST /game/interaction-telemetry
+    App->>API: POST /telemetry/events (game.interaction)
     App-->>User: Result dialog (WIN / LOSE)
 ```
 
@@ -868,7 +870,8 @@ All endpoints from live Swagger (`/v3/api-docs`) except the Yas webhook:
 | `POST /game/stop` | **Wired** | `StopwatchApi` |
 | `GET /game/sessions/{sessionRef}` | **Wired** | `StopwatchApi` |
 
-**Not on Swagger** (documented for future backend): `POST /game/interaction-telemetry` — client collects payload locally only (`interaction_telemetry_service.dart`).
+**Not on Swagger** (backend required): `POST /telemetry/events` — the client
+transport is implemented but remains disabled until this endpoint is deployed.
 
 ---
 

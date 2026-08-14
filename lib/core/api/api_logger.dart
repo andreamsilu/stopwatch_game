@@ -3,19 +3,32 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
-/// Console logging for [StopwatchApi] request/response traffic.
-///
-/// View logs:
-/// - **Web:** Chrome DevTools → Console (filter `StopwatchApi`)
-/// - **Desktop / `flutter run`:** terminal + VS Code Debug Console
+/// Privacy-safe console logging for [StopwatchApi] request/response traffic.
 class ApiLogger {
   ApiLogger._();
 
-  /// When false, no HTTP lines are printed (set from [EnvConfig.apiLogResponses] in main).
+  /// When false, no HTTP lines are printed.
   static bool enabled = true;
 
   static const _name = 'StopwatchApi';
   static const _maxBodyLength = 8000;
+  static const _redacted = '<redacted>';
+  static const _secretKeys = {
+    'accesstoken',
+    'authorization',
+    'cookie',
+    'hmacsecret',
+    'otp',
+    'password',
+    'refreshtoken',
+    'secret',
+    'setcookie',
+    'signature',
+    'token',
+    'xnonce',
+    'xsignature',
+  };
+  static const _phoneKeys = {'msisdn', 'phone', 'phonenumber', 'username'};
 
   static void _emit(String message, {int level = 800}) {
     debugPrint('[$_name] $message');
@@ -32,16 +45,14 @@ class ApiLogger {
   }) {
     if (!enabled) return;
 
-    final buffer = StringBuffer()..writeln('→ $method $uri');
-
+    final buffer = StringBuffer()
+      ..writeln('→ $method ${sanitizeUriForLogging(uri)}');
     if (headers != null && headers.isNotEmpty) {
       buffer.writeln('  headers: ${_prettyJson(_redactHeaders(headers))}');
     }
-
     if (body != null) {
-      buffer.writeln('  request: ${_prettyJson(body)}');
+      buffer.writeln('  request: ${_prettyJson(sanitizeForLogging(body))}');
     }
-
     _emit(buffer.toString().trimRight());
   }
 
@@ -56,20 +67,20 @@ class ApiLogger {
     if (!enabled) return;
 
     final buffer = StringBuffer()
-      ..writeln('← $method $statusCode (${durationMs}ms) $uri');
-
+      ..writeln(
+        '← $method $statusCode (${durationMs}ms) '
+        '${sanitizeUriForLogging(uri)}',
+      );
     if (responseHeaders != null && responseHeaders.isNotEmpty) {
       buffer.writeln(
         '  response-headers: ${_prettyJson(_redactHeaders(responseHeaders))}',
       );
     }
-
-    if (body.trim().isEmpty) {
-      buffer.writeln('  response: <empty>');
-    } else {
-      buffer.writeln('  response: ${_prettyBody(body)}');
-    }
-
+    buffer.writeln(
+      body.trim().isEmpty
+          ? '  response: <empty>'
+          : '  response: ${_prettyBody(body)}',
+    );
     _emit(buffer.toString().trimRight());
   }
 
@@ -80,39 +91,92 @@ class ApiLogger {
     required int durationMs,
   }) {
     if (!enabled) return;
-
-    _emit('✕ $method ERROR (${durationMs}ms) $uri\n  $error', level: 1000);
+    _emit(
+      '✕ $method ERROR (${durationMs}ms) '
+      '${sanitizeUriForLogging(uri)}\n  ${_redactText('$error')}',
+      level: 1000,
+    );
   }
 
   static Map<String, String> _redactHeaders(Map<String, String> headers) {
     return {
       for (final entry in headers.entries)
-        entry.key: entry.key.toLowerCase() == 'authorization'
-            ? _maskAuthorization(entry.value)
+        entry.key: _secretKeys.contains(_normalizeKey(entry.key))
+            ? _redacted
             : entry.value,
     };
-  }
-
-  static String _maskAuthorization(String value) {
-    if (!value.startsWith('Bearer ')) return '<redacted>';
-    final token = value.substring(7);
-    if (token.length <= 12) return 'Bearer ***';
-    return 'Bearer ${token.substring(0, 6)}…${token.substring(token.length - 4)}';
   }
 
   static String _prettyBody(String body) {
     final trimmed = body.trim();
     if (trimmed.isEmpty) return '<empty>';
-
     try {
-      final decoded = jsonDecode(trimmed);
-      return _truncate(_prettyJson(decoded));
+      return _truncate(_prettyJson(sanitizeForLogging(jsonDecode(trimmed))));
     } catch (_) {
-      return _truncate(trimmed);
+      return _truncate(_redactText(trimmed));
     }
   }
 
-  static String _prettyJson(Object value) {
+  /// Recursively removes credentials and masks phone-number fields.
+  @visibleForTesting
+  static Object? sanitizeForLogging(Object? value, {String? key}) {
+    final normalizedKey = key == null ? '' : _normalizeKey(key);
+    if (_secretKeys.contains(normalizedKey)) return _redacted;
+    if (_phoneKeys.contains(normalizedKey) && value is String) {
+      return _maskPhone(value);
+    }
+    if (value is Map) {
+      return {
+        for (final entry in value.entries)
+          entry.key.toString(): sanitizeForLogging(
+            entry.value,
+            key: entry.key.toString(),
+          ),
+      };
+    }
+    if (value is Iterable) {
+      return value.map((item) => sanitizeForLogging(item)).toList();
+    }
+    return value;
+  }
+
+  /// Removes sensitive query parameters before a URI reaches the console.
+  @visibleForTesting
+  static Uri sanitizeUriForLogging(Uri uri) {
+    if (!uri.hasQuery) return uri;
+    final sanitized = <String, String>{};
+    uri.queryParameters.forEach((key, value) {
+      final normalizedKey = _normalizeKey(key);
+      if (_secretKeys.contains(normalizedKey)) {
+        sanitized[key] = _redacted;
+      } else if (_phoneKeys.contains(normalizedKey)) {
+        sanitized[key] = _maskPhone(value);
+      } else {
+        sanitized[key] = value;
+      }
+    });
+    return uri.replace(queryParameters: sanitized);
+  }
+
+  static String _maskPhone(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 7) return _redacted;
+    return '${digits.substring(0, 6)}***${digits.substring(digits.length - 3)}';
+  }
+
+  static String _normalizeKey(String key) =>
+      key.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+
+  static String _redactText(String text) {
+    return text
+        .replaceAll(
+          RegExp(r'Bearer\s+[A-Za-z0-9._~+/=-]+', caseSensitive: false),
+          'Bearer $_redacted',
+        )
+        .replaceAll(RegExp(r'\b(?:255|0)\d{8,11}\b'), _redacted);
+  }
+
+  static String _prettyJson(Object? value) {
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert(value);
   }

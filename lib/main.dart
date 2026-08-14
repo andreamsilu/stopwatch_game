@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/core/theme/app_theme.dart';
+import 'package:stopwatch_game/features/admin/presentation/pages/admin_dashboard_page.dart';
 import 'package:stopwatch_game/features/auth/presentation/pages/auth_gate_page.dart';
 
 Future<void> main() async {
@@ -18,6 +20,7 @@ Future<void> main() async {
   );
 
   if (kIsWeb) {
+    usePathUrlStrategy();
     BrowserContextMenu.disableContextMenu();
     HardwareKeyboard.instance.addHandler(_blockInspectionShortcuts);
   }
@@ -42,7 +45,8 @@ bool _blockInspectionShortcuts(KeyEvent event) {
       (ctrlOrCmd && key == LogicalKeyboardKey.keyU);
 
   // Block common navigation shortcuts (reload / close tab) while game is active.
-  final isNavigationCombo = ctrlOrCmd &&
+  final isNavigationCombo =
+      ctrlOrCmd &&
       (key == LogicalKeyboardKey.keyR || // reload
           key == LogicalKeyboardKey.keyW); // close tab
 
@@ -50,7 +54,9 @@ bool _blockInspectionShortcuts(KeyEvent event) {
 }
 
 class StopwatchChallengeApp extends StatelessWidget {
-  const StopwatchChallengeApp({super.key});
+  const StopwatchChallengeApp({this.initialRoute, super.key});
+
+  final String? initialRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +65,13 @@ class StopwatchChallengeApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Stopwatch Challenge',
         theme: AppTheme.lightTheme,
-        home: const AuthGatePage(),
+        initialRoute: initialRoute,
+        routes: {
+          '/': (_) => const AuthGatePage(),
+          '/admin': (_) => const AdminDashboardPage(),
+        },
+        onUnknownRoute: (_) =>
+            MaterialPageRoute<void>(builder: (_) => const AuthGatePage()),
       ),
     );
   }

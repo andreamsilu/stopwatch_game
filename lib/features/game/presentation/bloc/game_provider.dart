@@ -17,6 +17,7 @@ final gameControllerProvider = StateNotifierProvider<GameController, GameState>(
       msisdn: msisdn,
       isSubscribed: isSubscribed,
       api: api,
+      telemetryService: ref.watch(interactionTelemetryProvider),
     );
   },
 );

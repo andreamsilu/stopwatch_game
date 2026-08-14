@@ -23,17 +23,23 @@ class GameController extends StateNotifier<GameState> {
     required bool isSubscribed,
     GameService? gameService,
     StopwatchApi? api,
+    InteractionTelemetryService? telemetryService,
   }) : _msisdn = msisdn,
        _isSubscribed = isSubscribed,
        _gameService = gameService ?? GameService.create(api: api),
+       _telemetry =
+           telemetryService ??
+           InteractionTelemetryService(api: api, enabled: false),
        super(const GameState.initial()) {
     GameFeedbackService.setSoundEnabled(state.isSoundEnabled);
     _beginInteractionSession();
+    _track('portal.session_started');
   }
 
   final String _msisdn;
   final bool _isSubscribed;
   final GameService _gameService;
+  final InteractionTelemetryService _telemetry;
 
   String get _effectiveMsisdn => _msisdn;
 
@@ -60,7 +66,9 @@ class GameController extends StateNotifier<GameState> {
   int _beginRoundOperation() => ++_roundOperationId;
 
   void selectTab(GameTab tab) {
+    if (state.selectedTab == tab) return;
     state = state.copyWith(selectedTab: tab);
+    _track('navigation.tab_viewed', properties: {'tab': tab.name});
   }
 
   void toggleSoundEnabled() {
@@ -87,6 +95,7 @@ class GameController extends StateNotifier<GameState> {
       clearActiveSession: true,
       clearRoundError: true,
     );
+    _track('game.play_opened');
     await _chargeAndPrepareRound();
   }
 
@@ -211,6 +220,14 @@ class GameController extends StateNotifier<GameState> {
         elapsed: _stopwatch.elapsed,
       ),
     );
+    _track(
+      'game.started',
+      properties: {
+        'sessionRef': state.sessionRef,
+        'gameSessionId': state.activeSessionId,
+        'targetTimeMs': state.targetTime.inMilliseconds,
+      },
+    );
   }
 
   Future<void> onStopPressed() async {
@@ -227,28 +244,33 @@ class GameController extends StateNotifier<GameState> {
 
       _stopwatch.reset();
       final interactionPayload = _buildInteractionPayload();
-      await InteractionTelemetryService.submitRoundPayload(interactionPayload);
-      if (!mounted) return;
+      unawaited(_telemetry.submitRoundPayload(interactionPayload));
 
-      _patchState(
-        (s) {
-          final absDiff = backendResult.differenceMs.abs();
-          final prevBest = s.bestDifferenceAbsMs;
-          final newBest = prevBest == null
-              ? absDiff
-              : (absDiff < prevBest ? absDiff : prevBest);
-          return s.copyWith(
-            isRunning: false,
-            isSubmitting: false,
-            elapsed: Duration.zero,
-            latestResult: backendResult,
-            latestInteractionPayload: interactionPayload,
-            totalWins:
-                s.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
-            roundsPlayed: s.roundsPlayed + 1,
-            bestDifferenceAbsMs: newBest,
-            clearActiveSession: true,
-          );
+      _patchState((s) {
+        final absDiff = backendResult.differenceMs.abs();
+        final prevBest = s.bestDifferenceAbsMs;
+        final newBest = prevBest == null
+            ? absDiff
+            : (absDiff < prevBest ? absDiff : prevBest);
+        return s.copyWith(
+          isRunning: false,
+          isSubmitting: false,
+          elapsed: Duration.zero,
+          latestResult: backendResult,
+          latestInteractionPayload: interactionPayload,
+          totalWins:
+              s.totalWins + (backendResult.outcomeLabel == 'WIN' ? 1 : 0),
+          roundsPlayed: s.roundsPlayed + 1,
+          bestDifferenceAbsMs: newBest,
+          clearActiveSession: true,
+        );
+      });
+      _track(
+        'game.completed',
+        properties: {
+          'sessionRef': interactionPayload['sessionRef'],
+          'differenceMs': backendResult.differenceMs,
+          'winner': backendResult.outcomeLabel == 'WIN',
         },
       );
     } on ApiException catch (e) {
@@ -422,6 +444,11 @@ class GameController extends StateNotifier<GameState> {
       );
       if (!_isActiveRoundOp(operationId)) return;
 
+      _track(
+        'billing.initiated',
+        properties: {'billingRequestId': billing.requestId},
+      );
+
       _patchState(
         (s) => s.copyWith(
           preparePhase: RoundPreparePhase.awaitingPayment,
@@ -430,10 +457,13 @@ class GameController extends StateNotifier<GameState> {
         ),
       );
 
-      await _gameService.waitForBillingSuccess(
-        requestId: billing.requestId,
-      );
+      await _gameService.waitForBillingSuccess(requestId: billing.requestId);
       if (!_isActiveRoundOp(operationId)) return;
+
+      _track(
+        'billing.succeeded',
+        properties: {'billingRequestId': billing.requestId},
+      );
 
       _patchState(
         (s) => s.copyWith(
@@ -447,6 +477,13 @@ class GameController extends StateNotifier<GameState> {
       );
     } on ApiException catch (e) {
       if (!_isActiveRoundOp(operationId)) return;
+      _track(
+        'round.preparation_failed',
+        properties: {
+          'phase': state.preparePhase.name,
+          'reasonType': e.runtimeType.toString(),
+        },
+      );
       _patchState(
         (s) => s.copyWith(
           isSubmitting: false,
@@ -460,6 +497,13 @@ class GameController extends StateNotifier<GameState> {
       );
     } catch (e) {
       if (!_isActiveRoundOp(operationId)) return;
+      _track(
+        'round.preparation_failed',
+        properties: {
+          'phase': state.preparePhase.name,
+          'reasonType': e.runtimeType.toString(),
+        },
+      );
       _patchState(
         (s) => s.copyWith(
           isSubmitting: false,
@@ -537,10 +581,14 @@ class GameController extends StateNotifier<GameState> {
       'movementEntropy': movementEntropy,
       'clickVariance': clickVariance,
       'interactionConsistency': interactionConsistency,
-      'sessionId': session.sessionId,
-      'timestamp': DateTime.now().toIso8601String(),
+      'interactionSessionId': session.sessionId,
+      'sessionRef': _resolveSessionLookupRef(),
       'isTrusted': session.latestTrustedFlag,
     };
+  }
+
+  void _track(String eventName, {Map<String, dynamic> properties = const {}}) {
+    unawaited(_telemetry.track(eventName, properties: properties));
   }
 
   double _computeInteractionConsistency() {
@@ -557,7 +605,9 @@ class GameController extends StateNotifier<GameState> {
     if (values.isEmpty) return 0;
     final mean = values.reduce((a, b) => a + b) / values.length;
     final variance =
-        values.map((v) => math.pow(v - mean, 2).toDouble()).reduce((a, b) => a + b) /
+        values
+            .map((v) => math.pow(v - mean, 2).toDouble())
+            .reduce((a, b) => a + b) /
         values.length;
     return math.sqrt(variance);
   }
@@ -604,9 +654,14 @@ class _RoundInteractionSession {
   }
 
   int get reactionTimeMs {
-    final firstDown = _samples.firstWhereOrNull((s) => s.type == _PointerType.down);
+    final firstDown = _samples.firstWhereOrNull(
+      (s) => s.type == _PointerType.down,
+    );
     if (firstDown == null) return 0;
-    return firstDown.timestamp.difference(uiReadyAt).inMilliseconds.clamp(0, 60000);
+    return firstDown.timestamp
+        .difference(uiReadyAt)
+        .inMilliseconds
+        .clamp(0, 60000);
   }
 
   double get movementEntropy {
@@ -633,10 +688,14 @@ class _RoundInteractionSession {
   }
 
   double get clickPrecisionVariance {
-    final downPoints =
-        _samples.where((s) => s.type == _PointerType.down).map((s) => s.position).toList();
-    final upPoints =
-        _samples.where((s) => s.type == _PointerType.up).map((s) => s.position).toList();
+    final downPoints = _samples
+        .where((s) => s.type == _PointerType.down)
+        .map((s) => s.position)
+        .toList();
+    final upPoints = _samples
+        .where((s) => s.type == _PointerType.up)
+        .map((s) => s.position)
+        .toList();
     final pairCount = math.min(downPoints.length, upPoints.length);
     if (pairCount == 0) return 0;
     final distances = <double>[];
@@ -645,7 +704,9 @@ class _RoundInteractionSession {
     }
     final mean = distances.reduce((a, b) => a + b) / distances.length;
     final variance =
-        distances.map((d) => math.pow(d - mean, 2).toDouble()).reduce((a, b) => a + b) /
+        distances
+            .map((d) => math.pow(d - mean, 2).toDouble())
+            .reduce((a, b) => a + b) /
         distances.length;
     return variance;
   }

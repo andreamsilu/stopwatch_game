@@ -1,17 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/api/api_messages.dart';
+import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
 import 'package:stopwatch_game/features/auth/data/auth_service.dart';
 import 'package:stopwatch_game/features/auth/data/models/auth_login_result.dart';
 import 'package:stopwatch_game/features/auth/data/models/otp_login_response.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 
 class LoginNotifier extends StateNotifier<LoginState> {
-  LoginNotifier({AuthService? auth})
+  LoginNotifier({AuthService? auth, InteractionTelemetryService? telemetry})
     : _auth = auth ?? AuthService.create(),
+      _telemetry = telemetry ?? InteractionTelemetryService(enabled: false),
       super(const LoginState.initial());
 
   final AuthService _auth;
+  final InteractionTelemetryService _telemetry;
 
   void updatePhoneNumber(String value) {
     state = state.copyWith(phoneNumber: value, clearError: true);
@@ -46,10 +51,16 @@ class LoginNotifier extends StateNotifier<LoginState> {
   Future<bool> submitPhone() async {
     if (!state.canSubmitPhone) return false;
 
-    state = state.copyWith(isSubmitting: true, clearError: true, clearInfo: true);
+    state = state.copyWith(
+      isSubmitting: true,
+      clearError: true,
+      clearInfo: true,
+    );
     try {
       final result = await _auth.login(msisdn: state.normalizedMsisdn);
-      return _applyLoginResult(result, advanceToOtp: true);
+      final authenticated = _applyLoginResult(result, advanceToOtp: true);
+      if (authenticated) _trackLoginSuccess('direct');
+      return authenticated;
     } on ApiException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
       return false;
@@ -66,10 +77,16 @@ class LoginNotifier extends StateNotifier<LoginState> {
   }
 
   Future<bool> resendOtp() async {
-    state = state.copyWith(isResendingOtp: true, clearError: true, clearInfo: true);
+    state = state.copyWith(
+      isResendingOtp: true,
+      clearError: true,
+      clearInfo: true,
+    );
     try {
       final result = await _auth.login(msisdn: state.normalizedMsisdn);
-      return _applyLoginResult(result, advanceToOtp: false);
+      final authenticated = _applyLoginResult(result, advanceToOtp: false);
+      if (authenticated) _trackLoginSuccess('resend');
+      return authenticated;
     } on ApiException catch (e) {
       state = state.copyWith(isResendingOtp: false, errorMessage: e.message);
       return false;
@@ -85,7 +102,11 @@ class LoginNotifier extends StateNotifier<LoginState> {
   Future<bool> verifyOtp() async {
     if (!state.canVerifyOtp) return false;
 
-    state = state.copyWith(isSubmitting: true, clearError: true, clearInfo: true);
+    state = state.copyWith(
+      isSubmitting: true,
+      clearError: true,
+      clearInfo: true,
+    );
     try {
       final user = await _auth.signInWithOtp(
         msisdn: state.normalizedMsisdn,
@@ -97,6 +118,7 @@ class LoginNotifier extends StateNotifier<LoginState> {
         infoMessage: user.status.isNotEmpty ? user.status : null,
         clearInfo: user.status.isEmpty,
       );
+      _trackLoginSuccess('otp');
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
@@ -139,7 +161,10 @@ class LoginNotifier extends StateNotifier<LoginState> {
     }
   }
 
-  void _applyOtpRequired(OtpLoginResponse response, {required bool advanceToOtp}) {
+  void _applyOtpRequired(
+    OtpLoginResponse response, {
+    required bool advanceToOtp,
+  }) {
     final stubOtp = response.otp?.trim();
     final otpCode = stubOtp != null && stubOtp.length == LoginState.otpLength
         ? stubOtp
@@ -154,6 +179,12 @@ class LoginNotifier extends StateNotifier<LoginState> {
       clearInfo: response.displayMessage == null,
       otpExpiresInSeconds: response.expiresInSeconds,
       clearOtpExpiry: response.expiresInSeconds == null,
+    );
+  }
+
+  void _trackLoginSuccess(String method) {
+    unawaited(
+      _telemetry.track('auth.login_succeeded', properties: {'method': method}),
     );
   }
 }
