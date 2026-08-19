@@ -10,8 +10,8 @@ import 'package:stopwatch_game/core/widgets/app_footer.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:stopwatch_game/features/game/presentation/pages/game_page.dart';
 
-class LoginPage extends ConsumerWidget {
-  const LoginPage({super.key});
+class HomePage extends ConsumerWidget {
+  const HomePage({super.key});
 
   Future<void> _completeAuth(BuildContext context, WidgetRef ref) async {
     final loginState = ref.read(loginProvider);

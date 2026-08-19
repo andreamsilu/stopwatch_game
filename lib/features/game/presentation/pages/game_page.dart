@@ -11,7 +11,7 @@ import 'package:stopwatch_game/core/widgets/app_footer.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
-import 'package:stopwatch_game/features/auth/presentation/pages/login_page.dart';
+import 'package:stopwatch_game/features/auth/presentation/pages/home_page.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
@@ -101,10 +101,7 @@ Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
     await ref.read(authServiceProvider).logout();
   } catch (_) {
     if (context.mounted) {
-      AppSnackBar.showWarning(
-        context,
-        GameCopy.logoutOffline,
-      );
+      AppSnackBar.showWarning(context, GameCopy.logoutOffline);
     }
   }
 
@@ -115,7 +112,7 @@ Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
 
   if (!context.mounted) return;
   Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute<void>(builder: (_) => const LoginPage()),
+    MaterialPageRoute<void>(builder: (_) => const HomePage()),
     (_) => false,
   );
 }
@@ -141,12 +138,7 @@ class GamePage extends ConsumerWidget {
       if (next.roundErrorMessage != null &&
           next.roundErrorMessage!.isNotEmpty &&
           next.roundErrorMessage != previous?.roundErrorMessage) {
-        _showGameError(
-          context,
-          next,
-          next.roundErrorMessage!,
-          ref: ref,
-        );
+        _showGameError(context, next, next.roundErrorMessage!, ref: ref);
         controller.clearFeedbackMessages();
       }
 
@@ -291,7 +283,8 @@ class GamePage extends ConsumerWidget {
                             _DrawerNavTile(
                               label: GameCopy.historyTab,
                               icon: Icons.history,
-                              isActive: gameState.selectedTab == GameTab.history,
+                              isActive:
+                                  gameState.selectedTab == GameTab.history,
                               onTap: () {
                                 controller.selectTab(GameTab.history);
                                 Navigator.of(context).maybePop();
@@ -300,7 +293,8 @@ class GamePage extends ConsumerWidget {
                             _DrawerNavTile(
                               label: GameCopy.supportTab,
                               icon: Icons.support_agent_outlined,
-                              isActive: gameState.selectedTab == GameTab.support,
+                              isActive:
+                                  gameState.selectedTab == GameTab.support,
                               onTap: () {
                                 controller.selectTab(GameTab.support);
                                 Navigator.of(context).maybePop();
@@ -343,7 +337,9 @@ class GamePage extends ConsumerWidget {
                   : (isWindows
                         ? 12.0
                         : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0)));
-              final verticalPadding = isMobile ? (isVerySmallMobile ? 6.0 : 8.0) : 20.0;
+              final verticalPadding = isMobile
+                  ? (isVerySmallMobile ? 6.0 : 8.0)
+                  : 20.0;
               final maxContentWidth = isMobile
                   ? width
                   : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
@@ -382,8 +378,9 @@ class GamePage extends ConsumerWidget {
                                   ),
                                   actions: [
                                     TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogContext).pop(false),
+                                      onPressed: () => Navigator.of(
+                                        dialogContext,
+                                      ).pop(false),
                                       child: const Text(
                                         GameCopy.refreshConfirmCancel,
                                       ),
@@ -421,89 +418,104 @@ class GamePage extends ConsumerWidget {
                                 alignment: Alignment.topCenter,
                                 child: ConstrainedBox(
                                   constraints: BoxConstraints(
-                                    maxWidth: isLargeDesktop ? 1100 : double.infinity,
+                                    maxWidth: isLargeDesktop
+                                        ? 1100
+                                        : double.infinity,
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 220),
-                                    switchInCurve: Curves.easeOutCubic,
-                                    switchOutCurve: Curves.easeInCubic,
-                                    transitionBuilder: (child, animation) {
-                                      return FadeTransition(
-                                        opacity: animation,
-                                        child: SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(0, 0.02),
-                                            end: Offset.zero,
-                                          ).animate(animation),
-                                          child: child,
+                                        duration: const Duration(
+                                          milliseconds: 220,
                                         ),
-                                      );
-                                    },
-                                    child: _GamePanelShell(
-                                      child: _GameBody(
-                                        key: ValueKey<GameTab>(gameState.selectedTab),
-                                        state: gameState,
-                                        onPlayPressed: () {
-                                          _showGameInfo(
-                                            context,
-                                            gameState,
-                                            GameCopy.startingNewRound,
+                                        switchInCurve: Curves.easeOutCubic,
+                                        switchOutCurve: Curves.easeInCubic,
+                                        transitionBuilder: (child, animation) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: SlideTransition(
+                                              position: Tween<Offset>(
+                                                begin: const Offset(0, 0.02),
+                                                end: Offset.zero,
+                                              ).animate(animation),
+                                              child: child,
+                                            ),
                                           );
-                                          controller.openRoundBoard();
                                         },
-                                        onOpenHistory: () =>
-                                            controller.selectTab(GameTab.history),
-                                        onOpenTips: () =>
-                                            controller.selectTab(GameTab.support),
-                                        onResetRound: () {
-                                          controller.onResetPressed();
-                                        },
-                                        onToggleSound: controller.toggleSoundEnabled,
-                                      onStartControlPointerDown:
-                                          controller.onStartControlPointerDown,
-                                      onStartControlPointerMove:
-                                          controller.onStartControlPointerMove,
-                                      onStartControlPointerUp:
-                                          controller.onStartControlPointerUp,
-                                        onPlayRound: () async {
-                                          AppSnackBar.dismiss();
-                                          if (gameState.latestResult != null) {
-                                            controller.dismissResultDialog();
-                                          }
-                                          await controller.onPlayRoundPressed();
-                                        },
-                                        onStartOrStopRound: () async {
-                                          if (gameState
-                                              .isStopwatchControlDisabled) {
-                                            return;
-                                          }
-                                          if (gameState.isRunning) {
-                                            await controller.onStopPressed();
-                                          } else {
-                                            AppSnackBar.dismiss();
-                                            await controller.onStartPressed();
-                                          }
-                                        },
-                                        hasBillingForRound:
-                                            gameState.hasBillingForRound,
+                                        child: _GamePanelShell(
+                                          child: _GameBody(
+                                            key: ValueKey<GameTab>(
+                                              gameState.selectedTab,
+                                            ),
+                                            state: gameState,
+                                            onPlayPressed: () {
+                                              _showGameInfo(
+                                                context,
+                                                gameState,
+                                                GameCopy.startingNewRound,
+                                              );
+                                              controller.openRoundBoard();
+                                            },
+                                            onOpenHistory: () => controller
+                                                .selectTab(GameTab.history),
+                                            onOpenTips: () => controller
+                                                .selectTab(GameTab.support),
+                                            onResetRound: () {
+                                              controller.onResetPressed();
+                                            },
+                                            onToggleSound:
+                                                controller.toggleSoundEnabled,
+                                            onStartControlPointerDown:
+                                                controller
+                                                    .onStartControlPointerDown,
+                                            onStartControlPointerMove:
+                                                controller
+                                                    .onStartControlPointerMove,
+                                            onStartControlPointerUp: controller
+                                                .onStartControlPointerUp,
+                                            onPlayRound: () async {
+                                              AppSnackBar.dismiss();
+                                              if (gameState.latestResult !=
+                                                  null) {
+                                                controller
+                                                    .dismissResultDialog();
+                                              }
+                                              await controller
+                                                  .onPlayRoundPressed();
+                                            },
+                                            onStartOrStopRound: () async {
+                                              if (gameState
+                                                  .isStopwatchControlDisabled) {
+                                                return;
+                                              }
+                                              if (gameState.isRunning) {
+                                                await controller
+                                                    .onStopPressed();
+                                              } else {
+                                                AppSnackBar.dismiss();
+                                                await controller
+                                                    .onStartPressed();
+                                              }
+                                            },
+                                            hasBillingForRound:
+                                                gameState.hasBillingForRound,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
                                       const SizedBox(height: 12),
                                       AppFooter(
-                                        onTerms: () =>
-                                            controller.selectTab(GameTab.support),
-                                        onPrivacy: () =>
-                                            controller.selectTab(GameTab.support),
-                                        onContactSupport: () =>
-                                            controller.selectTab(GameTab.support),
+                                        onTerms: () => controller.selectTab(
+                                          GameTab.support,
+                                        ),
+                                        onPrivacy: () => controller.selectTab(
+                                          GameTab.support,
+                                        ),
+                                        onContactSupport: () => controller
+                                            .selectTab(GameTab.support),
                                       ),
-                                      SizedBox(
-                                        height: isMobile ? 8 : 12,
-                                      ),
+                                      SizedBox(height: isMobile ? 8 : 12),
                                     ],
                                   ),
                                 ),
@@ -612,9 +624,11 @@ class _GameBody extends StatelessWidget {
   final VoidCallback onOpenTips;
   final VoidCallback onResetRound;
   final VoidCallback onToggleSound;
-  final void Function(Offset position, {bool? isTrusted}) onStartControlPointerDown;
+  final void Function(Offset position, {bool? isTrusted})
+  onStartControlPointerDown;
   final ValueChanged<Offset> onStartControlPointerMove;
-  final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
+  final void Function(Offset position, {bool? isTrusted})
+  onStartControlPointerUp;
   final Future<void> Function() onPlayRound;
   final bool hasBillingForRound;
   final Future<void> Function() onStartOrStopRound;

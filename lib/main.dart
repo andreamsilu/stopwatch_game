@@ -7,7 +7,7 @@ import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/core/theme/app_theme.dart';
 import 'package:stopwatch_game/features/admin/presentation/pages/admin_dashboard_page.dart';
-import 'package:stopwatch_game/features/auth/presentation/pages/auth_gate_page.dart';
+import 'package:stopwatch_game/features/auth/presentation/pages/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,11 +67,11 @@ class StopwatchChallengeApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         initialRoute: initialRoute,
         routes: {
-          '/': (_) => const AuthGatePage(),
+          '/': (_) => const HomePage(),
           '/admin': (_) => const AdminDashboardPage(),
         },
         onUnknownRoute: (_) =>
-            MaterialPageRoute<void>(builder: (_) => const AuthGatePage()),
+            MaterialPageRoute<void>(builder: (_) => const HomePage()),
       ),
     );
   }
