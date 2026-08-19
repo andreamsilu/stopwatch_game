@@ -22,7 +22,6 @@ import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/how_to_play_steps_card.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/round_result_dialog.dart';
 
 /// No centered toasts while the stopwatch is running (focus mode).
 bool _allowGameToasts(GameState state) => !state.isRunning;
@@ -169,9 +168,9 @@ class GamePage extends ConsumerWidget {
     });
 
     ref.listen<GameState>(gameControllerProvider, (previous, next) async {
-      final hadDialog = previous?.latestResult != null;
-      final shouldShowDialog = next.latestResult != null && !hadDialog;
-      if (!shouldShowDialog || !context.mounted || next.isRunning) return;
+      final hadResult = previous?.latestResult != null;
+      final hasNewResult = next.latestResult != null && !hadResult;
+      if (!hasNewResult || !context.mounted || next.isRunning) return;
       ref.read(gameHistoryProvider.notifier).load(refresh: true);
       final result = next.latestResult!;
       if (result.isPrizeAwarded) {
@@ -179,44 +178,6 @@ class GamePage extends ConsumerWidget {
       } else {
         await GameFeedbackService.onLose();
       }
-      if (!context.mounted) return;
-      final resultMessage = result.isPrizeAwarded
-          ? GameCopy.perfectStop
-          : result.deltaLabel;
-      if (resultMessage.isNotEmpty) {
-        if (result.isPrizeAwarded) {
-          _showGameSuccess(context, next, resultMessage);
-        } else {
-          _showGameWarning(context, next, resultMessage);
-        }
-      }
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => RoundResultDialog(
-          result: result,
-          onCancel: () {
-            controller.dismissResultDialog();
-            controller.cancelRound(goHome: false);
-          },
-          onViewHistory: () {
-            controller.dismissResultDialog();
-            controller.cancelRound(goHome: false);
-            controller.selectTab(GameTab.history);
-          },
-          onTryAgain: () async {
-            controller.dismissResultDialog();
-            _showGameInfo(
-              context,
-              ref.read(gameControllerProvider),
-              GameCopy.startingNewRound,
-            );
-            await controller.prepareNewPaidRound();
-          },
-        ),
-      );
-      if (!context.mounted) return;
-      controller.dismissResultDialog();
     });
 
     final protectsPaidRound =
@@ -333,16 +294,6 @@ class GamePage extends ConsumerWidget {
                                     gameState.selectedTab == GameTab.support,
                                 onTap: () {
                                   controller.selectTab(GameTab.support);
-                                  Navigator.of(context).maybePop();
-                                },
-                              ),
-                              _DrawerNavTile(
-                                label: GameCopy.profileTab,
-                                icon: Icons.person_outline_rounded,
-                                isActive:
-                                    gameState.selectedTab == GameTab.profile,
-                                onTap: () {
-                                  controller.selectTab(GameTab.profile);
                                   Navigator.of(context).maybePop();
                                 },
                               ),
@@ -518,11 +469,27 @@ class GamePage extends ConsumerWidget {
                                                 state: gameState,
                                                 onOpenPlay: () => controller
                                                     .selectTab(GameTab.play),
-                                                onLogout: () =>
-                                                    performLogoutFromGame(
-                                                      context,
-                                                      ref,
+                                                onPlayAgain: () async {
+                                                  controller
+                                                      .dismissResultDialog();
+                                                  _showGameInfo(
+                                                    context,
+                                                    ref.read(
+                                                      gameControllerProvider,
                                                     ),
+                                                    GameCopy.startingNewRound,
+                                                  );
+                                                  await controller
+                                                      .prepareNewPaidRound();
+                                                },
+                                                onViewHistory: () {
+                                                  controller
+                                                      .dismissResultDialog();
+                                                  controller.cancelRound();
+                                                  controller.selectTab(
+                                                    GameTab.history,
+                                                  );
+                                                },
                                                 onResetRound: () {
                                                   controller.onResetPressed();
                                                 },
@@ -671,7 +638,8 @@ class _GameBody extends StatelessWidget {
     super.key,
     required this.state,
     required this.onOpenPlay,
-    required this.onLogout,
+    required this.onPlayAgain,
+    required this.onViewHistory,
     required this.onResetRound,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
@@ -684,7 +652,8 @@ class _GameBody extends StatelessWidget {
 
   final GameState state;
   final VoidCallback onOpenPlay;
-  final Future<void> Function() onLogout;
+  final Future<void> Function() onPlayAgain;
+  final VoidCallback onViewHistory;
   final VoidCallback onResetRound;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted})
@@ -723,6 +692,9 @@ class _GameBody extends StatelessWidget {
           onPlayRound: onPlayRound,
           onStartOrStopRound: onStartOrStopRound,
           totalWins: state.totalWins,
+          result: state.latestResult,
+          onPlayAgain: onPlayAgain,
+          onViewHistory: onViewHistory,
         );
       case GameTab.history:
         return HistoryPanel(onPlayAgain: onOpenPlay);
@@ -730,54 +702,6 @@ class _GameBody extends StatelessWidget {
         return const HowToPlayStepsCard();
       case GameTab.support:
         return const HelpSupportPanel();
-      case GameTab.profile:
-        return _ProfilePanel(onLogout: onLogout);
     }
-  }
-}
-
-class _ProfilePanel extends ConsumerWidget {
-  const _ProfilePanel({required this.onLogout});
-
-  final Future<void> Function() onLogout;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(playerUserProvider);
-    final msisdn = user?.msisdn ?? ref.watch(playerMsisdnProvider);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              GameCopy.profileTab,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 18),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFE7F2FC),
-                child: Icon(Icons.person_rounded, color: AppColors.primary),
-              ),
-              title: Text(msisdn ?? ''),
-              subtitle: const Text('Tanzanian mobile number'),
-            ),
-            const SizedBox(height: 18),
-            OutlinedButton.icon(
-              onPressed: onLogout,
-              icon: const Icon(Icons.logout_rounded),
-              label: const Text(GameCopy.logOut),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

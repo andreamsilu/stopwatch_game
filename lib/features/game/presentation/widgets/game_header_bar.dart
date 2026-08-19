@@ -155,8 +155,6 @@ class _CenteredTabStrip extends StatelessWidget {
         return GameCopy.howToPlayTab;
       case GameTab.support:
         return GameCopy.supportTab;
-      case GameTab.profile:
-        return GameCopy.profileTab;
     }
   }
 }

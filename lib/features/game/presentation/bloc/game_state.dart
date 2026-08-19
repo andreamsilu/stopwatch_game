@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
-enum GameTab { play, history, howToPlay, support, profile }
+enum GameTab { play, history, howToPlay, support }
 
 class RoundResultData {
   const RoundResultData({

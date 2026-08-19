@@ -1,11 +1,10 @@
-import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
+import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
-import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/target_time_badge.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
@@ -34,6 +33,9 @@ class RoundPlayPanel extends StatefulWidget {
     required this.onPlayRound,
     required this.onStartOrStopRound,
     required this.totalWins,
+    required this.result,
+    required this.onPlayAgain,
+    required this.onViewHistory,
     super.key,
   });
 
@@ -62,46 +64,26 @@ class RoundPlayPanel extends StatefulWidget {
   final Future<void> Function() onPlayRound;
   final Future<void> Function() onStartOrStopRound;
   final int totalWins;
+  final RoundResultData? result;
+  final Future<void> Function() onPlayAgain;
+  final VoidCallback onViewHistory;
 
   @override
   State<RoundPlayPanel> createState() => _RoundPlayPanelState();
 }
 
 class _RoundPlayPanelState extends State<RoundPlayPanel> {
-  late final StopwatchFlameGame _stopwatchGame;
-  double? _lastDiameter;
-  bool? _lastRunningState;
-
-  @override
-  void initState() {
-    super.initState();
-    _stopwatchGame = StopwatchFlameGame(
-      isRunning: widget.isRunning,
-      diameter: GameConstants.stopwatchCircleDesktopDiameter,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant RoundPlayPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isRunning != widget.isRunning) {
-      _updateGame(
-        _lastDiameter ?? GameConstants.stopwatchCircleDesktopDiameter,
-      );
-    }
-  }
-
-  void _updateGame(double diameter) {
-    if (_lastDiameter == diameter && _lastRunningState == widget.isRunning) {
-      return;
-    }
-    _lastDiameter = diameter;
-    _lastRunningState = widget.isRunning;
-    _stopwatchGame.updateState(isRunning: widget.isRunning, diameter: diameter);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final result = widget.result;
+    if (result != null) {
+      return _InlineRoundResult(
+        result: result,
+        onPlayAgain: widget.onPlayAgain,
+        onViewHistory: widget.onViewHistory,
+      );
+    }
+
     final isPreparing = widget.preparePhase != RoundPreparePhase.idle;
     final hasTarget =
         widget.hasBillingForRound &&
@@ -116,19 +98,17 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 600;
             final widthBasedDiameter = isMobile
-                ? (constraints.maxWidth - 20).clamp(240.0, 360.0).toDouble()
-                : constraints.maxWidth.clamp(380.0, 500.0).toDouble();
+                ? (constraints.maxWidth - 20).clamp(230.0, 340.0).toDouble()
+                : constraints.maxWidth.clamp(320.0, 380.0).toDouble();
             final reservedHeight = widget.isRunning ? 150.0 : 245.0;
             final heightBasedDiameter = constraints.maxHeight.isFinite
                 ? (constraints.maxHeight - reservedHeight)
-                      .clamp(190.0, 500.0)
+                      .clamp(190.0, 380.0)
                       .toDouble()
-                : 500.0;
+                : 380.0;
             final diameter = widthBasedDiameter < heightBasedDiameter
                 ? widthBasedDiameter
                 : heightBasedDiameter;
-            _updateGame(diameter);
-
             return Column(
               children: [
                 Align(
@@ -157,44 +137,16 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                   ),
                 ),
                 SizedBox(height: widget.isRunning ? 6 : 12),
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 220),
-                  opacity: !widget.isRunning && !hasTarget ? 0.52 : 1,
-                  child: SizedBox(
-                    width: diameter,
-                    height: diameter,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        RepaintBoundary(
-                          child: GameWidget(
-                            game: _stopwatchGame,
-                            backgroundBuilder: (_) => const SizedBox.shrink(),
-                          ),
-                        ),
-                        SizedBox(
-                          width: diameter * 0.66,
-                          child: TimerDisplay(
-                            timeText: widget.currentTimeLabel,
-                            fontSize: (diameter * 0.16).clamp(42.0, 68.0),
-                          ),
-                        ),
-                        IgnorePointer(
-                          child: CustomPaint(
-                            size: Size.square(diameter),
-                            painter: _FocusRingPainter(
-                              isRunning: widget.isRunning,
-                              progress: widget.targetTime.inMilliseconds == 0
-                                  ? 0
-                                  : (widget.elapsed.inMilliseconds /
-                                            widget.targetTime.inMilliseconds)
-                                        .clamp(0.0, 1.0),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _MinimalStopwatch(
+                  diameter: diameter,
+                  timeText: widget.currentTimeLabel,
+                  isRunning: widget.isRunning,
+                  isInactive: !widget.isRunning && !hasTarget,
+                  progress: widget.targetTime.inMilliseconds == 0
+                      ? 0
+                      : (widget.elapsed.inMilliseconds /
+                              widget.targetTime.inMilliseconds)
+                          .clamp(0.0, 1.0),
                 ),
                 SizedBox(height: isMobile ? 8 : 14),
                 ConstrainedBox(
@@ -509,26 +461,128 @@ class _PrimaryRoundAction extends StatelessWidget {
   }
 }
 
-class _FocusRingPainter extends CustomPainter {
-  const _FocusRingPainter({required this.isRunning, required this.progress});
+class _MinimalStopwatch extends StatelessWidget {
+  const _MinimalStopwatch({
+    required this.diameter,
+    required this.timeText,
+    required this.isRunning,
+    required this.isInactive,
+    required this.progress,
+  });
+
+  final double diameter;
+  final String timeText;
+  final bool isRunning;
+  final bool isInactive;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: diameter,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            size: Size.square(diameter),
+            painter: _StopwatchPainter(
+              isRunning: isRunning,
+              progress: progress,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: diameter * 0.07),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: isInactive ? 0.76 : 1,
+              child: SizedBox(
+                width: diameter * 0.68,
+                child: TimerDisplay(
+                  timeText: timeText,
+                  fontSize: (diameter * 0.15).clamp(38.0, 58.0),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StopwatchPainter extends CustomPainter {
+  const _StopwatchPainter({required this.isRunning, required this.progress});
 
   final bool isRunning;
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = (size.shortestSide / 2) - 7;
-    final track = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.12)
+    final center = Offset(size.width / 2, (size.height / 2) + 9);
+    final radius = (size.shortestSide / 2) - 22;
+
+    canvas.drawCircle(
+      center + const Offset(0, 5),
+      radius,
+      Paint()
+        ..color = AppColors.primary.withValues(alpha: 0.11)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    canvas.drawCircle(center, radius, Paint()..color = const Color(0xFFF7FBFF));
+
+    final outline = Paint()
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 5;
+      ..strokeWidth = 6;
+    canvas.drawCircle(center, radius, outline);
+
+    final crownWidth = radius * 0.34;
+    final crownRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(center.dx, center.dy - radius - 8),
+        width: crownWidth,
+        height: 18,
+      ),
+      const Radius.circular(5),
+    );
+    canvas.drawRRect(crownRect, Paint()..color = AppColors.primary);
+
+    final accentRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(center.dx + radius * 0.72, center.dy - radius * 0.66),
+        width: 24,
+        height: 11,
+      ),
+      const Radius.circular(5),
+    );
+    canvas.save();
+    canvas.rotate(0.7);
+    canvas.restore();
+    canvas.drawRRect(accentRect, Paint()..color = AppColors.accent);
+
+    final tickPaint = Paint()
+      ..color = AppColors.primary.withValues(alpha: 0.58)
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+    for (var index = 0; index < 12; index++) {
+      final angle = (index * 0.5235987756) - 1.5708;
+      final outer = Offset(
+        center.dx + (radius - 13) * Math.cos(angle),
+        center.dy + (radius - 13) * Math.sin(angle),
+      );
+      final inset = index % 3 == 0 ? 27.0 : 21.0;
+      final inner = Offset(
+        center.dx + (radius - inset) * Math.cos(angle),
+        center.dy + (radius - inset) * Math.sin(angle),
+      );
+      canvas.drawLine(inner, outer, tickPaint);
+    }
+
     final active = Paint()
       ..color = AppColors.accent
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
+      ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, track);
     if (isRunning) {
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -541,6 +595,156 @@ class _FocusRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _FocusRingPainter oldDelegate) =>
+  bool shouldRepaint(covariant _StopwatchPainter oldDelegate) =>
       oldDelegate.isRunning != isRunning || oldDelegate.progress != progress;
+}
+
+class _InlineRoundResult extends StatelessWidget {
+  const _InlineRoundResult({
+    required this.result,
+    required this.onPlayAgain,
+    required this.onViewHistory,
+  });
+
+  final RoundResultData result;
+  final Future<void> Function() onPlayAgain;
+  final VoidCallback onViewHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final yourTime = _formatTime(result.finalTimeLabel);
+    final target = _formatTime(result.targetTimeLabel);
+    final difference = _formatDifference(result.differenceMs);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'YOUR TIME',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  yourTime,
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        color: AppColors.primary,
+                        fontSize: 62,
+                        fontWeight: FontWeight.w900,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 28,
+                  runSpacing: 12,
+                  children: [
+                    _ResultMetric(label: 'TARGET', value: target),
+                    _ResultMetric(label: 'DIFFERENCE', value: difference),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  _feedback(result.differenceMs),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton.icon(
+                    onPressed: onPlayAgain,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.onAccent,
+                    ),
+                    icon: const Icon(Icons.replay_rounded),
+                    label: const Text(GameCopy.playAgain),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Play Again starts a new paid round.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF64748B),
+                      ),
+                ),
+                TextButton(
+                  onPressed: onViewHistory,
+                  child: const Text(GameCopy.viewHistory),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatTime(String value) {
+    final seconds = double.tryParse(value.split(':').last);
+    return seconds?.toStringAsFixed(3) ?? value;
+  }
+
+  static String _formatDifference(int milliseconds) {
+    final seconds = milliseconds / 1000;
+    final sign = seconds >= 0 ? '+' : '';
+    return '$sign${seconds.toStringAsFixed(3)} sec';
+  }
+
+  static String _feedback(int milliseconds) {
+    final distance = milliseconds.abs();
+    if (distance <= 5) return 'PERFECT! 🎯';
+    if (distance <= 20) return 'Incredible! Only 0.01s away.';
+    if (distance <= 75) return 'So close!';
+    return 'Nice try!';
+  }
+}
+
+class _ResultMetric extends StatelessWidget {
+  const _ResultMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+      ],
+    );
+  }
 }

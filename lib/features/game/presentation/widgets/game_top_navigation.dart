@@ -180,8 +180,6 @@ class _TabButtonState extends State<_TabButton> {
         return GameCopy.howToPlayTab;
       case GameTab.support:
         return GameCopy.supportTab;
-      case GameTab.profile:
-        return GameCopy.profileTab;
     }
   }
 }
