@@ -6,16 +6,22 @@ class AppCopy {
 class AuthCopy {
   AuthCopy._();
 
-  static const welcomeTitle = 'Welcome';
-  static const welcomeSubtitle = 'Log in with your mobile number to play.';
+  static const welcomeTitle = 'Stopwatch Challenge';
+  static const welcomeSubtitle =
+      'Think you can stop the clock at exactly 10.00 seconds?';
+  static const welcomeSupport =
+      'Enter your mobile number to play and test your precision.';
 
   static const verifyTitle = 'Verify your number';
   static String verifySubtitle(String maskedPhone) =>
       'Enter the 6-digit code sent to $maskedPhone.';
 
-  static const phoneLabel = 'Phone number';
-  static const phoneHint = '712 345 678';
-  static const continueButton = 'Continue';
+  static const phoneLabel = 'Tanzanian mobile number';
+  static const phoneHint = 'Phone number';
+  static const phoneReassurance =
+      'Your number will be used to identify your game entry.';
+  static const continueButton = 'START PLAYING  →';
+  static const verifyButton = 'VERIFY & PLAY  →';
   static const changeNumber = 'Change number';
   static const resendCode = 'Resend code';
   static const resendingCode = 'Sending…';

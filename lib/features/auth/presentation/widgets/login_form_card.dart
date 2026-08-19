@@ -4,7 +4,6 @@ import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/otp_input_boxes.dart';
-import 'package:stopwatch_game/core/widgets/app_logo.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone_prefix.dart';
 
 class LoginFormCard extends StatelessWidget {
@@ -73,7 +72,7 @@ class LoginFormCard extends StatelessWidget {
 }
 
 class _LoginCardSpacing {
-  static const padding = EdgeInsets.fromLTRB(24, 28, 24, 28);
+  static const padding = EdgeInsets.fromLTRB(26, 28, 26, 26);
   static const section = 24.0;
   static const block = 16.0;
   static const tight = 12.0;
@@ -89,27 +88,19 @@ class _CardShell extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD6DFEA)),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE1EAF3)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x1400377D),
-            blurRadius: 24,
-            offset: Offset(0, 10),
+            color: Color(0x1000377D),
+            blurRadius: 28,
+            offset: Offset(0, 12),
           ),
         ],
       ),
       child: Padding(
         padding: _LoginCardSpacing.padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Center(child: AppLogo(size: 56)),
-            const SizedBox(height: 20),
-            child,
-          ],
-        ),
+        child: child,
       ),
     );
   }
@@ -136,12 +127,13 @@ class _PrimaryButton extends StatelessWidget {
       child: FilledButton(
         onPressed: enabled && !loading ? onPressed : null,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.onAccent,
-          disabledBackgroundColor: const Color(0xFFE2E8F0),
-          disabledForegroundColor: const Color(0xFF94A3B8),
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onPrimary,
+          disabledBackgroundColor: const Color(0xFFDCE4EE),
+          disabledForegroundColor: const Color(0xFF7C8DA1),
           elevation: enabled ? 1 : 0,
-          shadowColor: AppColors.accent.withValues(alpha: 0.35),
+          shadowColor: AppColors.primary.withValues(alpha: 0.28),
+          overlayColor: AppColors.accent.withValues(alpha: 0.22),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -200,9 +192,16 @@ class _PhoneStep extends StatelessWidget {
               letterSpacing: 0.3,
             ),
             decoration: const InputDecoration(
-              labelText: AuthCopy.phoneLabel,
               prefixIcon: TanzaniaPhonePrefix(size: 24),
               hintText: AuthCopy.phoneHint,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            AuthCopy.phoneReassurance,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF64748B),
+              height: 1.35,
             ),
           ),
           if (infoMessage != null && infoMessage!.isNotEmpty) ...[
@@ -283,7 +282,7 @@ class _OtpStep extends StatelessWidget {
           ),
           const SizedBox(height: _LoginCardSpacing.section + 4),
           _PrimaryButton(
-            label: AuthCopy.continueButton,
+            label: AuthCopy.verifyButton,
             enabled: canVerifyOtp,
             loading: isSubmitting,
             onPressed: () => onVerifyOtp(),

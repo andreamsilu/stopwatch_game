@@ -16,8 +16,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Welcome'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Stopwatch Challenge'), findsWidgets);
+    expect(find.text('START PLAYING  →'), findsOneWidget);
+    expect(find.text('10.00'), findsOneWidget);
     expect(find.text('Phone number'), findsOneWidget);
   });
 }

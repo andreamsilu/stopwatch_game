@@ -26,11 +26,8 @@ class AppFooter extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(top: 2),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: const Border(
-          top: BorderSide(color: _borderColor),
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        color: Colors.transparent,
+        border: const Border(top: BorderSide(color: _borderColor)),
       ),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
