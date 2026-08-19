@@ -125,22 +125,16 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                     key: ValueKey<String>(_stateKey(isPreparing, hasTarget)),
                     isRunning: widget.isRunning,
                     isPreparing: isPreparing,
-                    phase: widget.preparePhase,
                     hasTarget: hasTarget,
-                    targetTimeLabel: widget.targetTimeLabel,
                   ),
                 ),
                 SizedBox(height: widget.isRunning ? 4 : 6),
                 _MinimalStopwatch(
                   diameter: diameter,
-                  timeText: widget.currentTimeLabel,
-                  isRunning: widget.isRunning,
+                  timeText: widget.isRunning
+                      ? 'TIMING...'
+                      : widget.currentTimeLabel,
                   isInactive: !widget.isRunning && !hasTarget,
-                  progress: widget.targetTime.inMilliseconds == 0
-                      ? 0
-                      : (widget.elapsed.inMilliseconds /
-                                widget.targetTime.inMilliseconds)
-                            .clamp(0.0, 1.0),
                 ),
                 SizedBox(height: isMobile ? 7 : 10),
                 ConstrainedBox(
@@ -228,25 +222,20 @@ class _StateHeader extends StatelessWidget {
     super.key,
     required this.isRunning,
     required this.isPreparing,
-    required this.phase,
     required this.hasTarget,
-    required this.targetTimeLabel,
   });
 
   final bool isRunning;
   final bool isPreparing;
-  final RoundPreparePhase phase;
   final bool hasTarget;
-  final String targetTimeLabel;
 
   @override
   Widget build(BuildContext context) {
     if (isRunning) {
-      return TargetTimeBadge(targetTimeLabel: targetTimeLabel);
+      return const TargetTimeBadge(targetTimeLabel: '00:10.000');
     }
 
     if (isPreparing) {
-      final awaiting = phase == RoundPreparePhase.awaitingPayment;
       return Column(
         children: [
           const SizedBox(
@@ -259,7 +248,7 @@ class _StateHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            awaiting ? 'Confirm payment on your phone' : 'Preparing your round',
+            'Confirm payment on your phone',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.primary,
@@ -268,12 +257,12 @@ class _StateHeader extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            awaiting
-                ? "We're waiting for your payment confirmation."
-                : 'Please wait while we prepare your challenge.',
+            'Waiting for payment confirmation...',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+          const SizedBox(height: 8),
+          const TargetTimeBadge(targetTimeLabel: '00:10.000'),
         ],
       );
     }
@@ -281,22 +270,22 @@ class _StateHeader extends StatelessWidget {
     if (hasTarget) {
       return Column(
         children: [
-          TargetTimeBadge(targetTimeLabel: targetTimeLabel),
-          const SizedBox(height: 10),
           Text(
-            'Stop the timer as close to '
-            '${_secondsDisplay(targetTimeLabel)} seconds as you can.',
+            'Your target is 10.00 seconds',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            "Start when you're ready and stop as close to the target as you can.",
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Ready when you are.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          const SizedBox(height: 8),
+          const TargetTimeBadge(targetTimeLabel: '00:10.000'),
         ],
       );
     }
@@ -313,7 +302,7 @@ class _StateHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Pay for a round to activate the target and start playing.',
+          'Pay for a round and stop the timer as close to 10.00 seconds as you can.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
@@ -321,11 +310,6 @@ class _StateHeader extends StatelessWidget {
         const TargetTimeBadge(targetTimeLabel: '00:10.000'),
       ],
     );
-  }
-
-  static String _secondsDisplay(String value) {
-    final seconds = double.tryParse(value.split(':').last);
-    return seconds?.toStringAsFixed(2) ?? value;
   }
 }
 
@@ -454,16 +438,12 @@ class _MinimalStopwatch extends StatelessWidget {
   const _MinimalStopwatch({
     required this.diameter,
     required this.timeText,
-    required this.isRunning,
     required this.isInactive,
-    required this.progress,
   });
 
   final double diameter;
   final String timeText;
-  final bool isRunning;
   final bool isInactive;
-  final double progress;
 
   @override
   Widget build(BuildContext context) {
@@ -474,10 +454,7 @@ class _MinimalStopwatch extends StatelessWidget {
         children: [
           CustomPaint(
             size: Size.square(diameter),
-            painter: _StopwatchPainter(
-              isRunning: isRunning,
-              progress: progress,
-            ),
+            painter: const _StopwatchPainter(),
           ),
           Padding(
             padding: EdgeInsets.only(top: diameter * 0.07),
@@ -500,10 +477,7 @@ class _MinimalStopwatch extends StatelessWidget {
 }
 
 class _StopwatchPainter extends CustomPainter {
-  const _StopwatchPainter({required this.isRunning, required this.progress});
-
-  final bool isRunning;
-  final double progress;
+  const _StopwatchPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -538,7 +512,7 @@ class _StopwatchPainter extends CustomPainter {
 
     final accentRect = RRect.fromRectAndRadius(
       Rect.fromCenter(
-        center: Offset(center.dx + radius * 0.72, center.dy - radius * 0.66),
+        center: Offset(center.dx + radius * 0.84, center.dy - radius * 0.48),
         width: 24,
         height: 11,
       ),
@@ -551,6 +525,7 @@ class _StopwatchPainter extends CustomPainter {
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
     for (var index = 0; index < 12; index++) {
+      if (index == 3 || index == 9) continue;
       final angle = (index * 0.5235987756) - 1.5708;
       final outer = Offset(
         center.dx + (radius - 13) * math.cos(angle),
@@ -563,26 +538,10 @@ class _StopwatchPainter extends CustomPainter {
       );
       canvas.drawLine(inner, outer, tickPaint);
     }
-
-    final active = Paint()
-      ..color = AppColors.accent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    if (isRunning) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -1.5708,
-        6.28318530718 * progress,
-        false,
-        active,
-      );
-    }
   }
 
   @override
-  bool shouldRepaint(covariant _StopwatchPainter oldDelegate) =>
-      oldDelegate.isRunning != isRunning || oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _StopwatchPainter oldDelegate) => false;
 }
 
 class InlineRoundResult extends StatelessWidget {

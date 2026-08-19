@@ -25,23 +25,12 @@ class TimerDisplay extends StatelessWidget {
           softWrap: false,
           overflow: TextOverflow.visible,
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
+            color: const Color(0xFF002B68),
             fontSize: fontSize,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
             height: 1.1,
             fontFeatures: const [FontFeature.tabularFigures()],
-            shadows: const [
-              Shadow(
-                color: Color(0x3300377D),
-                offset: Offset(0, 2),
-                blurRadius: 4,
-              ),
-              Shadow(
-                color: Color(0x18FFFFFF),
-                offset: Offset(0, -1),
-                blurRadius: 0,
-              ),
-            ],
           ),
         ),
       ),

@@ -206,7 +206,7 @@ class GamePage extends ConsumerWidget {
           },
           onPlayAgain: () async {
             controller.dismissResultDialog();
-            await controller.prepareNewPaidRound();
+            await controller.cancelRound();
           },
           onViewHistory: () {
             controller.dismissResultDialog();
