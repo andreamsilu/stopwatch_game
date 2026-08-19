@@ -494,7 +494,7 @@ class _HomepageHero extends StatelessWidget {
 
     if (isMobile) {
       return Column(
-        children: [copy, const SizedBox(height: 28), const _ChallengeVisual()],
+        children: [const _ChallengeVisual(), const SizedBox(height: 28), copy],
       );
     }
 
@@ -631,12 +631,11 @@ class _BenefitsStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useDesktopRow = constraints.maxWidth >= 1050;
-        final usePhoneGrid = constraints.maxWidth < 600;
+        final useColumns = constraints.maxWidth >= 1050;
         return Container(
           padding: EdgeInsets.symmetric(
-            horizontal: useDesktopRow ? 24 : 16,
-            vertical: useDesktopRow ? 22 : 16,
+            horizontal: useColumns ? 24 : 18,
+            vertical: useColumns ? 22 : 18,
           ),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.94),
@@ -650,7 +649,7 @@ class _BenefitsStrip extends StatelessWidget {
               ),
             ],
           ),
-          child: useDesktopRow
+          child: useColumns
               ? Row(
                   children: [
                     for (var index = 0; index < _items.length; index++) ...[
@@ -663,75 +662,17 @@ class _BenefitsStrip extends StatelessWidget {
                     ],
                   ],
                 )
-              : usePhoneGrid
-              ? GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.25,
-                  ),
-                  itemBuilder: (context, index) =>
-                      _CompactBenefitItem(item: _items[index]),
-                )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 2.65,
-                  ),
-                  itemBuilder: (context, index) =>
+              : Column(
+                  children: [
+                    for (var index = 0; index < _items.length; index++) ...[
                       _BenefitItem(item: _items[index]),
+                      if (index < _items.length - 1)
+                        const Divider(height: 26, color: Color(0xFFDCE5EF)),
+                    ],
+                  ],
                 ),
         );
       },
-    );
-  }
-}
-
-class _CompactBenefitItem extends StatelessWidget {
-  const _CompactBenefitItem({required this.item});
-
-  final (IconData, String, String) item;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6FAFE),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: const Color(0xFFE3EFFB),
-              child: Icon(item.$1, color: AppColors.primary, size: 25),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              item.$2,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
