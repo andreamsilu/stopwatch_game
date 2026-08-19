@@ -457,7 +457,10 @@ class GameController extends StateNotifier<GameState> {
         ),
       );
 
-      await _gameService.waitForBillingSuccess(requestId: billing.requestId);
+      await _gameService.waitForBillingSuccess(
+        requestId: billing.requestId,
+        isCancelled: () => !_isActiveRoundOp(operationId),
+      );
       if (!_isActiveRoundOp(operationId)) return;
 
       _track(

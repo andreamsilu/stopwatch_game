@@ -79,107 +79,118 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
     final isPreparing = widget.preparePhase != RoundPreparePhase.idle;
     final hasTarget = !isPreparing && widget.targetTime > Duration.zero;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 600;
-            final widthBasedDiameter = isMobile
-                ? (constraints.maxWidth - 20).clamp(230.0, 340.0).toDouble()
-                : constraints.maxWidth.clamp(280.0, 320.0).toDouble();
-            final reservedHeight = widget.isRunning ? 200.0 : 330.0;
-            final heightBasedDiameter = constraints.maxHeight.isFinite
-                ? (constraints.maxHeight - reservedHeight)
-                      .clamp(180.0, 320.0)
-                      .toDouble()
-                : 320.0;
-            final diameter = widthBasedDiameter < heightBasedDiameter
-                ? widthBasedDiameter
-                : heightBasedDiameter;
-            return Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox.square(
-                    dimension: 32,
-                    child: IconButton(
-                      onPressed: widget.onToggleSound,
-                      tooltip: widget.isSoundEnabled ? 'Sound On' : 'Sound Off',
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        widget.isSoundEnabled
-                            ? Icons.volume_up_outlined
-                            : Icons.volume_off_outlined,
-                        size: 21,
-                      ),
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: _StateHeader(
-                    key: ValueKey<String>(_stateKey(isPreparing, hasTarget)),
-                    isRunning: widget.isRunning,
-                    isPreparing: isPreparing,
-                    hasTarget: hasTarget,
-                  ),
-                ),
-                SizedBox(height: widget.isRunning ? 4 : 6),
-                _MinimalStopwatch(
-                  diameter: diameter,
-                  timeText: widget.isRunning
-                      ? 'TIMING...'
-                      : widget.currentTimeLabel,
-                  isInactive: !widget.isRunning && !hasTarget,
-                ),
-                SizedBox(height: isMobile ? 7 : 10),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: widget.isRunning ? 420 : 480,
-                  ),
-                  child: _PrimaryRoundAction(
-                    isRunning: widget.isRunning,
-                    isPreparing: isPreparing,
-                    hasTarget: hasTarget,
-                    isBusy: widget.isBusy,
-                    isRetry: widget.errorMessage?.isNotEmpty == true,
-                    visualOffset: widget.startButtonVisualOffset,
-                    hitboxOffset: widget.startButtonHitboxOffset,
-                    onPay: widget.onPlayRound,
-                    onStartOrStop: widget.onStartOrStopRound,
-                    onPointerDown: widget.onStartControlPointerDown,
-                    onPointerMove: widget.onStartControlPointerMove,
-                    onPointerUp: widget.onStartControlPointerUp,
-                  ),
-                ),
-                if (!widget.isRunning) ...[
-                  const SizedBox(height: 4),
-                  TextButton(
-                    onPressed: widget.isBusy ? null : _handleLeaveRound,
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                    ),
-                    child: const Text(GameCopy.leaveRound),
-                  ),
-                  if (widget.totalWins > 0) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Perfect Stops: ${widget.totalWins}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF64748B),
+    return Stack(
+      children: [
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+                final widthBasedDiameter = isMobile
+                    ? (constraints.maxWidth - 20).clamp(230.0, 340.0).toDouble()
+                    : constraints.maxWidth.clamp(280.0, 320.0).toDouble();
+                final reservedHeight = widget.isRunning ? 200.0 : 330.0;
+                final heightBasedDiameter = constraints.maxHeight.isFinite
+                    ? (constraints.maxHeight - reservedHeight)
+                          .clamp(180.0, 320.0)
+                          .toDouble()
+                    : 320.0;
+                final diameter = widthBasedDiameter < heightBasedDiameter
+                    ? widthBasedDiameter
+                    : heightBasedDiameter;
+                return Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox.square(
+                        dimension: 32,
+                        child: IconButton(
+                          onPressed: widget.onToggleSound,
+                          tooltip: widget.isSoundEnabled
+                              ? 'Sound On'
+                              : 'Sound Off',
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            widget.isSoundEnabled
+                                ? Icons.volume_up_outlined
+                                : Icons.volume_off_outlined,
+                            size: 21,
+                          ),
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: _StateHeader(
+                        key: ValueKey<String>(
+                          _stateKey(isPreparing, hasTarget),
+                        ),
+                        isRunning: widget.isRunning,
+                        isPreparing: isPreparing,
+                        hasTarget: hasTarget,
+                      ),
+                    ),
+                    SizedBox(height: widget.isRunning ? 4 : 6),
+                    _MinimalStopwatch(
+                      diameter: diameter,
+                      timeText: widget.isRunning
+                          ? 'TIMING...'
+                          : widget.currentTimeLabel,
+                      isInactive: !widget.isRunning && !hasTarget,
+                    ),
+                    SizedBox(height: isMobile ? 7 : 10),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: widget.isRunning ? 420 : 480,
+                      ),
+                      child: _PrimaryRoundAction(
+                        isRunning: widget.isRunning,
+                        isPreparing: isPreparing,
+                        hasTarget: hasTarget,
+                        isBusy: widget.isBusy,
+                        isRetry: widget.errorMessage?.isNotEmpty == true,
+                        visualOffset: widget.startButtonVisualOffset,
+                        hitboxOffset: widget.startButtonHitboxOffset,
+                        onPay: widget.onPlayRound,
+                        onStartOrStop: widget.onStartOrStopRound,
+                        onPointerDown: widget.onStartControlPointerDown,
+                        onPointerMove: widget.onStartControlPointerMove,
+                        onPointerUp: widget.onStartControlPointerUp,
+                      ),
+                    ),
+                    if (!widget.isRunning) ...[
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: widget.isBusy ? null : _handleLeaveRound,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                        ),
+                        child: const Text(GameCopy.leaveRound),
+                      ),
+                      if (widget.totalWins > 0) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Perfect Stops: ${widget.totalWins}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: const Color(0xFF64748B)),
+                        ),
+                      ],
+                    ],
                   ],
-                ],
-              ],
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
-      ),
+        if (isPreparing)
+          Positioned.fill(
+            child: _PaymentLoadingOverlay(onCancel: widget.onReset),
+          ),
+      ],
     );
   }
 
@@ -236,35 +247,7 @@ class _StateHeader extends StatelessWidget {
     }
 
     if (isPreparing) {
-      return Column(
-        children: [
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Confirm payment on your phone',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Waiting for payment confirmation...',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 8),
-          const TargetTimeBadge(targetTimeLabel: '00:10.000'),
-        ],
-      );
+      return const TargetTimeBadge(targetTimeLabel: '00:10.000');
     }
 
     if (hasTarget) {
@@ -313,6 +296,80 @@ class _StateHeader extends StatelessWidget {
   }
 }
 
+class _PaymentLoadingOverlay extends StatelessWidget {
+  const _PaymentLoadingOverlay({required this.onCancel});
+
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: 'Waiting for payment confirmation',
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(20),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 4,
+                      color: AppColors.primary,
+                      backgroundColor: Color(0xFFDCEBFA),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Confirm payment on your phone',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Waiting for payment confirmation...',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF475569),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const TargetTimeBadge(targetTimeLabel: '00:10.000'),
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: onCancel,
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    label: const Text('CANCEL WAITING'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PrimaryRoundAction extends StatelessWidget {
   const _PrimaryRoundAction({
     required this.isRunning,
@@ -354,18 +411,8 @@ class _PrimaryRoundAction extends StatelessWidget {
             backgroundColor: AppColors.accent,
             foregroundColor: AppColors.onAccent,
           ),
-          icon: isPreparing
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.2),
-                )
-              : const Icon(Icons.play_arrow_rounded),
-          label: Text(
-            isPreparing
-                ? 'PROCESSING PAYMENT'
-                : (isRetry ? 'TRY AGAIN' : 'PAY FOR ROUND'),
-          ),
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: Text(isRetry ? 'TRY AGAIN' : 'PAY FOR ROUND'),
         ),
       );
     }

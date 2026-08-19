@@ -215,8 +215,8 @@ class HomePage extends ConsumerWidget {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 700;
-                final horizontalPad = isMobile ? 18.0 : 28.0;
+                final isMobile = constraints.maxWidth < 980;
+                final horizontalPad = isMobile ? 18.0 : 40.0;
                 final verticalPad = constraints.maxHeight < 720 ? 12.0 : 20.0;
 
                 return SingleChildScrollView(
@@ -230,7 +230,7 @@ class HomePage extends ConsumerWidget {
                     ),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1040),
+                        constraints: const BoxConstraints(maxWidth: 1440),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -238,16 +238,19 @@ class HomePage extends ConsumerWidget {
                             Column(
                               children: [
                                 _TopNavigation(
+                                  isMobile: isMobile,
                                   isAuthenticated: isAuthenticated,
                                   onLogin: () =>
                                       _startOrResumeGame(context, ref),
                                 ),
-                                SizedBox(height: isMobile ? 42 : 70),
+                                SizedBox(height: isMobile ? 34 : 46),
                                 _HomepageHero(
                                   isMobile: isMobile,
                                   onStart: () =>
                                       _startOrResumeGame(context, ref),
                                 ),
+                                SizedBox(height: isMobile ? 32 : 28),
+                                const _BenefitsStrip(),
                               ],
                             ),
                             const Padding(
@@ -270,8 +273,13 @@ class HomePage extends ConsumerWidget {
 }
 
 class _TopNavigation extends StatelessWidget {
-  const _TopNavigation({required this.isAuthenticated, required this.onLogin});
+  const _TopNavigation({
+    required this.isMobile,
+    required this.isAuthenticated,
+    required this.onLogin,
+  });
 
+  final bool isMobile;
   final bool isAuthenticated;
   final VoidCallback onLogin;
 
@@ -292,6 +300,14 @@ class _TopNavigation extends StatelessWidget {
             ),
           ),
         ),
+        if (!isMobile) ...[
+          const Spacer(),
+          _NavigationLink(label: 'Play', isActive: true, onPressed: onLogin),
+          _NavigationLink(label: 'How to Play', onPressed: onLogin),
+          _NavigationLink(label: 'History', onPressed: onLogin),
+          _NavigationLink(label: 'Support', onPressed: onLogin),
+          const Spacer(),
+        ],
         const SizedBox(width: 12),
         FilledButton.icon(
           onPressed: onLogin,
@@ -317,6 +333,52 @@ class _TopNavigation extends StatelessWidget {
   }
 }
 
+class _NavigationLink extends StatelessWidget {
+  const _NavigationLink({
+    required this.label,
+    required this.onPressed,
+    this.isActive = false,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          shape: const RoundedRectangleBorder(),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 7),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: isActive ? 42 : 0,
+              height: 3,
+              decoration: BoxDecoration(
+                color: AppColors.accent,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HomepageHero extends StatelessWidget {
   const _HomepageHero({required this.isMobile, required this.onStart});
 
@@ -330,10 +392,6 @@ class _HomepageHero extends StatelessWidget {
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       children: [
-        if (isMobile) ...[
-          const _StopwatchMark(size: 96),
-          const SizedBox(height: 22),
-        ],
         Text(
           'FAST  ·  FUN  ·  SIMPLE  ·  PRECISE',
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
@@ -350,10 +408,10 @@ class _HomepageHero extends StatelessWidget {
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
           style: Theme.of(context).textTheme.displayMedium?.copyWith(
             color: AppColors.primary,
-            fontSize: isMobile ? 42 : 54,
+            fontSize: isMobile ? 42 : 68,
             fontWeight: FontWeight.w800,
-            height: 1.02,
-            letterSpacing: -1.2,
+            height: 1.01,
+            letterSpacing: -1.8,
           ),
         ),
         const SizedBox(height: 16),
@@ -385,48 +443,66 @@ class _HomepageHero extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 26),
+        if (!isMobile) ...[const SizedBox(height: 20), const _PlayerTrustRow()],
+        const SizedBox(height: 24),
         SizedBox(
-          width: isMobile ? double.infinity : 220,
-          height: 54,
+          width: isMobile ? double.infinity : 340,
+          height: 68,
           child: FilledButton(
             onPressed: onStart,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              overlayColor: AppColors.accent.withValues(alpha: 0.22),
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.primary,
+              overlayColor: AppColors.primary.withValues(alpha: 0.10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: const Text(
-              'START PLAYING  →',
+              '▶  START PLAYING',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
                 letterSpacing: 0.3,
               ),
             ),
           ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: isMobile
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.verified_user_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 9),
+            Text(
+              'Secure payments. Fair play.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ],
     );
 
     if (isMobile) {
       return Column(
-        children: [
-          copy,
-          const SizedBox(height: 30),
-          const _TargetTimeDisplay(),
-        ],
+        children: [const _ChallengeVisual(), const SizedBox(height: 28), copy],
       );
     }
 
     return Row(
       children: [
-        Expanded(flex: 6, child: copy),
-        const SizedBox(width: 64),
-        const Expanded(flex: 4, child: _ChallengeVisual()),
+        Expanded(flex: 5, child: copy),
+        const SizedBox(width: 28),
+        const Expanded(flex: 7, child: _ChallengeVisual()),
       ],
     );
   }
@@ -437,26 +513,209 @@ class _ChallengeVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFFE1EAF3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1000377D),
-            blurRadius: 30,
-            offset: Offset(0, 14),
+    return Semantics(
+      image: true,
+      label: 'A player celebrating a Stopwatch Challenge win',
+      child: AspectRatio(
+        aspectRatio: 3 / 2,
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE7F2FC),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1800377D),
+                blurRadius: 28,
+                offset: Offset(0, 12),
+              ),
+            ],
           ),
-        ],
+          child: Image.asset(
+            'images/hero.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            excludeFromSemantics: true,
+          ),
+        ),
       ),
-      child: const Column(
-        mainAxisSize: MainAxisSize.min,
+    );
+  }
+}
+
+class _PlayerTrustRow extends StatelessWidget {
+  const _PlayerTrustRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 116,
+          height: 40,
+          child: Stack(
+            children: List.generate(
+              4,
+              (index) => Positioned(
+                left: index * 25,
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: const Color(0xFFE7F2FC),
+                  child: Icon(
+                    Icons.person_rounded,
+                    size: 23,
+                    color: index.isEven
+                        ? AppColors.primary
+                        : const Color(0xFF2F80C9),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '★★★★★',
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 18,
+                letterSpacing: 2,
+                height: 1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Join 25,000+ players',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _BenefitsStrip extends StatelessWidget {
+  const _BenefitsStrip();
+
+  static const _items = [
+    (
+      Icons.track_changes_rounded,
+      'Hit the Target',
+      'Stop as close as you can to 10.00 seconds.',
+    ),
+    (
+      Icons.emoji_events_outlined,
+      'Win Real Money',
+      'The closer you are, the bigger the reward.',
+    ),
+    (
+      Icons.verified_user_outlined,
+      'Fair & Secure',
+      'Enjoy fair play with secure payments.',
+    ),
+    (
+      Icons.groups_rounded,
+      'Join Thousands',
+      'Thousands of players. Countless challenges.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useColumns = constraints.maxWidth >= 1050;
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: useColumns ? 24 : 18,
+            vertical: useColumns ? 22 : 18,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE1EAF3)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1000377D),
+                blurRadius: 24,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: useColumns
+              ? Row(
+                  children: [
+                    for (var index = 0; index < _items.length; index++) ...[
+                      Expanded(child: _BenefitItem(item: _items[index])),
+                      if (index < _items.length - 1)
+                        const SizedBox(
+                          height: 76,
+                          child: VerticalDivider(color: Color(0xFFDCE5EF)),
+                        ),
+                    ],
+                  ],
+                )
+              : Column(
+                  children: [
+                    for (var index = 0; index < _items.length; index++) ...[
+                      _BenefitItem(item: _items[index]),
+                      if (index < _items.length - 1)
+                        const Divider(height: 26, color: Color(0xFFDCE5EF)),
+                    ],
+                  ],
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _BenefitItem extends StatelessWidget {
+  const _BenefitItem({required this.item});
+
+  final (IconData, String, String) item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
         children: [
-          _StopwatchMark(size: 118),
-          SizedBox(height: 26),
-          _TargetTimeDisplay(),
+          CircleAvatar(
+            radius: 31,
+            backgroundColor: const Color(0xFFEAF3FD),
+            child: Icon(item.$1, color: AppColors.primary, size: 30),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.$2,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  item.$3,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF405674),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -507,68 +766,6 @@ class _StopwatchMark extends StatelessWidget {
                   size: size * 0.17,
                   color: AppColors.primary,
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TargetTimeDisplay extends StatelessWidget {
-  const _TargetTimeDisplay();
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Your target time is 10.00 seconds',
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(22, 10, 22, 11),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE7F2FC),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFC9DEEF)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                7,
-                (index) => Container(
-                  width: index == 3 ? 3 : 2,
-                  height: index == 3 ? 8 : 5,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: index == 3
-                        ? AppColors.accent
-                        : AppColors.primary.withValues(alpha: 0.42),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
-            const Text(
-              '10.00',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 34,
-                height: 1.05,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2.2,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(height: 2),
-            const Text(
-              'YOUR TARGET TIME',
-              style: TextStyle(
-                color: Color(0xFF52657A),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.4,
               ),
             ),
           ],

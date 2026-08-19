@@ -73,6 +73,7 @@ flutter:
   assets:
     - .env
     - images/logo.png
+    - images/hero.png
     - assets/win-clap.mp3
     - assets/lose-music.mp3
 

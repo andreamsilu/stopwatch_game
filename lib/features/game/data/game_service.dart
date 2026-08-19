@@ -23,15 +23,12 @@ class GameService {
 
   final StopwatchApi _api;
 
-  Future<BillingTransactionResponse> enqueueBilling({
-    required String msisdn,
-  }) =>
+  Future<BillingTransactionResponse> enqueueBilling({required String msisdn}) =>
       _postBillingTransaction(msisdn: msisdn);
 
   Future<BillingTransactionResponse> getBillingStatus({
     required String requestId,
-  }) =>
-      _fetchBillingStatus(requestId);
+  }) => _fetchBillingStatus(requestId);
 
   /// Polls until billing succeeds, fails, or [EnvConfig.billingPollTimeout] elapses.
   ///
@@ -40,6 +37,7 @@ class GameService {
   /// instead of a fixed interval — fewer requests while the charge is pending.
   Future<BillingTransactionResponse> waitForBillingSuccess({
     required String requestId,
+    bool Function()? isCancelled,
   }) async {
     final deadline = DateTime.now().add(EnvConfig.billingPollTimeout);
     final random = math.Random();
@@ -47,11 +45,19 @@ class GameService {
     var backoff = EnvConfig.billingPollInterval;
 
     while (true) {
+      if (isCancelled?.call() ?? false) {
+        throw StateError('Billing status polling was cancelled.');
+      }
+
       if (DateTime.now().isAfter(deadline)) {
         throw ApiException(lastPendingMessage ?? 'pending');
       }
 
       final transaction = await getBillingStatus(requestId: requestId);
+
+      if (isCancelled?.call() ?? false) {
+        throw StateError('Billing status polling was cancelled.');
+      }
 
       if (transaction.isBillingSuccess) return transaction;
 
@@ -68,24 +74,25 @@ class GameService {
         throw ApiException(lastPendingMessage ?? 'pending');
       }
 
-      final capMs = math.min(
-        remaining.inMilliseconds,
-        backoff.inMilliseconds,
-      );
+      final capMs = math.min(remaining.inMilliseconds, backoff.inMilliseconds);
       if (capMs > 0) {
         const jitterLow = 0.85;
         const jitterHigh = 1.15;
-        final factor = jitterLow + random.nextDouble() * (jitterHigh - jitterLow);
+        final factor =
+            jitterLow + random.nextDouble() * (jitterHigh - jitterLow);
         final sleepMs = math.max(0, (capMs * factor).round());
         await Future<void>.delayed(Duration(milliseconds: sleepMs));
       }
 
-      final nextMs = (backoff.inMilliseconds * EnvConfig.billingPollBackoffMultiplier)
-          .round();
+      if (isCancelled?.call() ?? false) {
+        throw StateError('Billing status polling was cancelled.');
+      }
+
+      final nextMs =
+          (backoff.inMilliseconds * EnvConfig.billingPollBackoffMultiplier)
+              .round();
       final maxMs = EnvConfig.billingPollBackoffMax.inMilliseconds;
-      backoff = Duration(
-        milliseconds: math.min(maxMs, math.max(nextMs, 1)),
-      );
+      backoff = Duration(milliseconds: math.min(maxMs, math.max(nextMs, 1)));
     }
   }
 
@@ -96,12 +103,11 @@ class GameService {
     required String msisdn,
     required String billingRequestId,
     String? channel,
-  }) =>
-      _postGameStart(
-        msisdn: msisdn,
-        billingRequestId: billingRequestId,
-        channel: channel ?? EnvConfig.gameChannel,
-      );
+  }) => _postGameStart(
+    msisdn: msisdn,
+    billingRequestId: billingRequestId,
+    channel: channel ?? EnvConfig.gameChannel,
+  );
 
   Future<GameStartResponse> stopGameSession({required String sessionRef}) =>
       _postGameStop(sessionRef: sessionRef);
@@ -136,7 +142,9 @@ class GameService {
     );
   }
 
-  Future<BillingTransactionResponse> _fetchBillingStatus(String requestId) async {
+  Future<BillingTransactionResponse> _fetchBillingStatus(
+    String requestId,
+  ) async {
     final response = await _api.get(
       Uri.parse(ApiConfig.billingTransaction(requestId)),
     );
