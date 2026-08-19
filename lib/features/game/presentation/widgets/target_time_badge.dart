@@ -19,15 +19,15 @@ class TargetTimeBadge extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0xFFE7F2FC),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFC9DEEF)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             GameCopy.targetTimeBadge,
@@ -37,7 +37,13 @@ class TargetTimeBadge extends StatelessWidget {
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(width: 12),
+          Container(
+            width: 1,
+            height: 28,
+            color: AppColors.primary.withValues(alpha: 0.18),
+          ),
+          const SizedBox(width: 12),
           if (isLoading)
             const SizedBox(
               width: 22,
@@ -56,7 +62,7 @@ class TargetTimeBadge extends StatelessWidget {
                 color: AppColors.primary,
               ),
             ),
-          const SizedBox(height: 1),
+          const SizedBox(width: 8),
           const Text(
             'SECONDS',
             style: TextStyle(
