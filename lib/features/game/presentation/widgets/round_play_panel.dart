@@ -76,20 +76,8 @@ class RoundPlayPanel extends StatefulWidget {
 class _RoundPlayPanelState extends State<RoundPlayPanel> {
   @override
   Widget build(BuildContext context) {
-    final result = widget.result;
-    if (result != null) {
-      return _InlineRoundResult(
-        result: result,
-        onPlayAgain: widget.onPlayAgain,
-        onViewHistory: widget.onViewHistory,
-      );
-    }
-
     final isPreparing = widget.preparePhase != RoundPreparePhase.idle;
-    final hasTarget =
-        widget.hasBillingForRound &&
-        !isPreparing &&
-        widget.targetTime > Duration.zero;
+    final hasTarget = !isPreparing && widget.targetTime > Duration.zero;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -101,7 +89,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
             final widthBasedDiameter = isMobile
                 ? (constraints.maxWidth - 20).clamp(230.0, 340.0).toDouble()
                 : constraints.maxWidth.clamp(320.0, 380.0).toDouble();
-            final reservedHeight = widget.isRunning ? 150.0 : 245.0;
+            final reservedHeight = widget.isRunning ? 215.0 : 265.0;
             final heightBasedDiameter = constraints.maxHeight.isFinite
                 ? (constraints.maxHeight - reservedHeight)
                       .clamp(190.0, 380.0)
@@ -134,7 +122,6 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                     phase: widget.preparePhase,
                     hasTarget: hasTarget,
                     targetTimeLabel: widget.targetTimeLabel,
-                    errorMessage: widget.errorMessage,
                   ),
                 ),
                 SizedBox(height: widget.isRunning ? 6 : 12),
@@ -238,7 +225,6 @@ class _StateHeader extends StatelessWidget {
     required this.phase,
     required this.hasTarget,
     required this.targetTimeLabel,
-    this.errorMessage,
   });
 
   final bool isRunning;
@@ -246,11 +232,12 @@ class _StateHeader extends StatelessWidget {
   final RoundPreparePhase phase;
   final bool hasTarget;
   final String targetTimeLabel;
-  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
-    if (isRunning) return const SizedBox.shrink();
+    if (isRunning) {
+      return TargetTimeBadge(targetTimeLabel: targetTimeLabel);
+    }
 
     if (isPreparing) {
       final awaiting = phase == RoundPreparePhase.awaitingPayment;
@@ -308,29 +295,24 @@ class _StateHeader extends StatelessWidget {
       );
     }
 
-    final error = errorMessage?.trim();
     return Column(
       children: [
         Text(
-          error?.isNotEmpty == true
-              ? 'Payment was not completed'
-              : 'Ready for the challenge?',
+          'Ready for the challenge?',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: error?.isNotEmpty == true
-                ? Theme.of(context).colorScheme.error
-                : AppColors.primary,
+            color: AppColors.primary,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          error?.isNotEmpty == true
-              ? error!
-              : 'Pay for a round to reveal your target and start playing.',
+          'Pay for a round to activate the target and start playing.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
+        const SizedBox(height: 12),
+        const TargetTimeBadge(targetTimeLabel: '00:10.000'),
       ],
     );
   }
@@ -597,11 +579,12 @@ class _StopwatchPainter extends CustomPainter {
       oldDelegate.isRunning != isRunning || oldDelegate.progress != progress;
 }
 
-class _InlineRoundResult extends StatelessWidget {
-  const _InlineRoundResult({
+class InlineRoundResult extends StatelessWidget {
+  const InlineRoundResult({
     required this.result,
     required this.onPlayAgain,
     required this.onViewHistory,
+    super.key,
   });
 
   final RoundResultData result;

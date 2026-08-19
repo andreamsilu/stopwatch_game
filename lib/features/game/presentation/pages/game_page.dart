@@ -22,13 +22,34 @@ import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/how_to_play_steps_card.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/round_result_modal.dart';
 
 /// No centered toasts while the stopwatch is running (focus mode).
 bool _allowGameToasts(GameState state) => !state.isRunning;
 
 void _showGameInfo(BuildContext context, GameState state, String message) {
   if (!_allowGameToasts(state)) return;
-  AppSnackBar.showInfo(context, message);
+  _showGameResponse(context, title: 'Update', message: message);
+}
+
+void _showGameResponse(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) {
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('CLOSE'),
+        ),
+      ],
+    ),
+  );
 }
 
 bool _looksLikeSessionExpired(String message) {
@@ -79,12 +100,12 @@ void _showGameError(
     return;
   }
   if (!_allowGameToasts(state)) return;
-  AppSnackBar.showError(context, message);
+  _showGameResponse(context, title: 'Something went wrong', message: message);
 }
 
 void _showGameSuccess(BuildContext context, GameState state, String message) {
   if (!_allowGameToasts(state)) return;
-  AppSnackBar.showSuccess(context, message);
+  _showGameResponse(context, title: 'Success', message: message);
 }
 
 Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
@@ -173,6 +194,27 @@ class GamePage extends ConsumerWidget {
       } else {
         await GameFeedbackService.onLose();
       }
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => RoundResultModal(
+          result: result,
+          onClose: () {
+            controller.dismissResultDialog();
+            controller.cancelRound();
+          },
+          onPlayAgain: () async {
+            controller.dismissResultDialog();
+            await controller.prepareNewPaidRound();
+          },
+          onViewHistory: () {
+            controller.dismissResultDialog();
+            controller.cancelRound();
+            controller.selectTab(GameTab.history);
+          },
+        ),
+      );
     });
 
     final protectsPaidRound =
