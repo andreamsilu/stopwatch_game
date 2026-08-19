@@ -13,6 +13,19 @@ import 'package:stopwatch_game/core/widgets/app_footer.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:stopwatch_game/features/game/presentation/pages/game_page.dart';
 
+final _homeSessionRestoreProvider = FutureProvider<void>((ref) async {
+  final authService = ref.read(authServiceProvider);
+  final session =
+      authService.currentSession ??
+      await ref.read(authSessionStorageProvider).readValidSession();
+  if (session == null) return;
+
+  authService.restoreSession(session);
+  ref.read(playerMsisdnProvider.notifier).state = session.user.msisdn;
+  ref.read(playerUserProvider.notifier).state = session.user;
+  ref.read(subscriptionActiveProvider.notifier).state = true;
+});
+
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -165,6 +178,9 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(_homeSessionRestoreProvider);
+    final isAuthenticated = ref.watch(subscriptionActiveProvider);
+
     ref.listen<LoginState>(loginProvider, (previous, next) {
       if (!context.mounted) return;
 
@@ -222,6 +238,7 @@ class HomePage extends ConsumerWidget {
                             Column(
                               children: [
                                 _TopNavigation(
+                                  isAuthenticated: isAuthenticated,
                                   onLogin: () =>
                                       _startOrResumeGame(context, ref),
                                 ),
@@ -253,8 +270,9 @@ class HomePage extends ConsumerWidget {
 }
 
 class _TopNavigation extends StatelessWidget {
-  const _TopNavigation({required this.onLogin});
+  const _TopNavigation({required this.isAuthenticated, required this.onLogin});
 
+  final bool isAuthenticated;
   final VoidCallback onLogin;
 
   @override
@@ -277,8 +295,13 @@ class _TopNavigation extends StatelessWidget {
         const SizedBox(width: 12),
         FilledButton.icon(
           onPressed: onLogin,
-          icon: const Icon(Icons.person_outline_rounded, size: 18),
-          label: const Text('LOGIN'),
+          icon: Icon(
+            isAuthenticated
+                ? Icons.play_arrow_rounded
+                : Icons.person_outline_rounded,
+            size: 18,
+          ),
+          label: Text(isAuthenticated ? 'PLAY' : 'LOGIN'),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
