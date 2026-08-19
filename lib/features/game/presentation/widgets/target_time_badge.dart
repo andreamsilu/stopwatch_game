@@ -19,7 +19,7 @@ class TargetTimeBadge extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFFE7F2FC),
         borderRadius: BorderRadius.circular(14),
@@ -52,7 +52,7 @@ class TargetTimeBadge extends StatelessWidget {
               secondsText,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
-                fontSize: 32,
+                fontSize: 28,
                 color: AppColors.primary,
               ),
             ),

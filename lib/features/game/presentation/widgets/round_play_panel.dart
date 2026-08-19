@@ -82,19 +82,19 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 600;
             final widthBasedDiameter = isMobile
                 ? (constraints.maxWidth - 20).clamp(230.0, 340.0).toDouble()
-                : constraints.maxWidth.clamp(320.0, 380.0).toDouble();
-            final reservedHeight = widget.isRunning ? 215.0 : 265.0;
+                : constraints.maxWidth.clamp(280.0, 320.0).toDouble();
+            final reservedHeight = widget.isRunning ? 200.0 : 330.0;
             final heightBasedDiameter = constraints.maxHeight.isFinite
                 ? (constraints.maxHeight - reservedHeight)
-                      .clamp(190.0, 380.0)
+                      .clamp(180.0, 320.0)
                       .toDouble()
-                : 380.0;
+                : 320.0;
             final diameter = widthBasedDiameter < heightBasedDiameter
                 ? widthBasedDiameter
                 : heightBasedDiameter;
@@ -102,15 +102,21 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
               children: [
                 Align(
                   alignment: Alignment.centerRight,
-                  child: IconButton(
-                    onPressed: widget.onToggleSound,
-                    tooltip: widget.isSoundEnabled ? 'Sound On' : 'Sound Off',
-                    icon: Icon(
-                      widget.isSoundEnabled
-                          ? Icons.volume_up_outlined
-                          : Icons.volume_off_outlined,
+                  child: SizedBox.square(
+                    dimension: 32,
+                    child: IconButton(
+                      onPressed: widget.onToggleSound,
+                      tooltip: widget.isSoundEnabled ? 'Sound On' : 'Sound Off',
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        widget.isSoundEnabled
+                            ? Icons.volume_up_outlined
+                            : Icons.volume_off_outlined,
+                        size: 21,
+                      ),
+                      color: AppColors.primary,
                     ),
-                    color: AppColors.primary,
                   ),
                 ),
                 AnimatedSwitcher(
@@ -124,7 +130,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                     targetTimeLabel: widget.targetTimeLabel,
                   ),
                 ),
-                SizedBox(height: widget.isRunning ? 6 : 12),
+                SizedBox(height: widget.isRunning ? 4 : 6),
                 _MinimalStopwatch(
                   diameter: diameter,
                   timeText: widget.currentTimeLabel,
@@ -136,10 +142,10 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                                 widget.targetTime.inMilliseconds)
                             .clamp(0.0, 1.0),
                 ),
-                SizedBox(height: isMobile ? 8 : 14),
+                SizedBox(height: isMobile ? 7 : 10),
                 ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: widget.isRunning ? 420 : 520,
+                    maxWidth: widget.isRunning ? 420 : 480,
                   ),
                   child: _PrimaryRoundAction(
                     isRunning: widget.isRunning,
@@ -157,7 +163,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                   ),
                 ),
                 if (!widget.isRunning) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
                   TextButton(
                     onPressed: widget.isBusy ? null : _handleLeaveRound,
                     style: TextButton.styleFrom(
