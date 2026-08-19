@@ -115,9 +115,18 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 600;
-            final diameter = isMobile
+            final widthBasedDiameter = isMobile
                 ? (constraints.maxWidth - 20).clamp(240.0, 360.0).toDouble()
                 : constraints.maxWidth.clamp(380.0, 500.0).toDouble();
+            final reservedHeight = widget.isRunning ? 150.0 : 245.0;
+            final heightBasedDiameter = constraints.maxHeight.isFinite
+                ? (constraints.maxHeight - reservedHeight)
+                      .clamp(190.0, 500.0)
+                      .toDouble()
+                : 500.0;
+            final diameter = widthBasedDiameter < heightBasedDiameter
+                ? widthBasedDiameter
+                : heightBasedDiameter;
             _updateGame(diameter);
 
             return Column(
