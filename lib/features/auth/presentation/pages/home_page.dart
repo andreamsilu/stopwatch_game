@@ -243,7 +243,7 @@ class HomePage extends ConsumerWidget {
                                   onLogin: () =>
                                       _startOrResumeGame(context, ref),
                                 ),
-                                SizedBox(height: isMobile ? 34 : 46),
+                                SizedBox(height: isMobile ? 24 : 46),
                                 _HomepageHero(
                                   isMobile: isMobile,
                                   onStart: () =>
@@ -392,17 +392,19 @@ class _HomepageHero extends StatelessWidget {
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       children: [
-        Text(
-          'FAST  ·  FUN  ·  SIMPLE  ·  PRECISE',
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.3,
+        if (!isMobile) ...[
+          const Text(
+            'FAST  ·  FUN  ·  SIMPLE  ·  PRECISE',
+            textAlign: TextAlign.left,
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.3,
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 14),
+        ],
         Text(
           AuthCopy.welcomeTitle,
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
@@ -414,9 +416,11 @@ class _HomepageHero extends StatelessWidget {
             letterSpacing: -1.8,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isMobile ? 12 : 16),
         Text(
-          AuthCopy.welcomeSubtitle,
+          isMobile
+              ? 'Stop the clock at exactly 10.00 seconds.'
+              : AuthCopy.welcomeSubtitle,
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: AppColors.onBackground,
@@ -425,29 +429,31 @@ class _HomepageHero extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          AuthCopy.welcomeSupport,
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: const Color(0xFF52657A),
-            height: 1.45,
+        if (!isMobile) ...[
+          const SizedBox(height: 12),
+          Text(
+            AuthCopy.welcomeSupport,
+            textAlign: TextAlign.left,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: const Color(0xFF52657A),
+              height: 1.45,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Closest time wins.',
-          textAlign: isMobile ? TextAlign.center : TextAlign.left,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w700,
+          const SizedBox(height: 8),
+          Text(
+            'Closest time wins.',
+            textAlign: TextAlign.left,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
+        ],
         if (!isMobile) ...[const SizedBox(height: 20), const _PlayerTrustRow()],
-        const SizedBox(height: 24),
+        SizedBox(height: isMobile ? 18 : 24),
         SizedBox(
           width: isMobile ? double.infinity : 340,
-          height: 68,
+          height: isMobile ? 60 : 68,
           child: FilledButton(
             onPressed: onStart,
             style: FilledButton.styleFrom(
@@ -468,7 +474,7 @@ class _HomepageHero extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isMobile ? 12 : 16),
         Row(
           mainAxisAlignment: isMobile
               ? MainAxisAlignment.center
@@ -494,7 +500,11 @@ class _HomepageHero extends StatelessWidget {
 
     if (isMobile) {
       return Column(
-        children: [const _ChallengeVisual(), const SizedBox(height: 28), copy],
+        children: [
+          const _ChallengeVisual(compact: true),
+          const SizedBox(height: 22),
+          copy,
+        ],
       );
     }
 
@@ -509,7 +519,9 @@ class _HomepageHero extends StatelessWidget {
 }
 
 class _ChallengeVisual extends StatelessWidget {
-  const _ChallengeVisual();
+  const _ChallengeVisual({this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -517,7 +529,7 @@ class _ChallengeVisual extends StatelessWidget {
       image: true,
       label: 'A player celebrating a Stopwatch Challenge win',
       child: AspectRatio(
-        aspectRatio: 3 / 2,
+        aspectRatio: compact ? 16 / 10 : 3 / 2,
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
@@ -631,11 +643,12 @@ class _BenefitsStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumns = constraints.maxWidth >= 1050;
+        final useDesktopRow = constraints.maxWidth >= 1050;
+        final usePhoneGrid = constraints.maxWidth < 600;
         return Container(
           padding: EdgeInsets.symmetric(
-            horizontal: useColumns ? 24 : 18,
-            vertical: useColumns ? 22 : 18,
+            horizontal: useDesktopRow ? 24 : 16,
+            vertical: useDesktopRow ? 22 : 16,
           ),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.94),
@@ -649,7 +662,7 @@ class _BenefitsStrip extends StatelessWidget {
               ),
             ],
           ),
-          child: useColumns
+          child: useDesktopRow
               ? Row(
                   children: [
                     for (var index = 0; index < _items.length; index++) ...[
@@ -662,17 +675,75 @@ class _BenefitsStrip extends StatelessWidget {
                     ],
                   ],
                 )
-              : Column(
-                  children: [
-                    for (var index = 0; index < _items.length; index++) ...[
+              : usePhoneGrid
+              ? GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _items.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.25,
+                  ),
+                  itemBuilder: (context, index) =>
+                      _CompactBenefitItem(item: _items[index]),
+                )
+              : GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _items.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 2.65,
+                  ),
+                  itemBuilder: (context, index) =>
                       _BenefitItem(item: _items[index]),
-                      if (index < _items.length - 1)
-                        const Divider(height: 26, color: Color(0xFFDCE5EF)),
-                    ],
-                  ],
                 ),
         );
       },
+    );
+  }
+}
+
+class _CompactBenefitItem extends StatelessWidget {
+  const _CompactBenefitItem({required this.item});
+
+  final (IconData, String, String) item;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6FAFE),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFFE3EFFB),
+              child: Icon(item.$1, color: AppColors.primary, size: 25),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              item.$2,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
