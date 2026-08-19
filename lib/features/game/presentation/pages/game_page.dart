@@ -87,11 +87,6 @@ void _showGameSuccess(BuildContext context, GameState state, String message) {
   AppSnackBar.showSuccess(context, message);
 }
 
-void _showGameWarning(BuildContext context, GameState state, String message) {
-  if (!_allowGameToasts(state)) return;
-  AppSnackBar.showWarning(context, message);
-}
-
 Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
   ref.read(gameControllerProvider.notifier).invalidatePendingWork();
   await ref.read(gameControllerProvider.notifier).cancelRound();

@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
-import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
@@ -147,8 +146,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                   progress: widget.targetTime.inMilliseconds == 0
                       ? 0
                       : (widget.elapsed.inMilliseconds /
-                              widget.targetTime.inMilliseconds)
-                          .clamp(0.0, 1.0),
+                                widget.targetTime.inMilliseconds)
+                            .clamp(0.0, 1.0),
                 ),
                 SizedBox(height: isMobile ? 8 : 14),
                 ConstrainedBox(
@@ -638,11 +637,11 @@ class _InlineRoundResult extends StatelessWidget {
                 Text(
                   yourTime,
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: AppColors.primary,
-                        fontSize: 62,
-                        fontWeight: FontWeight.w900,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                    color: AppColors.primary,
+                    fontSize: 62,
+                    fontWeight: FontWeight.w900,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Wrap(
@@ -659,9 +658,9 @@ class _InlineRoundResult extends StatelessWidget {
                   _feedback(result.differenceMs),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -681,8 +680,8 @@ class _InlineRoundResult extends StatelessWidget {
                 Text(
                   'Play Again starts a new paid round.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF64748B),
-                      ),
+                    color: const Color(0xFF64748B),
+                  ),
                 ),
                 TextButton(
                   onPressed: onViewHistory,
@@ -739,9 +738,9 @@ class _ResultMetric extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w800,
-              ),
+            color: AppColors.primary,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ],
     );
