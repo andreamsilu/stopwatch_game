@@ -1,14 +1,11 @@
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flame/game.dart' hide Matrix4;
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
-import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
-import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/round_billing_hint.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/stopwatch_3d_stage.dart';
+import 'package:stopwatch_game/features/game/presentation/flame/stopwatch_flame_game.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/target_time_badge.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/timer_display.dart';
 
@@ -24,6 +21,7 @@ class RoundPlayPanel extends StatefulWidget {
     required this.isLoadingTarget,
     required this.preparePhase,
     this.statusMessage,
+    this.errorMessage,
     required this.isSoundEnabled,
     required this.startButtonVisualOffset,
     required this.startButtonHitboxOffset,
@@ -49,6 +47,7 @@ class RoundPlayPanel extends StatefulWidget {
   final bool isLoadingTarget;
   final RoundPreparePhase preparePhase;
   final String? statusMessage;
+  final String? errorMessage;
   final bool isSoundEnabled;
   final Offset startButtonVisualOffset;
   final Offset startButtonHitboxOffset;
@@ -68,12 +67,10 @@ class RoundPlayPanel extends StatefulWidget {
   State<RoundPlayPanel> createState() => _RoundPlayPanelState();
 }
 
-class _RoundPlayPanelState extends State<RoundPlayPanel>
-    with SingleTickerProviderStateMixin {
+class _RoundPlayPanelState extends State<RoundPlayPanel> {
   late final StopwatchFlameGame _stopwatchGame;
-  AnimationController? _ringRotationController;
-  double? _lastGameDiameter;
-  bool? _lastGameIsRunning;
+  double? _lastDiameter;
+  bool? _lastRunningState;
 
   @override
   void initState() {
@@ -82,525 +79,419 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
       isRunning: widget.isRunning,
       diameter: GameConstants.stopwatchCircleDesktopDiameter,
     );
-    _ringRotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2600),
-    );
-    if (widget.isRunning) {
-      _ringRotationController?.repeat();
-    }
   }
 
   @override
   void didUpdateWidget(covariant RoundPlayPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isRunning != widget.isRunning) {
-      _stopwatchGame.updateState(
-        isRunning: widget.isRunning,
-        diameter: _stopwatchGame.diameter,
+      _updateGame(
+        _lastDiameter ?? GameConstants.stopwatchCircleDesktopDiameter,
       );
-      if (widget.isRunning) {
-        _ringRotationController?.repeat();
-      } else {
-        _ringRotationController?.stop();
-      }
     }
   }
 
-  @override
-  void dispose() {
-    _ringRotationController?.dispose();
-    super.dispose();
+  void _updateGame(double diameter) {
+    if (_lastDiameter == diameter && _lastRunningState == widget.isRunning) {
+      return;
+    }
+    _lastDiameter = diameter;
+    _lastRunningState = widget.isRunning;
+    _stopwatchGame.updateState(isRunning: widget.isRunning, diameter: diameter);
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = screenWidth < 380;
-    final isTightMobile = screenWidth < 430;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
-          margin: EdgeInsets.zero,
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 10 : 16,
-                  vertical: isSmallMobile ? 6 : 8,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isCompactHeader = constraints.maxWidth < 380;
-                    if (isCompactHeader) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                GameCopy.targetTime,
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(
-                                      letterSpacing: 0.2,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                onPressed: widget.onToggleSound,
-                                icon: Icon(
-                                  widget.isSoundEnabled
-                                      ? Icons.volume_up_outlined
-                                      : Icons.volume_off_outlined,
-                                ),
-                                tooltip: widget.isSoundEnabled
-                                    ? GameCopy.disableSounds
-                                    : GameCopy.enableSounds,
-                                visualDensity: VisualDensity.compact,
-                                constraints: const BoxConstraints.tightFor(
-                                  width: 36,
-                                  height: 36,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          PlaySurface3DTilt(
-                            child: TargetTimeBadge(
-                              targetTimeLabel: widget.targetTimeLabel,
-                              isLoading: widget.isLoadingTarget,
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        PlaySurface3DTilt(
-                          child: TargetTimeBadge(
-                            targetTimeLabel: widget.targetTimeLabel,
-                            isLoading: widget.isLoadingTarget,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: widget.onToggleSound,
-                          icon: Icon(
-                            widget.isSoundEnabled
-                                ? Icons.volume_up_outlined
-                                : Icons.volume_off_outlined,
-                          ),
-                          tooltip: widget.isSoundEnabled
-                              ? GameCopy.disableSounds
-                              : GameCopy.enableSounds,
-                          visualDensity: VisualDensity.compact,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 36,
-                            height: 36,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 10 : 18,
-                  vertical: isSmallMobile ? 6 : 10,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxWidth = constraints.maxWidth;
-                    final compactPanel = maxWidth < 430;
-                    final responsivePreferred = compactPanel
-                        ? (maxWidth * 0.66)
-                        : (maxWidth < 600
-                              ? (maxWidth * 0.76)
-                              : GameConstants.stopwatchCircleDesktopDiameter);
-                    final maxAllowedDiameter = compactPanel
-                        ? (maxWidth - 36).clamp(140.0, 260.0)
-                        : (maxWidth - 20).clamp(140.0, 360.0);
-                    final circleDiameter = responsivePreferred
-                        .clamp(140.0, maxAllowedDiameter)
-                        .toDouble();
-                    final progressValue = widget.targetTime.inMilliseconds <= 0
-                        ? 0.0
-                        : (widget.elapsed.inMilliseconds /
-                                  widget.targetTime.inMilliseconds)
-                              .clamp(0.0, 1.0);
-                    // Keep elapsed time clear of rotating progress cycles.
-                    final timerFontSize = (circleDiameter * 0.19)
-                        .clamp(
-                          compactPanel ? 22.0 : 24.0,
-                          compactPanel ? 38.0 : 44.0,
-                        )
-                        .toDouble();
-                    final timerMaxWidth = (circleDiameter * 0.56)
-                        .clamp(88.0, 180.0)
-                        .toDouble();
-                    if (_lastGameDiameter != circleDiameter ||
-                        _lastGameIsRunning != widget.isRunning) {
-                      _lastGameDiameter = circleDiameter;
-                      _lastGameIsRunning = widget.isRunning;
-                      _stopwatchGame.updateState(
-                        isRunning: widget.isRunning,
-                        diameter: circleDiameter,
-                      );
-                    }
+    final isPreparing = widget.preparePhase != RoundPreparePhase.idle;
+    final hasTarget =
+        widget.hasBillingForRound &&
+        !isPreparing &&
+        widget.targetTime > Duration.zero;
 
-                    return Column(
-                      children: [
-                        Center(
-                          child: Stopwatch3DStage(
-                            diameter: circleDiameter,
-                            isRunning: widget.isRunning,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                RepaintBoundary(
-                                  child: SizedBox(
-                                    width: circleDiameter,
-                                    height: circleDiameter,
-                                    child: GameWidget(
-                                      game: _stopwatchGame,
-                                      backgroundBuilder: (context) =>
-                                          const SizedBox.shrink(),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: timerMaxWidth,
-                                  child: TimerDisplay(
-                                    timeText: widget.currentTimeLabel,
-                                    fontSize: timerFontSize,
-                                  ),
-                                ),
-                                IgnorePointer(
-                                  child: RepaintBoundary(
-                                    child: SizedBox(
-                                      width: circleDiameter,
-                                      height: circleDiameter,
-                                      child: AnimatedBuilder(
-                                        animation:
-                                            _ringRotationController ??
-                                            const AlwaysStoppedAnimation<
-                                              double
-                                            >(0),
-                                        builder: (context, _) {
-                                          return CustomPaint(
-                                            painter: _RoundProgressRingPainter(
-                                              progress: progressValue,
-                                              rotation:
-                                                  _ringRotationController
-                                                      ?.value ??
-                                                  0,
-                                              isRunning: widget.isRunning,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: compactPanel ? 10 : 16),
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 280),
-                            child: PlaySurface3DTilt(
-                              child: _RoundStatCard(
-                                label: GameCopy.perfectStops,
-                                value: '${widget.totalWins}',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: isTightMobile ? 8 : 12),
-        LayoutBuilder(
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+        child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 560;
-            final resetButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + 6,
-              child: OutlinedButton.icon(
-                onPressed: widget.isBusy
-                    ? null
-                    : () async {
-                        await GameFeedbackService.onRoundReset();
-                        widget.onReset();
-                      },
-                icon: const Icon(Icons.close_rounded),
-                label: const Text(GameCopy.leaveRound),
-              ),
-            );
-            final playDisabled =
-                widget.isSubmitting ||
-                widget.preparePhase != RoundPreparePhase.idle;
-            final playButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + 6,
-              child: ElevatedButton.icon(
-                onPressed: playDisabled
-                    ? null
-                    : () async {
-                        await widget.onPlayRound();
-                      },
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text(GameCopy.payForRound),
-              ),
-            );
-            final startRoundButton = SizedBox(
-              height: GameConstants.minTouchTargetSize + 6,
-              child: _OffsetAwareStartControl(
-                isRunning: widget.isRunning,
-                isDisabled: widget.isBusy,
-                actionLabel: widget.isRunning
-                    ? GameCopy.stopRound
-                    : GameCopy.startRound,
-                visualOffset: widget.startButtonVisualOffset,
-                hitboxOffset: widget.startButtonHitboxOffset,
-                onPointerDown: widget.onStartControlPointerDown,
-                onPointerMove: widget.onStartControlPointerMove,
-                onPointerUp: widget.onStartControlPointerUp,
-                onTap: _handleStartOrStopTap,
-              ),
-            );
+            final isMobile = constraints.maxWidth < 600;
+            final diameter = isMobile
+                ? (constraints.maxWidth - 20).clamp(240.0, 360.0).toDouble()
+                : constraints.maxWidth.clamp(380.0, 500.0).toDouble();
+            _updateGame(diameter);
 
-            final actionButton = widget.hasBillingForRound || widget.isRunning
-                ? startRoundButton
-                : playButton;
-
-            if (compact) {
-              return Row(
-                children: [
-                  Expanded(child: resetButton),
-                  const SizedBox(width: 10),
-                  Expanded(child: actionButton),
-                ],
-              );
-            }
-            return Row(
+            return Column(
               children: [
-                Expanded(child: resetButton),
-                const SizedBox(width: 10),
-                Expanded(child: actionButton),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    onPressed: widget.onToggleSound,
+                    tooltip: widget.isSoundEnabled ? 'Sound On' : 'Sound Off',
+                    icon: Icon(
+                      widget.isSoundEnabled
+                          ? Icons.volume_up_outlined
+                          : Icons.volume_off_outlined,
+                    ),
+                    color: AppColors.primary,
+                  ),
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: _StateHeader(
+                    key: ValueKey<String>(_stateKey(isPreparing, hasTarget)),
+                    isRunning: widget.isRunning,
+                    isPreparing: isPreparing,
+                    phase: widget.preparePhase,
+                    hasTarget: hasTarget,
+                    targetTimeLabel: widget.targetTimeLabel,
+                    errorMessage: widget.errorMessage,
+                  ),
+                ),
+                SizedBox(height: widget.isRunning ? 6 : 12),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 220),
+                  opacity: !widget.isRunning && !hasTarget ? 0.52 : 1,
+                  child: SizedBox(
+                    width: diameter,
+                    height: diameter,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        RepaintBoundary(
+                          child: GameWidget(
+                            game: _stopwatchGame,
+                            backgroundBuilder: (_) => const SizedBox.shrink(),
+                          ),
+                        ),
+                        SizedBox(
+                          width: diameter * 0.66,
+                          child: TimerDisplay(
+                            timeText: widget.currentTimeLabel,
+                            fontSize: (diameter * 0.16).clamp(42.0, 68.0),
+                          ),
+                        ),
+                        IgnorePointer(
+                          child: CustomPaint(
+                            size: Size.square(diameter),
+                            painter: _FocusRingPainter(
+                              isRunning: widget.isRunning,
+                              progress: widget.targetTime.inMilliseconds == 0
+                                  ? 0
+                                  : (widget.elapsed.inMilliseconds /
+                                            widget.targetTime.inMilliseconds)
+                                        .clamp(0.0, 1.0),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: isMobile ? 8 : 14),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: widget.isRunning ? 420 : 520,
+                  ),
+                  child: _PrimaryRoundAction(
+                    isRunning: widget.isRunning,
+                    isPreparing: isPreparing,
+                    hasTarget: hasTarget,
+                    isBusy: widget.isBusy,
+                    isRetry: widget.errorMessage?.isNotEmpty == true,
+                    visualOffset: widget.startButtonVisualOffset,
+                    hitboxOffset: widget.startButtonHitboxOffset,
+                    onPay: widget.onPlayRound,
+                    onStartOrStop: widget.onStartOrStopRound,
+                    onPointerDown: widget.onStartControlPointerDown,
+                    onPointerMove: widget.onStartControlPointerMove,
+                    onPointerUp: widget.onStartControlPointerUp,
+                  ),
+                ),
+                if (!widget.isRunning) ...[
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: widget.isBusy ? null : _handleLeaveRound,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
+                    child: const Text(GameCopy.leaveRound),
+                  ),
+                  if (widget.totalWins > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Perfect Stops: ${widget.totalWins}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ],
               ],
             );
           },
         ),
-        RoundBillingHint(
-          phase: widget.preparePhase,
-          statusMessage: widget.statusMessage,
+      ),
+    );
+  }
+
+  String _stateKey(bool isPreparing, bool hasTarget) {
+    if (widget.isRunning) return 'running';
+    if (isPreparing) return widget.preparePhase.name;
+    if (hasTarget) return 'target';
+    return 'unpaid';
+  }
+
+  Future<void> _handleLeaveRound() async {
+    if (!widget.hasBillingForRound) {
+      widget.onReset();
+      return;
+    }
+
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave this round?'),
+        content: const Text('Your current round will be lost if you leave.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('CONTINUE PLAYING'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('LEAVE ROUND'),
+          ),
+        ],
+      ),
+    );
+    if (leave == true && mounted) widget.onReset();
+  }
+}
+
+class _StateHeader extends StatelessWidget {
+  const _StateHeader({
+    super.key,
+    required this.isRunning,
+    required this.isPreparing,
+    required this.phase,
+    required this.hasTarget,
+    required this.targetTimeLabel,
+    this.errorMessage,
+  });
+
+  final bool isRunning;
+  final bool isPreparing;
+  final RoundPreparePhase phase;
+  final bool hasTarget;
+  final String targetTimeLabel;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isRunning) return const SizedBox.shrink();
+
+    if (isPreparing) {
+      final awaiting = phase == RoundPreparePhase.awaitingPayment;
+      return Column(
+        children: [
+          const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            awaiting ? 'Confirm payment on your phone' : 'Preparing your round',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            awaiting
+                ? "We're waiting for your payment confirmation."
+                : 'Please wait while we prepare your challenge.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      );
+    }
+
+    if (hasTarget) {
+      return Column(
+        children: [
+          TargetTimeBadge(targetTimeLabel: targetTimeLabel),
+          const SizedBox(height: 10),
+          Text(
+            'Stop the timer as close to '
+            '${_secondsDisplay(targetTimeLabel)} seconds as you can.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Ready when you are.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      );
+    }
+
+    final error = errorMessage?.trim();
+    return Column(
+      children: [
+        Text(
+          error?.isNotEmpty == true
+              ? 'Payment was not completed'
+              : 'Ready for the challenge?',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: error?.isNotEmpty == true
+                ? Theme.of(context).colorScheme.error
+                : AppColors.primary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          error?.isNotEmpty == true
+              ? error!
+              : 'Pay for a round to reveal your target and start playing.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
     );
   }
 
-  Future<void> _handleStartOrStopTap() async {
-    if (widget.isBusy) return;
-    await widget.onStartOrStopRound();
+  static String _secondsDisplay(String value) {
+    final seconds = double.tryParse(value.split(':').last);
+    return seconds?.toStringAsFixed(2) ?? value;
   }
 }
 
-class _OffsetAwareStartControl extends StatelessWidget {
-  const _OffsetAwareStartControl({
+class _PrimaryRoundAction extends StatelessWidget {
+  const _PrimaryRoundAction({
     required this.isRunning,
-    required this.isDisabled,
-    required this.actionLabel,
+    required this.isPreparing,
+    required this.hasTarget,
+    required this.isBusy,
+    required this.isRetry,
     required this.visualOffset,
     required this.hitboxOffset,
+    required this.onPay,
+    required this.onStartOrStop,
     required this.onPointerDown,
     required this.onPointerMove,
     required this.onPointerUp,
-    required this.onTap,
   });
 
   final bool isRunning;
-  final bool isDisabled;
-  final String actionLabel;
+  final bool isPreparing;
+  final bool hasTarget;
+  final bool isBusy;
+  final bool isRetry;
   final Offset visualOffset;
   final Offset hitboxOffset;
+  final Future<void> Function() onPay;
+  final Future<void> Function() onStartOrStop;
   final void Function(Offset position, {bool? isTrusted}) onPointerDown;
   final ValueChanged<Offset> onPointerMove;
   final void Function(Offset position, {bool? isTrusted}) onPointerUp;
-  final Future<void> Function() onTap;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = !isDisabled;
-    final buttonStyle = ElevatedButton.styleFrom(
-      backgroundColor: enabled
-          ? AppColors.accent
-          : AppColors.accent.withValues(alpha: 0.45),
-      disabledBackgroundColor: enabled
-          ? AppColors.accent
-          : AppColors.accent.withValues(alpha: 0.45),
-      foregroundColor: enabled
-          ? AppColors.onAccent
-          : AppColors.onAccent.withValues(alpha: 0.55),
-      disabledForegroundColor: enabled
-          ? AppColors.onAccent
-          : AppColors.onAccent.withValues(alpha: 0.55),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-    );
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0008)
-            ..rotateX(isRunning ? -0.03 : -0.05)
-            ..translateByDouble(
-              visualOffset.dx,
-              visualOffset.dy,
-              isRunning ? 4.0 : 0.0,
-              1.0,
-            ),
-          child: IgnorePointer(
-            child: SizedBox.expand(
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 170),
-                curve: Curves.easeOutCubic,
-                scale: isRunning ? 1.02 : 1,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(
-                          alpha: isRunning ? 0.35 : 0.22,
-                        ),
-                        blurRadius: isRunning ? 16 : 10,
-                        offset: Offset(0, isRunning ? 8 : 5),
-                      ),
-                      BoxShadow(
-                        color: AppColors.accent.withValues(
-                          alpha: isRunning ? 0.4 : 0.2,
-                        ),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: null,
-                    style: buttonStyle,
-                    icon: Icon(
-                      isRunning ? Icons.stop_rounded : Icons.timer_rounded,
-                    ),
-                    label: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      transitionBuilder: (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
-                      child: Text(
-                        actionLabel,
-                        key: ValueKey<String>(actionLabel),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+    if (!hasTarget && !isRunning) {
+      return SizedBox(
+        width: double.infinity,
+        height: 62,
+        child: ElevatedButton.icon(
+          onPressed: isPreparing || isBusy ? null : onPay,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.accent,
+            foregroundColor: AppColors.onAccent,
+          ),
+          icon: isPreparing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                )
+              : const Icon(Icons.play_arrow_rounded),
+          label: Text(
+            isPreparing
+                ? 'PROCESSING PAYMENT'
+                : (isRetry ? 'TRY AGAIN' : 'PAY FOR ROUND'),
           ),
         ),
-        Positioned.fill(
-          child: IgnorePointer(
-            ignoring: isDisabled,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              transform: Matrix4.translationValues(
-                hitboxOffset.dx,
-                hitboxOffset.dy,
-                0,
-              ),
-              child: Listener(
-                onPointerDown: (event) => onPointerDown(
-                  event.position,
-                  isTrusted: PointerEventTrust.currentIsTrusted(),
-                ),
-                onPointerMove: (event) => onPointerMove(event.position),
-                onPointerUp: (event) => onPointerUp(
-                  event.position,
-                  isTrusted: PointerEventTrust.currentIsTrusted(),
-                ),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () => onTap(),
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+      );
+    }
 
-class _RoundStatCard extends StatelessWidget {
-  const _RoundStatCard({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.background,
-            AppColors.secondary.withValues(alpha: 0.14),
-            AppColors.primary.withValues(alpha: 0.06),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A00377D),
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final label = isRunning ? 'STOP' : 'START ROUND';
+    return SizedBox(
+      width: double.infinity,
+      height: isRunning ? 78 : 64,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 4),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 180),
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: Text(
-              value,
-              key: ValueKey<String>(value),
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          Transform.translate(
+            offset: visualOffset,
+            child: SizedBox.expand(
+              child: ElevatedButton.icon(
+                onPressed: null,
+                style: ElevatedButton.styleFrom(
+                  disabledBackgroundColor: AppColors.accent,
+                  disabledForegroundColor: AppColors.onAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: Icon(
+                  isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                  size: isRunning ? 32 : 24,
+                ),
+                label: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: isRunning ? 25 : 17,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: isRunning ? 1.3 : 0.3,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: isBusy,
+              child: Transform.translate(
+                offset: hitboxOffset,
+                child: Listener(
+                  onPointerDown: (event) => onPointerDown(
+                    event.position,
+                    isTrusted: PointerEventTrust.currentIsTrusted(),
+                  ),
+                  onPointerMove: (event) => onPointerMove(event.position),
+                  onPointerUp: (event) => onPointerUp(
+                    event.position,
+                    isTrusted: PointerEventTrust.currentIsTrusted(),
+                  ),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: onStartOrStop,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -609,90 +500,38 @@ class _RoundStatCard extends StatelessWidget {
   }
 }
 
-class _RoundProgressRingPainter extends CustomPainter {
-  const _RoundProgressRingPainter({
-    required this.progress,
-    required this.rotation,
-    required this.isRunning,
-  });
+class _FocusRingPainter extends CustomPainter {
+  const _FocusRingPainter({required this.isRunning, required this.progress});
 
-  final double progress;
-  final double rotation;
   final bool isRunning;
+  final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final strokeWidth = (size.width * 0.013).clamp(2.2, 4.6);
-    final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = (size.width / 2) - (strokeWidth * 1.5);
-    final midRadius = outerRadius - (strokeWidth * 2.0);
-    final innerRadius = midRadius - (strokeWidth * 2.0);
-    final outerRect = Rect.fromCircle(center: center, radius: outerRadius);
-    final midRect = Rect.fromCircle(center: center, radius: midRadius);
-    final innerRect = Rect.fromCircle(center: center, radius: innerRadius);
-
-    final outerTrackPaint = Paint()
-      ..color = AppColors.accent.withValues(alpha: 0.2)
+    final center = size.center(Offset.zero);
+    final radius = (size.shortestSide / 2) - 7;
+    final track = Paint()
+      ..color = AppColors.primary.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-    final midTrackPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.16)
+      ..strokeWidth = 5;
+    final active = Paint()
+      ..color = AppColors.accent
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-    final innerTrackPaint = Paint()
-      ..color = AppColors.secondary.withValues(alpha: 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-
-    final outerProgressPaint = Paint()
-      ..color = isRunning
-          ? AppColors.accent.withValues(alpha: 0.95)
-          : AppColors.accent.withValues(alpha: 0.75)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = 7
       ..strokeCap = StrokeCap.round;
-    final midRotatingPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: isRunning ? 0.95 : 0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    final innerRotatingPaint = Paint()
-      ..color = AppColors.secondary.withValues(alpha: isRunning ? 0.95 : 0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawCircle(center, outerRadius, outerTrackPaint);
-    canvas.drawCircle(center, midRadius, midTrackPaint);
-    canvas.drawCircle(center, innerRadius, innerTrackPaint);
-
-    canvas.drawArc(
-      outerRect,
-      -1.5708,
-      6.28318530718 * progress,
-      false,
-      outerProgressPaint,
-    );
-    canvas.drawArc(
-      midRect,
-      (rotation * 6.28318530718) - 1.5708,
-      2.2,
-      false,
-      midRotatingPaint,
-    );
-    canvas.drawArc(
-      innerRect,
-      (-rotation * 6.28318530718) + 0.6,
-      1.7,
-      false,
-      innerRotatingPaint,
-    );
+    canvas.drawCircle(center, radius, track);
+    if (isRunning) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -1.5708,
+        6.28318530718 * progress,
+        false,
+        active,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _RoundProgressRingPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.rotation != rotation ||
-        oldDelegate.isRunning != isRunning;
-  }
+  bool shouldRepaint(covariant _FocusRingPainter oldDelegate) =>
+      oldDelegate.isRunning != isRunning || oldDelegate.progress != progress;
 }

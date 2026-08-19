@@ -12,12 +12,14 @@ import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 class GameHeaderBar extends ConsumerStatefulWidget {
   const GameHeaderBar({
     required this.activeTab,
+    required this.navigationEnabled,
     required this.onTabSelected,
     required this.onLogout,
     super.key,
   });
 
   final GameTab activeTab;
+  final bool navigationEnabled;
   final ValueChanged<GameTab> onTabSelected;
   final Future<void> Function() onLogout;
 
@@ -60,6 +62,7 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
           builder: (context, constraints) {
             final tabs = _CenteredTabStrip(
               activeTab: widget.activeTab,
+              enabled: widget.navigationEnabled,
               onTabSelected: widget.onTabSelected,
             );
             final avatar = _AvatarAccountMenu(
@@ -111,10 +114,12 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
 class _CenteredTabStrip extends StatelessWidget {
   const _CenteredTabStrip({
     required this.activeTab,
+    required this.enabled,
     required this.onTabSelected,
   });
 
   final GameTab activeTab;
+  final bool enabled;
   final ValueChanged<GameTab> onTabSelected;
 
   @override
@@ -131,7 +136,7 @@ class _CenteredTabStrip extends StatelessWidget {
             _HeaderTabButton(
               label: _labelForTab(tabs[i]),
               isActive: tabs[i] == activeTab,
-              onPressed: () => onTabSelected(tabs[i]),
+              onPressed: enabled ? () => onTabSelected(tabs[i]) : null,
             ),
             if (i < tabs.length - 1) const SizedBox(width: 8),
           ],
@@ -165,7 +170,7 @@ class _HeaderTabButton extends StatefulWidget {
 
   final String label;
   final bool isActive;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   State<_HeaderTabButton> createState() => _HeaderTabButtonState();
@@ -177,56 +182,62 @@ class _HeaderTabButtonState extends State<_HeaderTabButton> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
+      onEnter: widget.onPressed == null
+          ? null
+          : (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        height: GameConstants.minTouchTargetSize,
-        decoration: BoxDecoration(
-          gradient: widget.isActive
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.accent, AppColors.secondary],
-                )
-              : null,
-          color: widget.isActive
-              ? null
-              : (_hovered
-                    ? AppColors.secondary.withValues(alpha: 0.14)
-                    : Colors.transparent),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: widget.onPressed == null && !widget.isActive ? 0.42 : 1,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          height: GameConstants.minTouchTargetSize,
+          decoration: BoxDecoration(
+            gradient: widget.isActive
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.accent, AppColors.secondary],
+                  )
+                : null,
             color: widget.isActive
-                ? AppColors.primary.withValues(alpha: 0.25)
-                : AppColors.primary.withValues(alpha: 0.1),
-          ),
-          boxShadow: widget.isActive
-              ? [
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onPressed,
+                ? null
+                : (_hovered
+                      ? AppColors.secondary.withValues(alpha: 0.14)
+                      : Colors.transparent),
             borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Center(
-                child: Text(
-                  widget.label,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: widget.isActive
-                        ? AppColors.onAccent
-                        : AppColors.onBackground.withValues(alpha: 0.82),
+            border: Border.all(
+              color: widget.isActive
+                  ? AppColors.primary.withValues(alpha: 0.25)
+                  : AppColors.primary.withValues(alpha: 0.1),
+            ),
+            boxShadow: widget.isActive
+                ? [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onPressed,
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Center(
+                  child: Text(
+                    widget.label,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: widget.isActive
+                          ? AppColors.onAccent
+                          : AppColors.onBackground.withValues(alpha: 0.82),
+                    ),
                   ),
                 ),
               ),

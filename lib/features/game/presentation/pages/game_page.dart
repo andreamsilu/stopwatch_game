@@ -139,7 +139,6 @@ class GamePage extends ConsumerWidget {
           next.roundErrorMessage!.isNotEmpty &&
           next.roundErrorMessage != previous?.roundErrorMessage) {
         _showGameError(context, next, next.roundErrorMessage!, ref: ref);
-        controller.clearFeedbackMessages();
       }
 
       if (next.statusMessage != null &&
@@ -220,326 +219,367 @@ class GamePage extends ConsumerWidget {
       controller.dismissResultDialog();
     });
 
-    return Scaffold(
-      appBar: useDrawerNav
-          ? AppBar(
-              automaticallyImplyLeading: false,
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              titleSpacing: 0,
-              title: const Align(
-                alignment: Alignment.centerLeft,
-                child: AppLogo(size: 32),
-              ),
-              actions: [
-                Builder(
-                  builder: (context) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: IconButton.filledTonal(
-                      onPressed: () => Scaffold.of(context).openEndDrawer(),
-                      tooltip: GameCopy.openMenu,
-                      icon: const Icon(Icons.menu_rounded),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : null,
-      endDrawer: useDrawerNav
-          ? Drawer(
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      LoggedInUserBar(
-                        onLogout: () => performLogoutFromGame(context, ref),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        GameCopy.navigation,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: ListView(
-                          children: [
-                            _DrawerNavTile(
-                              label: GameCopy.playTab,
-                              icon: Icons.play_arrow_rounded,
-                              isActive: gameState.selectedTab == GameTab.play,
-                              onTap: () {
-                                controller.selectTab(GameTab.play);
-                                Navigator.of(context).maybePop();
-                              },
-                            ),
-                            _DrawerNavTile(
-                              label: GameCopy.historyTab,
-                              icon: Icons.history,
-                              isActive:
-                                  gameState.selectedTab == GameTab.history,
-                              onTap: () {
-                                controller.selectTab(GameTab.history);
-                                Navigator.of(context).maybePop();
-                              },
-                            ),
-                            _DrawerNavTile(
-                              label: GameCopy.howToPlayTab,
-                              icon: Icons.menu_book_outlined,
-                              isActive:
-                                  gameState.selectedTab == GameTab.howToPlay,
-                              onTap: () {
-                                controller.selectTab(GameTab.howToPlay);
-                                Navigator.of(context).maybePop();
-                              },
-                            ),
-                            _DrawerNavTile(
-                              label: GameCopy.supportTab,
-                              icon: Icons.support_agent_outlined,
-                              isActive:
-                                  gameState.selectedTab == GameTab.support,
-                              onTap: () {
-                                controller.selectTab(GameTab.support);
-                                Navigator.of(context).maybePop();
-                              },
-                            ),
-                            _DrawerNavTile(
-                              label: GameCopy.profileTab,
-                              icon: Icons.person_outline_rounded,
-                              isActive:
-                                  gameState.selectedTab == GameTab.profile,
-                              onTap: () {
-                                controller.selectTab(GameTab.profile);
-                                Navigator.of(context).maybePop();
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.logout_rounded,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        title: const Text(GameCopy.logOut),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await performLogoutFromGame(context, ref);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          : null,
-      body: ExperienceBackground(
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final isMobile = width < GameConstants.mobileBreakpoint;
-              final isTablet =
-                  width >= GameConstants.mobileBreakpoint &&
-                  width < GameConstants.tabletBreakpoint;
-              final isLargeDesktop = width >= 1400;
-              final isWindows = defaultTargetPlatform == TargetPlatform.windows;
-              final isVerySmallMobile = width < 380;
-              final horizontalPadding = isMobile
-                  ? (isVerySmallMobile ? 8.0 : 12.0)
-                  : (isWindows
-                        ? 12.0
-                        : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0)));
-              final verticalPadding = isMobile
-                  ? (isVerySmallMobile ? 6.0 : 8.0)
-                  : 20.0;
-              final maxContentWidth = isMobile
-                  ? width
-                  : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
+    final protectsPaidRound =
+        gameState.hasBillingForRound || gameState.isRunning;
 
-              return Align(
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: width.clamp(0, maxContentWidth),
-                  height: constraints.maxHeight,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: verticalPadding,
+    return PopScope(
+      canPop: !protectsPaidRound,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop || !protectsPaidRound) return;
+        final leave = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Leave this round?'),
+            content: const Text(
+              'Your current round will be lost if you leave.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('CONTINUE PLAYING'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('LEAVE ROUND'),
+              ),
+            ],
+          ),
+        );
+        if (leave != true || !context.mounted) return;
+        await controller.cancelRound();
+        if (context.mounted) Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        appBar: useDrawerNav
+            ? AppBar(
+                automaticallyImplyLeading: false,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                titleSpacing: 0,
+                title: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppLogo(size: 32),
+                ),
+                actions: [
+                  Builder(
+                    builder: (context) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: IconButton.filledTonal(
+                        onPressed: gameState.isRunning
+                            ? null
+                            : () => Scaffold.of(context).openEndDrawer(),
+                        tooltip: GameCopy.openMenu,
+                        icon: const Icon(Icons.menu_rounded),
+                      ),
                     ),
+                  ),
+                ],
+              )
+            : null,
+        endDrawer: useDrawerNav
+            ? Drawer(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (!useDrawerNav)
-                          GameHeaderBar(
-                            activeTab: gameState.selectedTab,
-                            onTabSelected: controller.selectTab,
-                            onLogout: () => performLogoutFromGame(context, ref),
-                          ),
-                        if (!useDrawerNav) const SizedBox(height: 6),
+                        LoggedInUserBar(
+                          onLogout: () => performLogoutFromGame(context, ref),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          GameCopy.navigation,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 10),
                         Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: () async {
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (dialogContext) => AlertDialog(
-                                  title: const Text(
-                                    GameCopy.refreshConfirmTitle,
-                                  ),
-                                  content: const Text(
-                                    GameCopy.refreshConfirmBody,
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(
-                                        dialogContext,
-                                      ).pop(false),
-                                      child: const Text(
-                                        GameCopy.refreshConfirmCancel,
-                                      ),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogContext).pop(true),
-                                      child: const Text(
-                                        GameCopy.refreshConfirmAction,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (confirmed != true || !context.mounted) {
-                                return;
-                              }
-                              final before = ref.read(gameControllerProvider);
-                              _showGameInfo(
-                                context,
-                                before,
-                                GameCopy.refreshingRound,
-                              );
-                              await controller.onPullToRefresh();
-                              if (!context.mounted) return;
-                              _showGameSuccess(
-                                context,
-                                ref.read(gameControllerProvider),
-                                GameCopy.roundRefreshed,
-                              );
-                            },
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Align(
-                                alignment: Alignment.topCenter,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: isLargeDesktop
-                                        ? 1100
-                                        : double.infinity,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      AnimatedSwitcher(
-                                        duration: const Duration(
-                                          milliseconds: 220,
-                                        ),
-                                        switchInCurve: Curves.easeOutCubic,
-                                        switchOutCurve: Curves.easeInCubic,
-                                        transitionBuilder: (child, animation) {
-                                          return FadeTransition(
-                                            opacity: animation,
-                                            child: SlideTransition(
-                                              position: Tween<Offset>(
-                                                begin: const Offset(0, 0.02),
-                                                end: Offset.zero,
-                                              ).animate(animation),
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                        child: _GamePanelShell(
-                                          child: _GameBody(
-                                            key: ValueKey<GameTab>(
-                                              gameState.selectedTab,
-                                            ),
-                                            state: gameState,
-                                            onOpenPlay: () => controller
-                                                .selectTab(GameTab.play),
-                                            onLogout: () =>
-                                                performLogoutFromGame(
-                                                  context,
-                                                  ref,
-                                                ),
-                                            onResetRound: () {
-                                              controller.onResetPressed();
-                                            },
-                                            onToggleSound:
-                                                controller.toggleSoundEnabled,
-                                            onStartControlPointerDown:
-                                                controller
-                                                    .onStartControlPointerDown,
-                                            onStartControlPointerMove:
-                                                controller
-                                                    .onStartControlPointerMove,
-                                            onStartControlPointerUp: controller
-                                                .onStartControlPointerUp,
-                                            onPlayRound: () async {
-                                              AppSnackBar.dismiss();
-                                              if (gameState.latestResult !=
-                                                  null) {
-                                                controller
-                                                    .dismissResultDialog();
-                                              }
-                                              await controller
-                                                  .onPlayRoundPressed();
-                                            },
-                                            onStartOrStopRound: () async {
-                                              if (gameState
-                                                  .isStopwatchControlDisabled) {
-                                                return;
-                                              }
-                                              if (gameState.isRunning) {
-                                                await controller
-                                                    .onStopPressed();
-                                              } else {
-                                                AppSnackBar.dismiss();
-                                                await controller
-                                                    .onStartPressed();
-                                              }
-                                            },
-                                            hasBillingForRound:
-                                                gameState.hasBillingForRound,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      AppFooter(
-                                        onTerms: () => controller.selectTab(
-                                          GameTab.support,
-                                        ),
-                                        onPrivacy: () => controller.selectTab(
-                                          GameTab.support,
-                                        ),
-                                        onContactSupport: () => controller
-                                            .selectTab(GameTab.support),
-                                      ),
-                                      SizedBox(height: isMobile ? 8 : 12),
-                                    ],
-                                  ),
-                                ),
+                          child: ListView(
+                            children: [
+                              _DrawerNavTile(
+                                label: GameCopy.playTab,
+                                icon: Icons.play_arrow_rounded,
+                                isActive: gameState.selectedTab == GameTab.play,
+                                onTap: () {
+                                  controller.selectTab(GameTab.play);
+                                  Navigator.of(context).maybePop();
+                                },
                               ),
-                            ),
+                              _DrawerNavTile(
+                                label: GameCopy.historyTab,
+                                icon: Icons.history,
+                                isActive:
+                                    gameState.selectedTab == GameTab.history,
+                                onTap: () {
+                                  controller.selectTab(GameTab.history);
+                                  Navigator.of(context).maybePop();
+                                },
+                              ),
+                              _DrawerNavTile(
+                                label: GameCopy.howToPlayTab,
+                                icon: Icons.menu_book_outlined,
+                                isActive:
+                                    gameState.selectedTab == GameTab.howToPlay,
+                                onTap: () {
+                                  controller.selectTab(GameTab.howToPlay);
+                                  Navigator.of(context).maybePop();
+                                },
+                              ),
+                              _DrawerNavTile(
+                                label: GameCopy.supportTab,
+                                icon: Icons.support_agent_outlined,
+                                isActive:
+                                    gameState.selectedTab == GameTab.support,
+                                onTap: () {
+                                  controller.selectTab(GameTab.support);
+                                  Navigator.of(context).maybePop();
+                                },
+                              ),
+                              _DrawerNavTile(
+                                label: GameCopy.profileTab,
+                                icon: Icons.person_outline_rounded,
+                                isActive:
+                                    gameState.selectedTab == GameTab.profile,
+                                onTap: () {
+                                  controller.selectTab(GameTab.profile);
+                                  Navigator.of(context).maybePop();
+                                },
+                              ),
+                            ],
                           ),
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.logout_rounded,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          title: const Text(GameCopy.logOut),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            await performLogoutFromGame(context, ref);
+                          },
                         ),
                       ],
                     ),
                   ),
                 ),
-              );
-            },
+              )
+            : null,
+        body: ExperienceBackground(
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final isMobile = width < GameConstants.mobileBreakpoint;
+                final isTablet =
+                    width >= GameConstants.mobileBreakpoint &&
+                    width < GameConstants.tabletBreakpoint;
+                final isLargeDesktop = width >= 1400;
+                final isWindows =
+                    defaultTargetPlatform == TargetPlatform.windows;
+                final isVerySmallMobile = width < 380;
+                final horizontalPadding = isMobile
+                    ? (isVerySmallMobile ? 8.0 : 12.0)
+                    : (isWindows
+                          ? 12.0
+                          : (isTablet ? 22.0 : (isLargeDesktop ? 40.0 : 32.0)));
+                final verticalPadding = isMobile
+                    ? (isVerySmallMobile ? 6.0 : 8.0)
+                    : 20.0;
+                final maxContentWidth = isMobile
+                    ? width
+                    : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
+
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: width.clamp(0, maxContentWidth),
+                    height: constraints.maxHeight,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: verticalPadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (!useDrawerNav)
+                            GameHeaderBar(
+                              activeTab: gameState.selectedTab,
+                              navigationEnabled: !gameState.isRunning,
+                              onTabSelected: controller.selectTab,
+                              onLogout: () =>
+                                  performLogoutFromGame(context, ref),
+                            ),
+                          if (!useDrawerNav) const SizedBox(height: 6),
+                          Expanded(
+                            child: RefreshIndicator(
+                              onRefresh: () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    title: const Text(
+                                      GameCopy.refreshConfirmTitle,
+                                    ),
+                                    content: const Text(
+                                      GameCopy.refreshConfirmBody,
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(
+                                          dialogContext,
+                                        ).pop(false),
+                                        child: const Text(
+                                          GameCopy.refreshConfirmCancel,
+                                        ),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.of(
+                                          dialogContext,
+                                        ).pop(true),
+                                        child: const Text(
+                                          GameCopy.refreshConfirmAction,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed != true || !context.mounted) {
+                                  return;
+                                }
+                                final before = ref.read(gameControllerProvider);
+                                _showGameInfo(
+                                  context,
+                                  before,
+                                  GameCopy.refreshingRound,
+                                );
+                                await controller.onPullToRefresh();
+                                if (!context.mounted) return;
+                                _showGameSuccess(
+                                  context,
+                                  ref.read(gameControllerProvider),
+                                  GameCopy.roundRefreshed,
+                                );
+                              },
+                              child: SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: Align(
+                                  alignment: Alignment.topCenter,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: isLargeDesktop
+                                          ? 1100
+                                          : double.infinity,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        AnimatedSwitcher(
+                                          duration: const Duration(
+                                            milliseconds: 220,
+                                          ),
+                                          switchInCurve: Curves.easeOutCubic,
+                                          switchOutCurve: Curves.easeInCubic,
+                                          transitionBuilder:
+                                              (child, animation) {
+                                                return FadeTransition(
+                                                  opacity: animation,
+                                                  child: SlideTransition(
+                                                    position: Tween<Offset>(
+                                                      begin: const Offset(
+                                                        0,
+                                                        0.02,
+                                                      ),
+                                                      end: Offset.zero,
+                                                    ).animate(animation),
+                                                    child: child,
+                                                  ),
+                                                );
+                                              },
+                                          child: _GamePanelShell(
+                                            child: _GameBody(
+                                              key: ValueKey<GameTab>(
+                                                gameState.selectedTab,
+                                              ),
+                                              state: gameState,
+                                              onOpenPlay: () => controller
+                                                  .selectTab(GameTab.play),
+                                              onLogout: () =>
+                                                  performLogoutFromGame(
+                                                    context,
+                                                    ref,
+                                                  ),
+                                              onResetRound: () {
+                                                controller.onResetPressed();
+                                              },
+                                              onToggleSound:
+                                                  controller.toggleSoundEnabled,
+                                              onStartControlPointerDown:
+                                                  controller
+                                                      .onStartControlPointerDown,
+                                              onStartControlPointerMove:
+                                                  controller
+                                                      .onStartControlPointerMove,
+                                              onStartControlPointerUp:
+                                                  controller
+                                                      .onStartControlPointerUp,
+                                              onPlayRound: () async {
+                                                AppSnackBar.dismiss();
+                                                if (gameState.latestResult !=
+                                                    null) {
+                                                  controller
+                                                      .dismissResultDialog();
+                                                }
+                                                await controller
+                                                    .onPlayRoundPressed();
+                                              },
+                                              onStartOrStopRound: () async {
+                                                if (gameState
+                                                    .isStopwatchControlDisabled) {
+                                                  return;
+                                                }
+                                                if (gameState.isRunning) {
+                                                  await controller
+                                                      .onStopPressed();
+                                                } else {
+                                                  AppSnackBar.dismiss();
+                                                  await controller
+                                                      .onStartPressed();
+                                                }
+                                              },
+                                              hasBillingForRound:
+                                                  gameState.hasBillingForRound,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        AppFooter(
+                                          onTerms: () => controller.selectTab(
+                                            GameTab.support,
+                                          ),
+                                          onPrivacy: () => controller.selectTab(
+                                            GameTab.support,
+                                          ),
+                                          onContactSupport: () => controller
+                                              .selectTab(GameTab.support),
+                                        ),
+                                        SizedBox(height: isMobile ? 8 : 12),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -656,6 +696,7 @@ class _GameBody extends StatelessWidget {
           isLoadingTarget: state.isLoadingTarget,
           preparePhase: state.preparePhase,
           statusMessage: state.statusMessage,
+          errorMessage: state.roundErrorMessage,
           isSoundEnabled: state.isSoundEnabled,
           startButtonVisualOffset: state.startButtonVisualOffset,
           startButtonHitboxOffset: state.startButtonHitboxOffset,
