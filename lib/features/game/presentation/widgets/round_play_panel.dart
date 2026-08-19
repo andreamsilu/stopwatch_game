@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
@@ -555,9 +557,6 @@ class _StopwatchPainter extends CustomPainter {
       ),
       const Radius.circular(5),
     );
-    canvas.save();
-    canvas.rotate(0.7);
-    canvas.restore();
     canvas.drawRRect(accentRect, Paint()..color = AppColors.accent);
 
     final tickPaint = Paint()
@@ -567,13 +566,13 @@ class _StopwatchPainter extends CustomPainter {
     for (var index = 0; index < 12; index++) {
       final angle = (index * 0.5235987756) - 1.5708;
       final outer = Offset(
-        center.dx + (radius - 13) * Math.cos(angle),
-        center.dy + (radius - 13) * Math.sin(angle),
+        center.dx + (radius - 13) * math.cos(angle),
+        center.dy + (radius - 13) * math.sin(angle),
       );
       final inset = index % 3 == 0 ? 27.0 : 21.0;
       final inner = Offset(
-        center.dx + (radius - inset) * Math.cos(angle),
-        center.dy + (radius - inset) * Math.sin(angle),
+        center.dx + (radius - inset) * math.cos(angle),
+        center.dy + (radius - inset) * math.sin(angle),
       );
       canvas.drawLine(inner, outer, tickPaint);
     }
