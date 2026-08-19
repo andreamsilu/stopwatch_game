@@ -78,7 +78,7 @@ class _Stopwatch3DStageState extends State<Stopwatch3DStage>
       ..setEntry(3, 2, 0.00115)
       ..rotateX(tiltX)
       ..rotateY(tiltY)
-      ..translate(0.0, 0.0, lift);
+      ..translateByDouble(0.0, 0.0, lift, 1.0);
   }
 
   @override
@@ -387,11 +387,7 @@ class _StopwatchGlassHighlightPainter extends CustomPainter {
 
 /// Subtle perspective tilt for stat chips and badges on the play screen.
 class PlaySurface3DTilt extends StatelessWidget {
-  const PlaySurface3DTilt({
-    required this.child,
-    this.depth = 0.045,
-    super.key,
-  });
+  const PlaySurface3DTilt({required this.child, this.depth = 0.045, super.key});
 
   final Widget child;
   final double depth;

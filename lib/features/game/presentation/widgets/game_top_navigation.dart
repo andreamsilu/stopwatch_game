@@ -22,50 +22,47 @@ class GameTopNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = GameTab.values;
     final content = LayoutBuilder(
-          builder: (context, constraints) {
-            final tabButtons = [
-              for (var i = 0; i < tabs.length; i++) ...[
-                _TabButton(
-                  tab: tabs[i],
-                  isActive: tabs[i] == activeTab,
-                  onPressed: () => onTabSelected(tabs[i]),
-                ),
-                if (i < tabs.length - 1) const SizedBox(width: 8),
-              ],
-            ];
+      builder: (context, constraints) {
+        final tabButtons = [
+          for (var i = 0; i < tabs.length; i++) ...[
+            _TabButton(
+              tab: tabs[i],
+              isActive: tabs[i] == activeTab,
+              onPressed: () => onTabSelected(tabs[i]),
+            ),
+            if (i < tabs.length - 1) const SizedBox(width: 8),
+          ],
+        ];
 
-            // Narrow: scroll. Wide: equal-width tabs across the full bar.
-            if (constraints.maxWidth < 520) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: tabButtons,
-                ),
-              );
-            }
+        // Narrow: scroll. Wide: equal-width tabs across the full bar.
+        if (constraints.maxWidth < 520) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(mainAxisSize: MainAxisSize.min, children: tabButtons),
+          );
+        }
 
-            return Row(
-              children: [
-                for (var i = 0; i < tabs.length; i++) ...[
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: i == 0 ? 0 : 4,
-                        right: i == tabs.length - 1 ? 0 : 4,
-                      ),
-                      child: _TabButton(
-                        tab: tabs[i],
-                        isActive: tabs[i] == activeTab,
-                        onPressed: () => onTabSelected(tabs[i]),
-                      ),
-                    ),
+        return Row(
+          children: [
+            for (var i = 0; i < tabs.length; i++) ...[
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: i == 0 ? 0 : 4,
+                    right: i == tabs.length - 1 ? 0 : 4,
                   ),
-                ],
-              ],
-            );
-          },
+                  child: _TabButton(
+                    tab: tabs[i],
+                    isActive: tabs[i] == activeTab,
+                    onPressed: () => onTabSelected(tabs[i]),
+                  ),
+                ),
+              ),
+            ],
+          ],
         );
+      },
+    );
 
     if (embedded) {
       return Padding(
@@ -76,10 +73,7 @@ class GameTopNavigation extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: content,
-      ),
+      child: Padding(padding: const EdgeInsets.all(8), child: content),
     );
   }
 }
@@ -164,9 +158,9 @@ class _TabButtonState extends State<_TabButton> {
                 ),
                 child: Text(
                   _labelForTab(widget.tab),
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -178,14 +172,16 @@ class _TabButtonState extends State<_TabButton> {
 
   String _labelForTab(GameTab tab) {
     switch (tab) {
-      case GameTab.home:
-        return GameCopy.home;
       case GameTab.play:
         return GameCopy.playTab;
       case GameTab.history:
         return GameCopy.historyTab;
+      case GameTab.howToPlay:
+        return GameCopy.howToPlayTab;
       case GameTab.support:
         return GameCopy.supportTab;
+      case GameTab.profile:
+        return GameCopy.profileTab;
     }
   }
 }

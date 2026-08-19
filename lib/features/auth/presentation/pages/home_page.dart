@@ -1,7 +1,10 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/providers/auth_providers.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
@@ -24,6 +27,26 @@ class HomePage extends ConsumerWidget {
     ).push(MaterialPageRoute<void>(builder: (_) => const GamePage()));
   }
 
+  Future<void> _startOrResumeGame(BuildContext context, WidgetRef ref) async {
+    final authService = ref.read(authServiceProvider);
+    var session = authService.currentSession;
+    session ??= await ref.read(authSessionStorageProvider).readValidSession();
+    if (!context.mounted) return;
+
+    if (session != null) {
+      authService.restoreSession(session);
+      ref.read(playerMsisdnProvider.notifier).state = session.user.msisdn;
+      ref.read(playerUserProvider.notifier).state = session.user;
+      ref.read(subscriptionActiveProvider.notifier).state = true;
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const GamePage()));
+      return;
+    }
+
+    await _showLoginDialog(context, ref);
+  }
+
   Future<void> _showLoginDialog(
     BuildContext pageContext,
     WidgetRef pageRef,
@@ -43,90 +66,94 @@ class HomePage extends ConsumerWidget {
           final loginNotifier = ref.read(loginProvider.notifier);
           final isOtpStep = loginState.step == LoginStep.otp;
 
-          return Dialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 24,
-            ),
-            backgroundColor: const Color(0xFFF3F8FD),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        const _StopwatchMark(size: 48),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: loginState.isSubmitting
-                              ? null
-                              : () => Navigator.of(dialogContext).pop(),
-                          tooltip: 'Close login',
-                          icon: const Icon(Icons.close_rounded),
-                          color: AppColors.primary,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isOtpStep ? AuthCopy.verifyTitle : 'Ready to play?',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+            child: Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 24,
+              ),
+              backgroundColor: const Color(0xFFF3F8FD),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const _StopwatchMark(size: 48),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: loginState.isSubmitting
+                                ? null
+                                : () => Navigator.of(dialogContext).pop(),
+                            tooltip: 'Close login',
+                            icon: const Icon(Icons.close_rounded),
                             color: AppColors.primary,
-                            fontWeight: FontWeight.w800,
                           ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      isOtpStep
-                          ? AuthCopy.verifySubtitle(loginState.maskedPhone)
-                          : AuthCopy.welcomeSupport,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF52657A),
-                        height: 1.4,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    LoginFormCard(
-                      step: loginState.step,
-                      phoneValue: loginState.phoneNumber,
-                      otpCode: loginState.otpCode,
-                      isSubmitting: loginState.isSubmitting,
-                      isResendingOtp: loginState.isResendingOtp,
-                      canSubmitPhone: loginState.canSubmitPhone,
-                      canVerifyOtp: loginState.canVerifyOtp,
-                      infoMessage: loginState.infoMessage,
-                      onPhoneChanged: loginNotifier.updatePhoneNumber,
-                      onOtpChanged: loginNotifier.updateOtpCode,
-                      onSubmitPhone: () async {
-                        final authenticated = await loginNotifier.submitPhone();
-                        if (authenticated && dialogContext.mounted) {
-                          await finishAuth(dialogContext);
-                        }
-                      },
-                      onResendOtp: () async {
-                        final authenticated = await loginNotifier.resendOtp();
-                        if (authenticated && dialogContext.mounted) {
-                          await finishAuth(dialogContext);
-                        }
-                      },
-                      onBackToPhone: loginNotifier.backToPhone,
-                      onVerifyOtp: () async {
-                        final authenticated = await loginNotifier.verifyOtp();
-                        if (authenticated && dialogContext.mounted) {
-                          await finishAuth(dialogContext);
-                        }
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        isOtpStep ? AuthCopy.verifyTitle : 'Ready to play?',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        isOtpStep
+                            ? AuthCopy.verifySubtitle(loginState.maskedPhone)
+                            : 'Enter your mobile number to continue.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF52657A),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      LoginFormCard(
+                        step: loginState.step,
+                        phoneValue: loginState.phoneNumber,
+                        otpCode: loginState.otpCode,
+                        isSubmitting: loginState.isSubmitting,
+                        isResendingOtp: loginState.isResendingOtp,
+                        canSubmitPhone: loginState.canSubmitPhone,
+                        canVerifyOtp: loginState.canVerifyOtp,
+                        infoMessage: loginState.infoMessage,
+                        onPhoneChanged: loginNotifier.updatePhoneNumber,
+                        onOtpChanged: loginNotifier.updateOtpCode,
+                        onSubmitPhone: () async {
+                          final authenticated = await loginNotifier
+                              .submitPhone();
+                          if (authenticated && dialogContext.mounted) {
+                            await finishAuth(dialogContext);
+                          }
+                        },
+                        onResendOtp: () async {
+                          final authenticated = await loginNotifier.resendOtp();
+                          if (authenticated && dialogContext.mounted) {
+                            await finishAuth(dialogContext);
+                          }
+                        },
+                        onBackToPhone: loginNotifier.backToPhone,
+                        onVerifyOtp: () async {
+                          final authenticated = await loginNotifier.verifyOtp();
+                          if (authenticated && dialogContext.mounted) {
+                            await finishAuth(dialogContext);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -195,12 +222,14 @@ class HomePage extends ConsumerWidget {
                             Column(
                               children: [
                                 _TopNavigation(
-                                  onLogin: () => _showLoginDialog(context, ref),
+                                  onLogin: () =>
+                                      _startOrResumeGame(context, ref),
                                 ),
                                 SizedBox(height: isMobile ? 42 : 70),
                                 _HomepageHero(
                                   isMobile: isMobile,
-                                  onStart: () => _showLoginDialog(context, ref),
+                                  onStart: () =>
+                                      _startOrResumeGame(context, ref),
                                 ),
                               ],
                             ),
@@ -322,6 +351,15 @@ class _HomepageHero extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: const Color(0xFF52657A),
             height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Closest time wins.',
+          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 26),

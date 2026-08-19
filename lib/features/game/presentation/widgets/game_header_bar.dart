@@ -46,7 +46,8 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
     final user = ref.watch(playerUserProvider);
     final displayMsisdn = MsisdnFormat.display(user?.msisdn ?? msisdn);
     final username = user?.username;
-    final showUsername = username != null &&
+    final showUsername =
+        username != null &&
         username.isNotEmpty &&
         username != user?.msisdn &&
         username != msisdn;
@@ -74,13 +75,7 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      logo,
-                      const Spacer(),
-                      avatar,
-                    ],
-                  ),
+                  Row(children: [logo, const Spacer(), avatar]),
                   const SizedBox(height: 8),
                   Center(child: tabs),
                 ],
@@ -93,10 +88,7 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
                 children: [
                   SizedBox(
                     width: GameHeaderBar._sideSlotWidth,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: logo,
-                    ),
+                    child: Align(alignment: Alignment.centerLeft, child: logo),
                   ),
                   Expanded(child: Center(child: tabs)),
                   SizedBox(
@@ -150,14 +142,16 @@ class _CenteredTabStrip extends StatelessWidget {
 
   static String _labelForTab(GameTab tab) {
     switch (tab) {
-      case GameTab.home:
-        return GameCopy.home;
       case GameTab.play:
         return GameCopy.playTab;
       case GameTab.history:
         return GameCopy.historyTab;
+      case GameTab.howToPlay:
+        return GameCopy.howToPlayTab;
       case GameTab.support:
         return GameCopy.supportTab;
+      case GameTab.profile:
+        return GameCopy.profileTab;
     }
   }
 }

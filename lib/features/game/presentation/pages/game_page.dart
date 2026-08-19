@@ -20,7 +20,7 @@ import 'package:stopwatch_game/features/game/presentation/widgets/game_header_ba
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/history_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/help_support_panel.dart';
-import 'package:stopwatch_game/features/game/presentation/widgets/home_overview_panel.dart';
+import 'package:stopwatch_game/features/game/presentation/widgets/how_to_play_steps_card.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_result_dialog.dart';
 
@@ -200,6 +200,11 @@ class GamePage extends ConsumerWidget {
             controller.dismissResultDialog();
             controller.cancelRound(goHome: false);
           },
+          onViewHistory: () {
+            controller.dismissResultDialog();
+            controller.cancelRound(goHome: false);
+            controller.selectTab(GameTab.history);
+          },
           onTryAgain: () async {
             controller.dismissResultDialog();
             _showGameInfo(
@@ -263,15 +268,6 @@ class GamePage extends ConsumerWidget {
                         child: ListView(
                           children: [
                             _DrawerNavTile(
-                              label: GameCopy.home,
-                              icon: Icons.home_outlined,
-                              isActive: gameState.selectedTab == GameTab.home,
-                              onTap: () {
-                                controller.selectTab(GameTab.home);
-                                Navigator.of(context).maybePop();
-                              },
-                            ),
-                            _DrawerNavTile(
                               label: GameCopy.playTab,
                               icon: Icons.play_arrow_rounded,
                               isActive: gameState.selectedTab == GameTab.play,
@@ -291,12 +287,32 @@ class GamePage extends ConsumerWidget {
                               },
                             ),
                             _DrawerNavTile(
+                              label: GameCopy.howToPlayTab,
+                              icon: Icons.menu_book_outlined,
+                              isActive:
+                                  gameState.selectedTab == GameTab.howToPlay,
+                              onTap: () {
+                                controller.selectTab(GameTab.howToPlay);
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                            _DrawerNavTile(
                               label: GameCopy.supportTab,
                               icon: Icons.support_agent_outlined,
                               isActive:
                                   gameState.selectedTab == GameTab.support,
                               onTap: () {
                                 controller.selectTab(GameTab.support);
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                            _DrawerNavTile(
+                              label: GameCopy.profileTab,
+                              icon: Icons.person_outline_rounded,
+                              isActive:
+                                  gameState.selectedTab == GameTab.profile,
+                              onTap: () {
+                                controller.selectTab(GameTab.profile);
                                 Navigator.of(context).maybePop();
                               },
                             ),
@@ -450,18 +466,13 @@ class GamePage extends ConsumerWidget {
                                               gameState.selectedTab,
                                             ),
                                             state: gameState,
-                                            onPlayPressed: () {
-                                              _showGameInfo(
-                                                context,
-                                                gameState,
-                                                GameCopy.startingNewRound,
-                                              );
-                                              controller.openRoundBoard();
-                                            },
-                                            onOpenHistory: () => controller
-                                                .selectTab(GameTab.history),
-                                            onOpenTips: () => controller
-                                                .selectTab(GameTab.support),
+                                            onOpenPlay: () => controller
+                                                .selectTab(GameTab.play),
+                                            onLogout: () =>
+                                                performLogoutFromGame(
+                                                  context,
+                                                  ref,
+                                                ),
                                             onResetRound: () {
                                               controller.onResetPressed();
                                             },
@@ -605,9 +616,8 @@ class _GameBody extends StatelessWidget {
   const _GameBody({
     super.key,
     required this.state,
-    required this.onPlayPressed,
-    required this.onOpenHistory,
-    required this.onOpenTips,
+    required this.onOpenPlay,
+    required this.onLogout,
     required this.onResetRound,
     required this.onToggleSound,
     required this.onStartControlPointerDown,
@@ -619,9 +629,8 @@ class _GameBody extends StatelessWidget {
   });
 
   final GameState state;
-  final VoidCallback onPlayPressed;
-  final VoidCallback onOpenHistory;
-  final VoidCallback onOpenTips;
+  final VoidCallback onOpenPlay;
+  final Future<void> Function() onLogout;
   final VoidCallback onResetRound;
   final VoidCallback onToggleSound;
   final void Function(Offset position, {bool? isTrusted})
@@ -635,12 +644,6 @@ class _GameBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (state.selectedTab) {
-      case GameTab.home:
-        return HomeOverviewPanel(
-          onPlayPressed: onPlayPressed,
-          onOpenHistory: onOpenHistory,
-          onOpenTips: onOpenTips,
-        );
       case GameTab.play:
         return RoundPlayPanel(
           targetTimeLabel: state.targetTimeLabel,
@@ -667,9 +670,59 @@ class _GameBody extends StatelessWidget {
           totalWins: state.totalWins,
         );
       case GameTab.history:
-        return const HistoryPanel();
+        return HistoryPanel(onPlayAgain: onOpenPlay);
+      case GameTab.howToPlay:
+        return const HowToPlayStepsCard();
       case GameTab.support:
         return const HelpSupportPanel();
+      case GameTab.profile:
+        return _ProfilePanel(onLogout: onLogout);
     }
+  }
+}
+
+class _ProfilePanel extends ConsumerWidget {
+  const _ProfilePanel({required this.onLogout});
+
+  final Future<void> Function() onLogout;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(playerUserProvider);
+    final msisdn = user?.msisdn ?? ref.watch(playerMsisdnProvider);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              GameCopy.profileTab,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 18),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xFFE7F2FC),
+                child: Icon(Icons.person_rounded, color: AppColors.primary),
+              ),
+              title: Text(msisdn ?? ''),
+              subtitle: const Text('Tanzanian mobile number'),
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: onLogout,
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text(GameCopy.logOut),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -6,7 +6,9 @@ import 'package:stopwatch_game/features/game/data/models/game_history_play.dart'
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
 
 class HistoryPanel extends ConsumerStatefulWidget {
-  const HistoryPanel({super.key});
+  const HistoryPanel({required this.onPlayAgain, super.key});
+
+  final VoidCallback onPlayAgain;
 
   @override
   ConsumerState<HistoryPanel> createState() => _HistoryPanelState();
@@ -76,6 +78,15 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
                 onNext: notifier.nextPage,
               ),
             ],
+            const SizedBox(height: 18),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                onPressed: widget.onPlayAgain,
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text(GameCopy.playAgain),
+              ),
+            ),
           ],
         ),
       ),
@@ -118,10 +129,7 @@ class _HistoryMessage extends StatelessWidget {
 }
 
 class _HistoryTable extends StatelessWidget {
-  const _HistoryTable({
-    required this.plays,
-    required this.isLoading,
-  });
+  const _HistoryTable({required this.plays, required this.isLoading});
 
   final List<GameHistoryPlay> plays;
   final bool isLoading;
@@ -303,9 +311,9 @@ class _HistoryPaginationBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             GameCopy.historyPageLabel(displayPage),
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         IconButton(

@@ -8,12 +8,14 @@ class RoundResultDialog extends StatefulWidget {
   const RoundResultDialog({
     required this.result,
     required this.onCancel,
+    required this.onViewHistory,
     required this.onTryAgain,
     super.key,
   });
 
   final RoundResultData result;
   final VoidCallback onCancel;
+  final VoidCallback onViewHistory;
   final Future<void> Function() onTryAgain;
 
   @override
@@ -47,15 +49,24 @@ class _RoundResultDialogState extends State<RoundResultDialog>
     _loseEmojiShake =
         TweenSequence<Offset>([
           TweenSequenceItem(
-            tween: Tween(begin: const Offset(-0.05, 0), end: const Offset(0.05, 0)),
+            tween: Tween(
+              begin: const Offset(-0.05, 0),
+              end: const Offset(0.05, 0),
+            ),
             weight: 1,
           ),
           TweenSequenceItem(
-            tween: Tween(begin: const Offset(0.05, 0), end: const Offset(-0.05, 0)),
+            tween: Tween(
+              begin: const Offset(0.05, 0),
+              end: const Offset(-0.05, 0),
+            ),
             weight: 1,
           ),
           TweenSequenceItem(
-            tween: Tween(begin: const Offset(-0.05, 0), end: const Offset(0, 0)),
+            tween: Tween(
+              begin: const Offset(-0.05, 0),
+              end: const Offset(0, 0),
+            ),
             weight: 1,
           ),
         ]).animate(
@@ -93,9 +104,17 @@ class _RoundResultDialogState extends State<RoundResultDialog>
     widget.onCancel();
   }
 
+  void _handleViewHistory() {
+    if (_isTryingAgain) return;
+    Navigator.of(context).pop();
+    widget.onViewHistory();
+  }
+
   @override
   Widget build(BuildContext context) {
     final differenceLabel = _formatDifference(widget.result.differenceMs);
+    final yourTimeLabel = _formatTime(widget.result.finalTimeLabel);
+    final targetTimeLabel = _formatTime(widget.result.targetTimeLabel);
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -115,9 +134,8 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                       const Spacer(),
                       Text(
                         GameCopy.roundSummary,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const Spacer(),
                       IconButton(
@@ -131,7 +149,10 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 220),
                     transitionBuilder: (child, animation) => ScaleTransition(
-                      scale: Tween<double>(begin: 0.9, end: 1).animate(animation),
+                      scale: Tween<double>(
+                        begin: 0.9,
+                        end: 1,
+                      ).animate(animation),
                       child: FadeTransition(opacity: animation, child: child),
                     ),
                     child: Text(
@@ -189,23 +210,25 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                       ),
                     ),
                     child: Column(
-                      key: ValueKey<String>(widget.result.finalTimeLabel),
+                      key: ValueKey<String>(yourTimeLabel),
                       children: [
                         Text(
                           GameCopy.yourTime,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          widget.result.finalTimeLabel,
+                          yourTimeLabel,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: Theme.of(context).textTheme.displaySmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -217,14 +240,14 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                       Expanded(
                         child: _ResultInfoCard(
                           label: GameCopy.targetTime,
-                          value: widget.result.targetTimeLabel,
+                          value: targetTimeLabel,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _ResultInfoCard(
                           label: GameCopy.yourTime,
-                          value: widget.result.finalTimeLabel,
+                          value: yourTimeLabel,
                         ),
                       ),
                     ],
@@ -241,8 +264,10 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: _isTryingAgain ? null : _handleCancel,
-                            child: const Text(GameCopy.cancel),
+                            onPressed: _isTryingAgain
+                                ? null
+                                : _handleViewHistory,
+                            child: const Text(GameCopy.viewHistory),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -262,7 +287,7 @@ class _RoundResultDialogState extends State<RoundResultDialog>
                                       color: AppColors.onAccent,
                                     ),
                                   )
-                                : const Text(GameCopy.tryAgain),
+                                : const Text(GameCopy.playAgain),
                           ),
                         ),
                       ],
@@ -296,7 +321,12 @@ class _RoundResultDialogState extends State<RoundResultDialog>
   static String _formatDifference(int differenceMs) {
     final seconds = differenceMs / 1000.0;
     final sign = seconds >= 0 ? '+' : '';
-    return '$sign${seconds.toStringAsFixed(3)}s';
+    return '$sign${seconds.toStringAsFixed(2)} sec';
+  }
+
+  static String _formatTime(String value) {
+    final seconds = double.tryParse(value.split(':').last);
+    return seconds?.toStringAsFixed(2) ?? value;
   }
 }
 

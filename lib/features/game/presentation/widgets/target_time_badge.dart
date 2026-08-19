@@ -14,36 +14,27 @@ class TargetTimeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final secondsText = _secondsDisplay(targetTimeLabel);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFF2B8), Color(0xFFFFD100)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33FFD100),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFFE7F2FC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFC9DEEF)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             GameCopy.targetTimeBadge,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-              color: AppColors.onAccent.withValues(alpha: 0.9),
+              letterSpacing: 1.2,
+              color: AppColors.primary,
             ),
           ),
           const SizedBox(height: 2),
@@ -58,14 +49,30 @@ class TargetTimeBadge extends StatelessWidget {
             )
           else
             Text(
-              targetTimeLabel,
+              secondsText,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: AppColors.onAccent,
+                fontSize: 32,
+                color: AppColors.primary,
               ),
             ),
+          const SizedBox(height: 1),
+          const Text(
+            'SECONDS',
+            style: TextStyle(
+              color: Color(0xFF52657A),
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  static String _secondsDisplay(String value) {
+    final seconds = double.tryParse(value.split(':').last);
+    return seconds?.toStringAsFixed(2) ?? value;
   }
 }

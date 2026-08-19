@@ -121,7 +121,7 @@ class GameController extends StateNotifier<GameState> {
       clearActiveSession: true,
       clearPendingBilling: true,
       clearRoundError: true,
-      selectedTab: goHome ? GameTab.home : state.selectedTab,
+      selectedTab: goHome ? GameTab.play : state.selectedTab,
     );
   }
 

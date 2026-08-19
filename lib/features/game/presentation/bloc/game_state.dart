@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
-enum GameTab { home, play, history, support }
+enum GameTab { play, history, howToPlay, support, profile }
 
 class RoundResultData {
   const RoundResultData({
@@ -52,7 +52,7 @@ class GameState {
   });
 
   const GameState.initial()
-    : selectedTab = GameTab.home,
+    : selectedTab = GameTab.play,
       elapsed = Duration.zero,
       isRunning = false,
       isSubmitting = false,
@@ -116,8 +116,7 @@ class GameState {
       preparePhase == RoundPreparePhase.idle;
 
   /// Start/stop tap on the billed control only.
-  bool get canTapStartRound =>
-      isRunning || (canStartRound && !isSubmitting);
+  bool get canTapStartRound => isRunning || (canStartRound && !isSubmitting);
 
   /// Play (charge round) before billing is complete.
   bool get canTapPlayRound =>

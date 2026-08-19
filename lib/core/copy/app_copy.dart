@@ -10,7 +10,7 @@ class AuthCopy {
   static const welcomeSubtitle =
       'Think you can stop the clock at exactly 10.00 seconds?';
   static const welcomeSupport =
-      'Enter your mobile number to play and test your precision.';
+      'Stop the clock as close to the target as you can and test your precision.';
 
   static const verifyTitle = 'Verify your number';
   static String verifySubtitle(String maskedPhone) =>
@@ -20,7 +20,7 @@ class AuthCopy {
   static const phoneHint = 'Phone number';
   static const phoneReassurance =
       'Your number will be used to identify your game entry.';
-  static const continueButton = 'START PLAYING  →';
+  static const continueButton = 'CONTINUE  →';
   static const verifyButton = 'VERIFY & PLAY  →';
   static const changeNumber = 'Change number';
   static const resendCode = 'Resend code';
@@ -65,7 +65,8 @@ class GameCopy {
   static const yourTime = 'Your time';
   static const timeDifference = 'Time difference';
   static const keepPractising = 'Keep practising!';
-  static const playAgain = 'Play again';
+  static const playAgain = 'PLAY AGAIN';
+  static const viewHistory = 'VIEW HISTORY';
   static const roundsStat = 'Rounds';
   static const bestDiffStat = 'Best diff';
   static const accuracyLabel = 'accuracy';
@@ -79,7 +80,9 @@ class GameCopy {
   static const home = 'Home';
   static const playTab = 'Play';
   static const historyTab = 'History';
+  static const howToPlayTab = 'How to Play';
   static const supportTab = 'Support';
+  static const profileTab = 'Profile';
   static const openMenu = 'Open menu';
 
   static const historyTitle = 'History';
@@ -140,8 +143,7 @@ class GameCopy {
   static const refreshConfirmAction = 'Pay again';
   static const refreshConfirmCancel = 'Not now';
   static const sessionExpiredTitle = 'Session ended';
-  static const sessionExpiredBody =
-      'Please sign in again to continue playing.';
+  static const sessionExpiredBody = 'Please sign in again to continue playing.';
   static const sessionExpiredAction = 'Sign in';
   static const logoutOffline =
       'Could not reach the server. You have been signed out locally.';

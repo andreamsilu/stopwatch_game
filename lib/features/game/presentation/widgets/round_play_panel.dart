@@ -57,7 +57,8 @@ class RoundPlayPanel extends StatefulWidget {
   final void Function(Offset position, {bool? isTrusted})
   onStartControlPointerDown;
   final ValueChanged<Offset> onStartControlPointerMove;
-  final void Function(Offset position, {bool? isTrusted}) onStartControlPointerUp;
+  final void Function(Offset position, {bool? isTrusted})
+  onStartControlPointerUp;
   final bool hasBillingForRound;
   final Future<void> Function() onPlayRound;
   final Future<void> Function() onStartOrStopRound;
@@ -233,7 +234,10 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                               .clamp(0.0, 1.0);
                     // Keep elapsed time clear of rotating progress cycles.
                     final timerFontSize = (circleDiameter * 0.19)
-                        .clamp(compactPanel ? 22.0 : 24.0, compactPanel ? 38.0 : 44.0)
+                        .clamp(
+                          compactPanel ? 22.0 : 24.0,
+                          compactPanel ? 38.0 : 44.0,
+                        )
                         .toDouble();
                     final timerMaxWidth = (circleDiameter * 0.56)
                         .clamp(88.0, 180.0)
@@ -281,10 +285,11 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                                       width: circleDiameter,
                                       height: circleDiameter,
                                       child: AnimatedBuilder(
-                                        animation: _ringRotationController ??
-                                            const AlwaysStoppedAnimation<double>(
-                                              0,
-                                            ),
+                                        animation:
+                                            _ringRotationController ??
+                                            const AlwaysStoppedAnimation<
+                                              double
+                                            >(0),
                                         builder: (context, _) {
                                           return CustomPaint(
                                             painter: _RoundProgressRingPainter(
@@ -342,7 +347,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel>
                 label: const Text(GameCopy.leaveRound),
               ),
             );
-            final playDisabled = widget.isSubmitting ||
+            final playDisabled =
+                widget.isSubmitting ||
                 widget.preparePhase != RoundPreparePhase.idle;
             final playButton = SizedBox(
               height: GameConstants.minTouchTargetSize + 6,
@@ -461,10 +467,11 @@ class _OffsetAwareStartControl extends StatelessWidget {
           transform: Matrix4.identity()
             ..setEntry(3, 2, 0.0008)
             ..rotateX(isRunning ? -0.03 : -0.05)
-            ..translate(
+            ..translateByDouble(
               visualOffset.dx,
               visualOffset.dy,
               isRunning ? 4.0 : 0.0,
+              1.0,
             ),
           child: IgnorePointer(
             child: SizedBox.expand(
@@ -493,21 +500,21 @@ class _OffsetAwareStartControl extends StatelessWidget {
                     ],
                   ),
                   child: ElevatedButton.icon(
-                  onPressed: null,
-                  style: buttonStyle,
-                  icon: Icon(
-                    isRunning ? Icons.stop_rounded : Icons.timer_rounded,
-                  ),
-                  label: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    transitionBuilder: (child, animation) =>
-                        FadeTransition(opacity: animation, child: child),
-                    child: Text(
-                      actionLabel,
-                      key: ValueKey<String>(actionLabel),
+                    onPressed: null,
+                    style: buttonStyle,
+                    icon: Icon(
+                      isRunning ? Icons.stop_rounded : Icons.timer_rounded,
+                    ),
+                    label: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: Text(
+                        actionLabel,
+                        key: ValueKey<String>(actionLabel),
+                      ),
                     ),
                   ),
-                ),
                 ),
               ),
             ),
@@ -586,10 +593,8 @@ class _RoundStatCard extends StatelessWidget {
           const SizedBox(height: 4),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
             child: Text(
               value,
               key: ValueKey<String>(value),
