@@ -230,7 +230,7 @@ class HomePage extends ConsumerWidget {
                     ),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1440),
+                        constraints: const BoxConstraints(maxWidth: 1800),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
