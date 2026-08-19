@@ -10,7 +10,9 @@ void main() {
     await EnvConfig.load();
   });
 
-  testWidgets('Login page renders key elements', (WidgetTester tester) async {
+  testWidgets('Homepage opens login form as a modal', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const StopwatchChallengeApp());
     await tester.pump();
     await tester.pump();
@@ -19,6 +21,13 @@ void main() {
     expect(find.text('Stopwatch Challenge'), findsWidgets);
     expect(find.text('START PLAYING  →'), findsOneWidget);
     expect(find.text('10.00'), findsOneWidget);
+    expect(find.text('LOGIN'), findsOneWidget);
+    expect(find.text('Phone number'), findsNothing);
+
+    await tester.tap(find.text('LOGIN'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Phone number'), findsOneWidget);
+    expect(find.text('Ready to play?'), findsOneWidget);
   });
 }

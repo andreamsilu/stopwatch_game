@@ -19,17 +19,125 @@ class LoginPage extends ConsumerWidget {
     ref.read(playerMsisdnProvider.notifier).state = user.msisdn;
     ref.read(playerUserProvider.notifier).state = user;
     ref.read(subscriptionActiveProvider.notifier).state = true;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const GamePage()),
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const GamePage()));
+  }
+
+  Future<void> _showLoginDialog(
+    BuildContext pageContext,
+    WidgetRef pageRef,
+  ) async {
+    Future<void> finishAuth(BuildContext dialogContext) async {
+      if (!dialogContext.mounted || !pageContext.mounted) return;
+      Navigator.of(dialogContext).pop();
+      await _completeAuth(pageContext, pageRef);
+    }
+
+    await showDialog<void>(
+      context: pageContext,
+      barrierColor: AppColors.primary.withValues(alpha: 0.58),
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) {
+          final loginState = ref.watch(loginProvider);
+          final loginNotifier = ref.read(loginProvider.notifier);
+          final isOtpStep = loginState.step == LoginStep.otp;
+
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 24,
+            ),
+            backgroundColor: const Color(0xFFF3F8FD),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const _StopwatchMark(size: 48),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: loginState.isSubmitting
+                              ? null
+                              : () => Navigator.of(dialogContext).pop(),
+                          tooltip: 'Close login',
+                          icon: const Icon(Icons.close_rounded),
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isOtpStep ? AuthCopy.verifyTitle : 'Ready to play?',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isOtpStep
+                          ? AuthCopy.verifySubtitle(loginState.maskedPhone)
+                          : AuthCopy.welcomeSupport,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF52657A),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    LoginFormCard(
+                      step: loginState.step,
+                      phoneValue: loginState.phoneNumber,
+                      otpCode: loginState.otpCode,
+                      isSubmitting: loginState.isSubmitting,
+                      isResendingOtp: loginState.isResendingOtp,
+                      canSubmitPhone: loginState.canSubmitPhone,
+                      canVerifyOtp: loginState.canVerifyOtp,
+                      infoMessage: loginState.infoMessage,
+                      onPhoneChanged: loginNotifier.updatePhoneNumber,
+                      onOtpChanged: loginNotifier.updateOtpCode,
+                      onSubmitPhone: () async {
+                        final authenticated = await loginNotifier.submitPhone();
+                        if (authenticated && dialogContext.mounted) {
+                          await finishAuth(dialogContext);
+                        }
+                      },
+                      onResendOtp: () async {
+                        final authenticated = await loginNotifier.resendOtp();
+                        if (authenticated && dialogContext.mounted) {
+                          await finishAuth(dialogContext);
+                        }
+                      },
+                      onBackToPhone: loginNotifier.backToPhone,
+                      onVerifyOtp: () async {
+                        final authenticated = await loginNotifier.verifyOtp();
+                        if (authenticated && dialogContext.mounted) {
+                          await finishAuth(dialogContext);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loginState = ref.watch(loginProvider);
-    final loginNotifier = ref.read(loginProvider.notifier);
-    final isOtpStep = loginState.step == LoginStep.otp;
-
     ref.listen<LoginState>(loginProvider, (previous, next) {
       if (!context.mounted) return;
 
@@ -46,12 +154,6 @@ class LoginPage extends ConsumerWidget {
         AppSnackBar.showInfo(context, next.infoMessage!);
       }
     });
-
-    final headline =
-        isOtpStep ? AuthCopy.verifyTitle : AuthCopy.welcomeTitle;
-    final subtitle = isOtpStep
-        ? AuthCopy.verifySubtitle(loginState.maskedPhone)
-        : AuthCopy.welcomeSubtitle;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F8FD),
@@ -71,9 +173,8 @@ class LoginPage extends ConsumerWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isMobile = constraints.maxWidth < 700;
-                final compact = constraints.maxHeight < 760;
                 final horizontalPad = isMobile ? 18.0 : 28.0;
-                final verticalPad = compact ? 12.0 : 22.0;
+                final verticalPad = constraints.maxHeight < 720 ? 12.0 : 20.0;
 
                 return SingleChildScrollView(
                   padding: EdgeInsets.symmetric(
@@ -86,106 +187,25 @@ class LoginPage extends ConsumerWidget {
                     ),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
+                        constraints: const BoxConstraints(maxWidth: 1040),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Column(
                               children: [
-                                _StopwatchMark(size: compact ? 80 : 96),
-                                SizedBox(height: compact ? 12 : 18),
-                                Text(
-                                  headline,
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                        color: AppColors.primary,
-                                        fontSize: isMobile ? 34 : 42,
-                                        fontWeight: FontWeight.w800,
-                                        height: 1.04,
-                                        letterSpacing: -0.8,
-                                      ),
+                                _TopNavigation(
+                                  onLogin: () => _showLoginDialog(context, ref),
                                 ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  subtitle,
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        color: AppColors.onBackground,
-                                        fontSize: isMobile ? 16 : 18,
-                                        height: 1.35,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                                if (!isOtpStep) ...[
-                                  SizedBox(height: compact ? 14 : 20),
-                                  const _TargetTimeDisplay(),
-                                  SizedBox(height: compact ? 12 : 16),
-                                  Text(
-                                    AuthCopy.welcomeSupport,
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: const Color(0xFF52657A),
-                                          height: 1.4,
-                                        ),
-                                  ),
-                                ],
-                                SizedBox(height: compact ? 16 : 22),
-                                ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 440),
-                                  child: LoginFormCard(
-                                    step: loginState.step,
-                                    phoneValue: loginState.phoneNumber,
-                                    otpCode: loginState.otpCode,
-                                    isSubmitting: loginState.isSubmitting,
-                                    isResendingOtp: loginState.isResendingOtp,
-                                    canSubmitPhone: loginState.canSubmitPhone,
-                                    canVerifyOtp: loginState.canVerifyOtp,
-                                    infoMessage: loginState.infoMessage,
-                                    onPhoneChanged:
-                                        loginNotifier.updatePhoneNumber,
-                                    onOtpChanged: loginNotifier.updateOtpCode,
-                                    onSubmitPhone: () async {
-                                      final authenticated =
-                                          await loginNotifier.submitPhone();
-                                      if (!context.mounted) return;
-                                      if (authenticated) {
-                                        await _completeAuth(context, ref);
-                                      }
-                                    },
-                                    onResendOtp: () async {
-                                      final authenticated =
-                                          await loginNotifier.resendOtp();
-                                      if (!context.mounted) return;
-                                      if (authenticated) {
-                                        await _completeAuth(context, ref);
-                                      }
-                                    },
-                                    onBackToPhone: loginNotifier.backToPhone,
-                                    onVerifyOtp: () async {
-                                      final isSuccess =
-                                          await loginNotifier.verifyOtp();
-                                      if (!context.mounted || !isSuccess) {
-                                        return;
-                                      }
-                                      await _completeAuth(context, ref);
-                                    },
-                                  ),
+                                SizedBox(height: isMobile ? 42 : 70),
+                                _HomepageHero(
+                                  isMobile: isMobile,
+                                  onStart: () => _showLoginDialog(context, ref),
                                 ),
                               ],
                             ),
                             const Padding(
-                              padding: EdgeInsets.only(top: 22),
+                              padding: EdgeInsets.only(top: 42),
                               child: AppFooter(),
                             ),
                           ],
@@ -197,6 +217,185 @@ class LoginPage extends ConsumerWidget {
               },
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopNavigation extends StatelessWidget {
+  const _TopNavigation({required this.onLogin});
+
+  final VoidCallback onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const _StopwatchMark(size: 44),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Stopwatch Challenge',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        FilledButton.icon(
+          onPressed: onLogin,
+          icon: const Icon(Icons.person_outline_rounded, size: 18),
+          label: const Text('LOGIN'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            overlayColor: AppColors.accent.withValues(alpha: 0.22),
+            minimumSize: const Size(104, 46),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomepageHero extends StatelessWidget {
+  const _HomepageHero({required this.isMobile, required this.onStart});
+
+  final bool isMobile;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = Column(
+      crossAxisAlignment: isMobile
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: [
+        if (isMobile) ...[
+          const _StopwatchMark(size: 96),
+          const SizedBox(height: 22),
+        ],
+        Text(
+          'FAST  ·  FUN  ·  SIMPLE  ·  PRECISE',
+          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.3,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          AuthCopy.welcomeTitle,
+          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+            color: AppColors.primary,
+            fontSize: isMobile ? 42 : 54,
+            fontWeight: FontWeight.w800,
+            height: 1.02,
+            letterSpacing: -1.2,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          AuthCopy.welcomeSubtitle,
+          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppColors.onBackground,
+            fontSize: isMobile ? 19 : 23,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          AuthCopy.welcomeSupport,
+          textAlign: isMobile ? TextAlign.center : TextAlign.left,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: const Color(0xFF52657A),
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 26),
+        SizedBox(
+          width: isMobile ? double.infinity : 220,
+          height: 54,
+          child: FilledButton(
+            onPressed: onStart,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              overlayColor: AppColors.accent.withValues(alpha: 0.22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'START PLAYING  →',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (isMobile) {
+      return Column(
+        children: [
+          copy,
+          const SizedBox(height: 30),
+          const _TargetTimeDisplay(),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(flex: 6, child: copy),
+        const SizedBox(width: 64),
+        const Expanded(flex: 4, child: _ChallengeVisual()),
+      ],
+    );
+  }
+}
+
+class _ChallengeVisual extends StatelessWidget {
+  const _ChallengeVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFE1EAF3)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1000377D),
+            blurRadius: 30,
+            offset: Offset(0, 14),
+          ),
+        ],
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StopwatchMark(size: 118),
+          SizedBox(height: 26),
+          _TargetTimeDisplay(),
         ],
       ),
     );
