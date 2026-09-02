@@ -105,7 +105,7 @@ class HomePage extends ConsumerWidget {
                             onPressed: loginState.isSubmitting
                                 ? null
                                 : () => Navigator.of(dialogContext).pop(),
-                            tooltip: 'Close login',
+                            tooltip: 'Funga sehemu ya kuingia',
                             icon: const Icon(Icons.close_rounded),
                             color: AppColors.primary,
                           ),
@@ -113,7 +113,9 @@ class HomePage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        isOtpStep ? AuthCopy.verifyTitle : 'Ready to play?',
+                        isOtpStep
+                            ? AuthCopy.verifyTitle
+                            : 'Uko tayari kucheza?',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
@@ -125,7 +127,7 @@ class HomePage extends ConsumerWidget {
                       Text(
                         isOtpStep
                             ? AuthCopy.verifySubtitle(loginState.maskedPhone)
-                            : 'Enter your mobile number to continue.',
+                            : 'Weka namba yako ya simu ili uendelee.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF52657A),
@@ -291,7 +293,7 @@ class _TopNavigation extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(
-            'Stopwatch Challenge',
+            GameCopy.appName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -302,10 +304,14 @@ class _TopNavigation extends StatelessWidget {
         ),
         if (!isMobile) ...[
           const Spacer(),
-          _NavigationLink(label: 'Play', isActive: true, onPressed: onLogin),
-          _NavigationLink(label: 'How to Play', onPressed: onLogin),
-          _NavigationLink(label: 'History', onPressed: onLogin),
-          _NavigationLink(label: 'Support', onPressed: onLogin),
+          _NavigationLink(
+            label: GameCopy.playTab,
+            isActive: true,
+            onPressed: onLogin,
+          ),
+          _NavigationLink(label: GameCopy.howToPlayTab, onPressed: onLogin),
+          _NavigationLink(label: GameCopy.historyTab, onPressed: onLogin),
+          _NavigationLink(label: GameCopy.supportTab, onPressed: onLogin),
           const Spacer(),
         ],
         const SizedBox(width: 12),
@@ -317,7 +323,7 @@ class _TopNavigation extends StatelessWidget {
                 : Icons.person_outline_rounded,
             size: 18,
           ),
-          label: Text(isAuthenticated ? 'PLAY' : 'LOGIN'),
+          label: Text(isAuthenticated ? 'CHEZA' : 'INGIA'),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -394,7 +400,7 @@ class _HomepageHero extends StatelessWidget {
       children: [
         if (!isMobile) ...[
           const Text(
-            'FAST  ·  FUN  ·  SIMPLE  ·  PRECISE',
+            'HARAKA  ·  BURUDANI  ·  RAHISI  ·  SAHIHI',
             textAlign: TextAlign.left,
             style: TextStyle(
               color: AppColors.primary,
@@ -419,7 +425,7 @@ class _HomepageHero extends StatelessWidget {
         SizedBox(height: isMobile ? 12 : 16),
         Text(
           isMobile
-              ? 'Stop the clock at exactly 10.00 seconds.'
+              ? 'Simamisha saa katika sekunde 10.00 kamili.'
               : AuthCopy.welcomeSubtitle,
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -441,7 +447,7 @@ class _HomepageHero extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Closest time wins.',
+            'Muda unaokaribia zaidi hushinda.',
             textAlign: TextAlign.left,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.primary,
@@ -465,7 +471,7 @@ class _HomepageHero extends StatelessWidget {
               ),
             ),
             child: const Text(
-              '▶  START PLAYING',
+              '▶  ANZA KUCHEZA',
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w900,
@@ -487,7 +493,7 @@ class _HomepageHero extends StatelessWidget {
             ),
             const SizedBox(width: 9),
             Text(
-              'Secure payments. Fair play.',
+              'Malipo salama. Mchezo wa haki.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
@@ -527,7 +533,7 @@ class _ChallengeVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: 'A player celebrating a Stopwatch Challenge win',
+      label: 'Mchezaji akisherehekea ushindi wa Changamoto ya Kipima Muda',
       child: AspectRatio(
         aspectRatio: compact ? 16 / 10 : 3 / 2,
         child: Container(
@@ -600,7 +606,7 @@ class _PlayerTrustRow extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Join 25,000+ players',
+              'Jiunge na wachezaji 25,000+',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
@@ -619,23 +625,23 @@ class _BenefitsStrip extends StatelessWidget {
   static const _items = [
     (
       Icons.track_changes_rounded,
-      'Hit the Target',
-      'Stop as close as you can to 10.00 seconds.',
+      'Fikia Lengo',
+      'Simamisha karibu iwezekanavyo na sekunde 10.00.',
     ),
     (
       Icons.emoji_events_outlined,
-      'Win Real Money',
-      'The closer you are, the bigger the reward.',
+      'Shinda Pesa Halisi',
+      'Kadiri unavyokaribia, ndivyo zawadi inavyokuwa kubwa.',
     ),
     (
       Icons.verified_user_outlined,
-      'Fair & Secure',
-      'Enjoy fair play with secure payments.',
+      'Haki na Usalama',
+      'Furahia mchezo wa haki wenye malipo salama.',
     ),
     (
       Icons.groups_rounded,
-      'Join Thousands',
-      'Thousands of players. Countless challenges.',
+      'Jiunge na Maelfu',
+      'Maelfu ya wachezaji. Changamoto zisizo na kikomo.',
     ),
   ];
 
@@ -801,7 +807,7 @@ class _StopwatchMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Stopwatch Challenge logo',
+      label: 'Nembo ya Changamoto ya Kipima Muda',
       image: true,
       child: SizedBox.square(
         dimension: size,

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:stopwatch_game/core/api/api_logger.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
+import 'package:stopwatch_game/core/providers/app_locale_provider.dart';
 import 'package:stopwatch_game/core/theme/app_theme.dart';
 import 'package:stopwatch_game/features/admin/presentation/pages/admin_dashboard_page.dart';
-import 'package:stopwatch_game/features/auth/presentation/pages/home_page.dart';
+import 'package:stopwatch_game/features/game/presentation/pages/landing_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,17 +64,26 @@ class StopwatchChallengeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Stopwatch Challenge',
-        theme: AppTheme.lightTheme,
-        initialRoute: initialRoute,
-        routes: {
-          '/': (_) => const HomePage(),
-          '/admin': (_) => const AdminDashboardPage(),
+      child: Consumer(
+        builder: (context, ref, _) {
+          final locale = ref.watch(appLocaleProvider);
+          AppLanguage.code = locale.languageCode;
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            onGenerateTitle: (_) => GameCopy.appName,
+            locale: locale,
+            supportedLocales: const [swahiliLocale, englishLocale],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            theme: AppTheme.lightTheme,
+            initialRoute: initialRoute,
+            routes: {
+              '/': (_) => const LandingPage(),
+              '/admin': (_) => const AdminDashboardPage(),
+            },
+            onUnknownRoute: (_) =>
+                MaterialPageRoute<void>(builder: (_) => const LandingPage()),
+          );
         },
-        onUnknownRoute: (_) =>
-            MaterialPageRoute<void>(builder: (_) => const HomePage()),
       ),
     );
   }

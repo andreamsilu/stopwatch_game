@@ -7,10 +7,7 @@ import 'package:stopwatch_game/core/utils/msisdn_format.dart';
 
 /// Shows the logged-in subscriber and their MSISDN, plus sign out.
 class LoggedInUserBar extends ConsumerStatefulWidget {
-  const LoggedInUserBar({
-    required this.onLogout,
-    super.key,
-  });
+  const LoggedInUserBar({required this.onLogout, super.key});
 
   final Future<void> Function() onLogout;
 

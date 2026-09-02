@@ -63,9 +63,9 @@ class TargetTimeBadge extends StatelessWidget {
               ),
             ),
           const SizedBox(width: 8),
-          const Text(
-            'SECONDS',
-            style: TextStyle(
+          Text(
+            GameCopy.secondsUpper,
+            style: const TextStyle(
               color: Color(0xFF52657A),
               fontSize: 10,
               fontWeight: FontWeight.w800,

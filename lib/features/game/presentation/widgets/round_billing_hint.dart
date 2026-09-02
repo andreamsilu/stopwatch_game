@@ -5,11 +5,7 @@ import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_pha
 
 /// Subtle inline status while billing runs (not a full-width banner).
 class RoundBillingHint extends StatelessWidget {
-  const RoundBillingHint({
-    required this.phase,
-    this.statusMessage,
-    super.key,
-  });
+  const RoundBillingHint({required this.phase, this.statusMessage, super.key});
 
   final RoundPreparePhase phase;
   final String? statusMessage;

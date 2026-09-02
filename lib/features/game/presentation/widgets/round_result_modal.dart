@@ -40,13 +40,13 @@ class RoundResultModal extends StatelessWidget {
                     Navigator.of(context).pop();
                     onClose();
                   },
-                  tooltip: 'Close result',
+                  tooltip: GameCopy.closeResultDialog,
                   icon: const Icon(Icons.close_rounded),
                 ),
               ),
-              const Text(
-                'YOUR TIME',
-                style: TextStyle(
+              Text(
+                GameCopy.yourTimeUpper,
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -69,8 +69,11 @@ class RoundResultModal extends StatelessWidget {
                 spacing: 28,
                 runSpacing: 12,
                 children: [
-                  _ResultMetric(label: 'TARGET', value: target),
-                  _ResultMetric(label: 'DIFFERENCE', value: difference),
+                  _ResultMetric(label: GameCopy.targetUpper, value: target),
+                  _ResultMetric(
+                    label: GameCopy.differenceUpper,
+                    value: difference,
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -96,17 +99,17 @@ class RoundResultModal extends StatelessWidget {
                     foregroundColor: AppColors.onAccent,
                   ),
                   icon: const Icon(Icons.replay_rounded),
-                  label: const Text(GameCopy.playAgain),
+                  label: Text(GameCopy.playAgain),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text('Play Again starts a new paid round.'),
+              Text(GameCopy.paidRoundHint),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   onViewHistory();
                 },
-                child: const Text(GameCopy.viewHistory),
+                child: Text(GameCopy.viewHistory),
               ),
             ],
           ),
@@ -123,15 +126,11 @@ class RoundResultModal extends StatelessWidget {
   static String _formatDifference(int milliseconds) {
     final seconds = milliseconds / 1000;
     final sign = seconds >= 0 ? '+' : '';
-    return '$sign${seconds.toStringAsFixed(3)} sec';
+    return GameCopy.differenceSeconds(seconds, sign);
   }
 
   static String _feedback(int milliseconds) {
-    final distance = milliseconds.abs();
-    if (distance <= 5) return 'PERFECT! 🎯';
-    if (distance <= 20) return 'Incredible! Only 0.01s away.';
-    if (distance <= 75) return 'So close!';
-    return 'Nice try!';
+    return GameCopy.feedback(milliseconds);
   }
 }
 

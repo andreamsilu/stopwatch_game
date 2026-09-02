@@ -3,10 +3,7 @@ import 'package:stopwatch_game/core/constants/app_colors.dart';
 
 /// Tanzania (+255) dial prefix with an inline flag (no network, no asset bundle).
 class TanzaniaPhonePrefix extends StatelessWidget {
-  const TanzaniaPhonePrefix({
-    this.size = 24,
-    super.key,
-  });
+  const TanzaniaPhonePrefix({this.size = 24, super.key});
 
   final int size;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class LoginBrandHeader extends StatelessWidget {
   const LoginBrandHeader({super.key});
@@ -18,7 +19,7 @@ class LoginBrandHeader extends StatelessWidget {
         ),
         const Spacer(),
         Semantics(
-          label: 'Help information',
+          label: AppLanguage.pick('Maelezo ya msaada', 'Help information'),
           button: true,
           child: Container(
             width: 40,
@@ -32,7 +33,7 @@ class LoginBrandHeader extends StatelessWidget {
               onPressed: () {},
               icon: const Icon(Icons.help_outline_rounded, size: 20),
               color: AppColors.primary,
-              tooltip: 'Help',
+              tooltip: AppLanguage.pick('Msaada', 'Help'),
               padding: EdgeInsets.zero,
             ),
           ),

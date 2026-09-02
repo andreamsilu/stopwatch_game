@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
 
 class OtpInputBoxes extends StatefulWidget {
@@ -78,7 +79,9 @@ class _OtpInputBoxesState extends State<OtpInputBoxes> {
     final digits = raw.replaceAll(RegExp(r'\D'), '');
     if (digits.isEmpty) return;
 
-    final code = digits.length > _length ? digits.substring(0, _length) : digits;
+    final code = digits.length > _length
+        ? digits.substring(0, _length)
+        : digits;
     for (var i = 0; i < _length; i++) {
       _controllers[i].text = i < code.length ? code[i] : '';
     }
@@ -112,7 +115,10 @@ class _OtpInputBoxesState extends State<OtpInputBoxes> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Six digit verification code',
+      label: AppLanguage.pick(
+        'Namba ya kuthibitisha yenye tarakimu sita',
+        'Six digit verification code',
+      ),
       textField: true,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

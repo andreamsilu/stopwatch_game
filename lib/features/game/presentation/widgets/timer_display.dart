@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class TimerDisplay extends StatelessWidget {
   const TimerDisplay({
@@ -13,7 +14,10 @@ class TimerDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Elapsed stopwatch time',
+      label: AppLanguage.pick(
+        'Muda uliopita kwenye kipima muda',
+        'Elapsed stopwatch time',
+      ),
       value: timeText,
       liveRegion: true,
       child: FittedBox(

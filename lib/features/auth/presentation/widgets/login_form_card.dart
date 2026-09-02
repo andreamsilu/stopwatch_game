@@ -98,10 +98,7 @@ class _CardShell extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: _LoginCardSpacing.padding,
-        child: child,
-      ),
+      child: Padding(padding: _LoginCardSpacing.padding, child: child),
     );
   }
 }
@@ -188,10 +185,10 @@ class _PhoneStep extends StatelessWidget {
             enabled: !isSubmitting,
             onChanged: onPhoneChanged,
             onFieldSubmitted: canSubmitPhone ? (_) => onSubmitPhone() : null,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              letterSpacing: 0.3,
-            ),
-            decoration: const InputDecoration(
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(letterSpacing: 0.3),
+            decoration: InputDecoration(
               prefixIcon: TanzaniaPhonePrefix(size: 24),
               hintText: AuthCopy.phoneHint,
             ),
@@ -261,7 +258,7 @@ class _OtpStep extends StatelessWidget {
             child: TextButton.icon(
               onPressed: isSubmitting ? null : onBackToPhone,
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: const Text(AuthCopy.changeNumber),
+              label: Text(AuthCopy.changeNumber),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -295,7 +292,10 @@ class _OtpStep extends StatelessWidget {
                   : () => onResendOtp(),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               child: isResendingOtp
                   ? const SizedBox(
@@ -303,7 +303,7 @@ class _OtpStep extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(AuthCopy.resendCode),
+                  : Text(AuthCopy.resendCode),
             ),
           ),
         ],

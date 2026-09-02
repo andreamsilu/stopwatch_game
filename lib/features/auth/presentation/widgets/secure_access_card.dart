@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class SecureAccessCard extends StatelessWidget {
   const SecureAccessCard({super.key});
@@ -35,7 +36,7 @@ class SecureAccessCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Secure access',
+                    AppLanguage.pick('Ufikiaji salama', 'Secure access'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -43,7 +44,10 @@ class SecureAccessCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'We will send a 6-digit code to verify your account.',
+                    AppLanguage.pick(
+                      'Tutakutumia namba yenye tarakimu 6 kuthibitisha akaunti yako.',
+                      'We will send a 6-digit code to verify your account.',
+                    ),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

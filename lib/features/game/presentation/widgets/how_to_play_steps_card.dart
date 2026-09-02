@@ -37,18 +37,14 @@ class HowToPlayStepsCard extends StatelessWidget {
                   color: AppColors.accent.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.flag_rounded,
-                  size: 18,
-                  color: _highlight,
-                ),
+                child: Icon(Icons.flag_rounded, size: 18, color: _highlight),
               ),
               const SizedBox(width: 10),
               Text(
                 GameCopy.howToPlayTitle,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -59,29 +55,44 @@ class HowToPlayStepsCard extends StatelessWidget {
               final step1 = _HowToPlayStepTile(
                 number: 1,
                 spans: [
-                  TextSpan(text: GameCopy.howToPlayStep1Prefix, style: bodyStyle),
+                  TextSpan(
+                    text: GameCopy.howToPlayStep1Prefix,
+                    style: bodyStyle,
+                  ),
                   TextSpan(
                     text: GameCopy.howToPlayStep1Highlight,
                     style: highlightStyle,
                   ),
-                  TextSpan(text: GameCopy.howToPlayStep1Suffix, style: bodyStyle),
+                  TextSpan(
+                    text: GameCopy.howToPlayStep1Suffix,
+                    style: bodyStyle,
+                  ),
                 ],
               );
               final step2 = _HowToPlayStepTile(
                 number: 2,
                 spans: [
-                  TextSpan(text: GameCopy.howToPlayStep2Prefix, style: bodyStyle),
+                  TextSpan(
+                    text: GameCopy.howToPlayStep2Prefix,
+                    style: bodyStyle,
+                  ),
                   TextSpan(
                     text: GameCopy.howToPlayStep2Highlight,
                     style: highlightStyle,
                   ),
-                  TextSpan(text: GameCopy.howToPlayStep2Suffix, style: bodyStyle),
+                  TextSpan(
+                    text: GameCopy.howToPlayStep2Suffix,
+                    style: bodyStyle,
+                  ),
                 ],
               );
               final step3 = _HowToPlayStepTile(
                 number: 3,
                 spans: [
-                  TextSpan(text: GameCopy.howToPlayStep3Prefix, style: bodyStyle),
+                  TextSpan(
+                    text: GameCopy.howToPlayStep3Prefix,
+                    style: bodyStyle,
+                  ),
                   TextSpan(
                     text: GameCopy.howToPlayStep3Highlight,
                     style: highlightStyle,
@@ -134,10 +145,7 @@ class HowToPlayStepsCard extends StatelessWidget {
 }
 
 class _HowToPlayStepTile extends StatelessWidget {
-  const _HowToPlayStepTile({
-    required this.number,
-    required this.spans,
-  });
+  const _HowToPlayStepTile({required this.number, required this.spans});
 
   final int number;
   final List<InlineSpan> spans;
@@ -173,9 +181,9 @@ class _HowToPlayStepTile extends StatelessWidget {
             ),
             child: Text(
               '$number',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),
           const SizedBox(height: 10),

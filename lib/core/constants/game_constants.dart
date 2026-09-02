@@ -1,7 +1,8 @@
 class GameConstants {
   const GameConstants._();
 
-  static const String gameTitle = 'Stopwatch Challenge';
+  static const String gameTitle = 'Changamoto ya Kipima Muda';
+
   /// Internal stopwatch accuracy (stop uses real elapsed time).
   static const Duration timerTickInterval = Duration(milliseconds: 10);
 

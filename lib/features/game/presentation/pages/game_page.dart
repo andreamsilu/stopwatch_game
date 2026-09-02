@@ -5,13 +5,15 @@ import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
 import 'package:stopwatch_game/core/providers/auth_providers.dart';
+import 'package:stopwatch_game/core/providers/app_locale_provider.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/widgets/app_footer.dart';
 import 'package:stopwatch_game/core/widgets/app_snackbar.dart';
 import 'package:stopwatch_game/core/widgets/experience_background.dart';
+import 'package:stopwatch_game/core/widgets/language_menu_button.dart';
 import 'package:stopwatch_game/features/auth/presentation/bloc/login_provider.dart';
-import 'package:stopwatch_game/features/auth/presentation/pages/home_page.dart';
+import 'package:stopwatch_game/features/auth/presentation/widgets/player_login_dialog.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
@@ -29,7 +31,7 @@ bool _allowGameToasts(GameState state) => !state.isRunning;
 
 void _showGameInfo(BuildContext context, GameState state, String message) {
   if (!_allowGameToasts(state)) return;
-  _showGameResponse(context, title: 'Update', message: message);
+  _showGameResponse(context, title: GameCopy.updateTitle, message: message);
 }
 
 void _showGameResponse(
@@ -45,7 +47,7 @@ void _showGameResponse(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('CLOSE'),
+          child: Text(GameCopy.close),
         ),
       ],
     ),
@@ -70,16 +72,16 @@ Future<void> _showSessionExpiredDialog(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => AlertDialog(
-      title: const Text(GameCopy.sessionExpiredTitle),
-      content: const Text(GameCopy.sessionExpiredBody),
+      title: Text(GameCopy.sessionExpiredTitle),
+      content: Text(GameCopy.sessionExpiredBody),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text(GameCopy.cancel),
+          child: Text(GameCopy.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text(GameCopy.sessionExpiredAction),
+          child: Text(GameCopy.sessionExpiredAction),
         ),
       ],
     ),
@@ -100,12 +102,12 @@ void _showGameError(
     return;
   }
   if (!_allowGameToasts(state)) return;
-  _showGameResponse(context, title: 'Something went wrong', message: message);
+  _showGameResponse(context, title: GameCopy.errorTitle, message: message);
 }
 
 void _showGameSuccess(BuildContext context, GameState state, String message) {
   if (!_allowGameToasts(state)) return;
-  _showGameResponse(context, title: 'Success', message: message);
+  _showGameResponse(context, title: GameCopy.successTitle, message: message);
 }
 
 Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
@@ -126,10 +128,7 @@ Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
   ref.read(loginProvider.notifier).reset();
 
   if (!context.mounted) return;
-  Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute<void>(builder: (_) => const HomePage()),
-    (_) => false,
-  );
+  Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
 }
 
 class GamePage extends ConsumerWidget {
@@ -137,10 +136,20 @@ class GamePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appLocaleProvider);
     final useDrawerNav =
         MediaQuery.of(context).size.width < GameConstants.mobileBreakpoint;
     final gameState = ref.watch(gameControllerProvider);
     final controller = ref.read(gameControllerProvider.notifier);
+    final isAuthenticated = ref.watch(subscriptionActiveProvider);
+
+    Future<bool> authenticate() async {
+      if (ref.read(subscriptionActiveProvider)) return true;
+      final authenticated = await showPlayerLoginDialog(context, ref);
+      if (!authenticated || !context.mounted) return false;
+      ref.invalidate(gameControllerProvider);
+      return true;
+    }
 
     ref.listen<GameState>(gameControllerProvider, (previous, next) {
       if (!context.mounted) return;
@@ -227,18 +236,16 @@ class GamePage extends ConsumerWidget {
         final leave = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Leave this round?'),
-            content: const Text(
-              'Your current round will be lost if you leave.',
-            ),
+            title: Text(GameCopy.leaveConfirmTitle),
+            content: Text(GameCopy.leaveConfirmBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('CONTINUE PLAYING'),
+                child: Text(GameCopy.continuePlaying),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('LEAVE ROUND'),
+                child: Text(GameCopy.leaveRoundAction),
               ),
             ],
           ),
@@ -259,6 +266,8 @@ class GamePage extends ConsumerWidget {
                   child: AppLogo(size: 32),
                 ),
                 actions: [
+                  const Center(child: LanguageMenuButton(compact: true)),
+                  const SizedBox(width: 4),
                   Builder(
                     builder: (context) => Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -282,9 +291,19 @@ class GamePage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        LoggedInUserBar(
-                          onLogout: () => performLogoutFromGame(context, ref),
-                        ),
+                        if (isAuthenticated)
+                          LoggedInUserBar(
+                            onLogout: () => performLogoutFromGame(context, ref),
+                          )
+                        else
+                          FilledButton.icon(
+                            onPressed: () async {
+                              Navigator.of(context).pop();
+                              await authenticate();
+                            },
+                            icon: const Icon(Icons.login_rounded),
+                            label: Text(GameCopy.sessionExpiredAction),
+                          ),
                         const SizedBox(height: 14),
                         Text(
                           GameCopy.navigation,
@@ -337,17 +356,18 @@ class GamePage extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.logout_rounded,
-                            color: Theme.of(context).colorScheme.error,
+                        if (isAuthenticated)
+                          ListTile(
+                            leading: Icon(
+                              Icons.logout_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            title: Text(GameCopy.logOut),
+                            onTap: () async {
+                              Navigator.of(context).pop();
+                              await performLogoutFromGame(context, ref);
+                            },
                           ),
-                          title: const Text(GameCopy.logOut),
-                          onTap: () async {
-                            Navigator.of(context).pop();
-                            await performLogoutFromGame(context, ref);
-                          },
-                        ),
                       ],
                     ),
                   ),
@@ -379,7 +399,9 @@ class GamePage extends ConsumerWidget {
                     ? width
                     : (isTablet ? 980.0 : (isLargeDesktop ? 1280.0 : 1120.0));
                 final isDesktopPlay =
-                    !isMobile && gameState.selectedTab == GameTab.play;
+                    !isMobile &&
+                    constraints.maxHeight >= 720 &&
+                    gameState.selectedTab == GameTab.play;
                 final desktopPlayHeight =
                     (constraints.maxHeight - (verticalPadding * 2) - 70 - 6)
                         .clamp(360.0, double.infinity)
@@ -402,7 +424,11 @@ class GamePage extends ConsumerWidget {
                             GameHeaderBar(
                               activeTab: gameState.selectedTab,
                               navigationEnabled: !gameState.isRunning,
+                              isAuthenticated: isAuthenticated,
                               onTabSelected: controller.selectTab,
+                              onLogin: () async {
+                                await authenticate();
+                              },
                               onLogout: () =>
                                   performLogoutFromGame(context, ref),
                             ),
@@ -413,18 +439,14 @@ class GamePage extends ConsumerWidget {
                                 final confirmed = await showDialog<bool>(
                                   context: context,
                                   builder: (dialogContext) => AlertDialog(
-                                    title: const Text(
-                                      GameCopy.refreshConfirmTitle,
-                                    ),
-                                    content: const Text(
-                                      GameCopy.refreshConfirmBody,
-                                    ),
+                                    title: Text(GameCopy.refreshConfirmTitle),
+                                    content: Text(GameCopy.refreshConfirmBody),
                                     actions: [
                                       TextButton(
                                         onPressed: () => Navigator.of(
                                           dialogContext,
                                         ).pop(false),
-                                        child: const Text(
+                                        child: Text(
                                           GameCopy.refreshConfirmCancel,
                                         ),
                                       ),
@@ -432,7 +454,7 @@ class GamePage extends ConsumerWidget {
                                         onPressed: () => Navigator.of(
                                           dialogContext,
                                         ).pop(true),
-                                        child: const Text(
+                                        child: Text(
                                           GameCopy.refreshConfirmAction,
                                         ),
                                       ),
@@ -543,6 +565,18 @@ class GamePage extends ConsumerWidget {
                                                         .onStartControlPointerUp,
                                                 onPlayRound: () async {
                                                   AppSnackBar.dismiss();
+                                                  if (!isAuthenticated) {
+                                                    if (!await authenticate()) {
+                                                      return;
+                                                    }
+                                                    await ref
+                                                        .read(
+                                                          gameControllerProvider
+                                                              .notifier,
+                                                        )
+                                                        .onPlayRoundPressed();
+                                                    return;
+                                                  }
                                                   if (gameState.latestResult !=
                                                       null) {
                                                     controller

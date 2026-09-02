@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 
 class ControlButtons extends StatelessWidget {
   const ControlButtons({
@@ -26,18 +27,24 @@ class ControlButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final buttons = [
       _GameActionButton(
-        label: 'Start',
-        semanticLabel: 'Start stopwatch',
+        label: AppLanguage.pick('Anza', 'Start'),
+        semanticLabel: AppLanguage.pick('Anza kipima muda', 'Start stopwatch'),
         onPressed: isRunning || isBusy ? null : onStart,
       ),
       _GameActionButton(
-        label: 'Stop',
-        semanticLabel: 'Stop stopwatch',
+        label: AppLanguage.pick('Simamisha', 'Stop'),
+        semanticLabel: AppLanguage.pick(
+          'Simamisha kipima muda',
+          'Stop stopwatch',
+        ),
         onPressed: isRunning && !isBusy ? onStop : null,
       ),
       _GameActionButton(
-        label: 'Reset',
-        semanticLabel: 'Reset stopwatch',
+        label: AppLanguage.pick('Weka upya', 'Reset'),
+        semanticLabel: AppLanguage.pick(
+          'Weka kipima muda upya',
+          'Reset stopwatch',
+        ),
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.onAccent,
         onPressed: isBusy ? null : onReset,

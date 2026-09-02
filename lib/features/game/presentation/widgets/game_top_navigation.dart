@@ -99,7 +99,7 @@ class _TabButtonState extends State<_TabButton> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '${_labelForTab(widget.tab)} tab',
+      label: 'Kichupo cha ${_labelForTab(widget.tab)}',
       button: true,
       selected: widget.isActive,
       child: MouseRegion(

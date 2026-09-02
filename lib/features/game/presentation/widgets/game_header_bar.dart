@@ -6,6 +6,7 @@ import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/providers/player_session_provider.dart';
 import 'package:stopwatch_game/core/utils/msisdn_format.dart';
 import 'package:stopwatch_game/core/widgets/app_logo.dart';
+import 'package:stopwatch_game/core/widgets/language_menu_button.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 /// Centered nav tabs with account avatar + menu on the right.
@@ -13,17 +14,21 @@ class GameHeaderBar extends ConsumerStatefulWidget {
   const GameHeaderBar({
     required this.activeTab,
     required this.navigationEnabled,
+    required this.isAuthenticated,
     required this.onTabSelected,
+    required this.onLogin,
     required this.onLogout,
     super.key,
   });
 
   final GameTab activeTab;
   final bool navigationEnabled;
+  final bool isAuthenticated;
   final ValueChanged<GameTab> onTabSelected;
+  final Future<void> Function() onLogin;
   final Future<void> Function() onLogout;
 
-  static const double _sideSlotWidth = 52;
+  static const double _sideSlotWidth = 220;
   static const double _logoSize = 36;
 
   @override
@@ -65,20 +70,34 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
               enabled: widget.navigationEnabled,
               onTabSelected: widget.onTabSelected,
             );
-            final avatar = _AvatarAccountMenu(
-              displayMsisdn: displayMsisdn,
-              subtitle: showUsername ? username : null,
-              loggingOut: _loggingOut,
-              onLogout: _handleLogout,
+            final account = widget.isAuthenticated
+                ? _AvatarAccountMenu(
+                    displayMsisdn: displayMsisdn,
+                    subtitle: showUsername ? username : null,
+                    loggingOut: _loggingOut,
+                    onLogout: _handleLogout,
+                  )
+                : FilledButton.icon(
+                    onPressed: widget.navigationEnabled ? widget.onLogin : null,
+                    icon: const Icon(Icons.login_rounded, size: 18),
+                    label: Text(GameCopy.sessionExpiredAction),
+                  );
+            final controls = Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const LanguageMenuButton(),
+                const SizedBox(width: 8),
+                account,
+              ],
             );
 
             const logo = AppLogo(size: GameHeaderBar._logoSize);
 
-            if (constraints.maxWidth < 560) {
+            if (constraints.maxWidth < 900) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [logo, const Spacer(), avatar]),
+                  Row(children: [logo, const Spacer(), controls]),
                   const SizedBox(height: 8),
                   Center(child: tabs),
                 ],
@@ -98,7 +117,7 @@ class _GameHeaderBarState extends ConsumerState<GameHeaderBar> {
                     width: GameHeaderBar._sideSlotWidth,
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: avatar,
+                      child: controls,
                     ),
                   ),
                 ],
@@ -304,7 +323,7 @@ class _AvatarAccountMenu extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(),
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'logout',
           child: Row(
             children: [

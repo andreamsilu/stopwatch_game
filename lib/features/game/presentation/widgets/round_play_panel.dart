@@ -109,8 +109,8 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                         child: IconButton(
                           onPressed: widget.onToggleSound,
                           tooltip: widget.isSoundEnabled
-                              ? 'Sound On'
-                              : 'Sound Off',
+                              ? GameCopy.soundOn
+                              : GameCopy.soundOff,
                           padding: EdgeInsets.zero,
                           visualDensity: VisualDensity.compact,
                           icon: Icon(
@@ -138,7 +138,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                     _MinimalStopwatch(
                       diameter: diameter,
                       timeText: widget.isRunning
-                          ? 'TIMING...'
+                          ? GameCopy.timing
                           : widget.currentTimeLabel,
                       isInactive: !widget.isRunning && !hasTarget,
                     ),
@@ -169,12 +169,12 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.primary,
                         ),
-                        child: const Text(GameCopy.leaveRound),
+                        child: Text(GameCopy.leaveRound),
                       ),
                       if (widget.totalWins > 0) ...[
                         const SizedBox(height: 4),
                         Text(
-                          'Perfect Stops: ${widget.totalWins}',
+                          GameCopy.perfectStopsCount(widget.totalWins),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: const Color(0xFF64748B)),
                         ),
@@ -210,16 +210,16 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
     final leave = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Leave this round?'),
-        content: const Text('Your current round will be lost if you leave.'),
+        title: Text(GameCopy.leaveConfirmTitle),
+        content: Text(GameCopy.leaveConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('CONTINUE PLAYING'),
+            child: Text(GameCopy.continuePlaying),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('LEAVE ROUND'),
+            child: Text(GameCopy.leaveRoundAction),
           ),
         ],
       ),
@@ -254,7 +254,7 @@ class _StateHeader extends StatelessWidget {
       return Column(
         children: [
           Text(
-            'Your target is 10.00 seconds',
+            GameCopy.targetTenSeconds,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.primary,
@@ -263,7 +263,7 @@ class _StateHeader extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            "Start when you're ready and stop as close to the target as you can.",
+            GameCopy.startWhenReady,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -276,7 +276,7 @@ class _StateHeader extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'Ready for the challenge?',
+          GameCopy.readyForChallenge,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: AppColors.primary,
@@ -285,7 +285,7 @@ class _StateHeader extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Pay for a round and stop the timer as close to 10.00 seconds as you can.',
+          GameCopy.payRoundInstruction,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
@@ -306,7 +306,7 @@ class _PaymentLoadingOverlay extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: 'Waiting for payment confirmation',
+      label: GameCopy.waitingForPayment,
       child: Material(
         color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
@@ -329,7 +329,7 @@ class _PaymentLoadingOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Confirm payment on your phone',
+                    GameCopy.confirmPaymentOnPhone,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.primary,
@@ -338,7 +338,7 @@ class _PaymentLoadingOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Waiting for payment confirmation...',
+                    GameCopy.waitingForPaymentEllipsis,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFF475569),
@@ -350,7 +350,7 @@ class _PaymentLoadingOverlay extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onCancel,
                     icon: const Icon(Icons.close_rounded, size: 20),
-                    label: const Text('CANCEL WAITING'),
+                    label: Text(GameCopy.cancelWaiting),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
@@ -412,12 +412,14 @@ class _PrimaryRoundAction extends StatelessWidget {
             foregroundColor: AppColors.onAccent,
           ),
           icon: const Icon(Icons.play_arrow_rounded),
-          label: Text(isRetry ? 'TRY AGAIN' : 'PAY FOR ROUND'),
+          label: Text(
+            isRetry ? GameCopy.tryAgainUpper : GameCopy.payForRoundUpper,
+          ),
         ),
       );
     }
 
-    final label = isRunning ? 'STOP' : 'START ROUND';
+    final label = isRunning ? GameCopy.stopUpper : GameCopy.startRoundUpper;
     return SizedBox(
       width: double.infinity,
       height: isRunning ? 78 : 64,
@@ -619,9 +621,9 @@ class InlineRoundResult extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'YOUR TIME',
-                  style: TextStyle(
+                Text(
+                  GameCopy.yourTimeUpper,
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -644,8 +646,11 @@ class InlineRoundResult extends StatelessWidget {
                   spacing: 28,
                   runSpacing: 12,
                   children: [
-                    _ResultMetric(label: 'TARGET', value: target),
-                    _ResultMetric(label: 'DIFFERENCE', value: difference),
+                    _ResultMetric(label: GameCopy.targetUpper, value: target),
+                    _ResultMetric(
+                      label: GameCopy.differenceUpper,
+                      value: difference,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -668,19 +673,19 @@ class InlineRoundResult extends StatelessWidget {
                       foregroundColor: AppColors.onAccent,
                     ),
                     icon: const Icon(Icons.replay_rounded),
-                    label: const Text(GameCopy.playAgain),
+                    label: Text(GameCopy.playAgain),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Play Again starts a new paid round.',
+                  GameCopy.paidRoundHint,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: const Color(0xFF64748B),
                   ),
                 ),
                 TextButton(
                   onPressed: onViewHistory,
-                  child: const Text(GameCopy.viewHistory),
+                  child: Text(GameCopy.viewHistory),
                 ),
               ],
             ),
@@ -698,15 +703,11 @@ class InlineRoundResult extends StatelessWidget {
   static String _formatDifference(int milliseconds) {
     final seconds = milliseconds / 1000;
     final sign = seconds >= 0 ? '+' : '';
-    return '$sign${seconds.toStringAsFixed(3)} sec';
+    return GameCopy.differenceSeconds(seconds, sign);
   }
 
   static String _feedback(int milliseconds) {
-    final distance = milliseconds.abs();
-    if (distance <= 5) return 'PERFECT! 🎯';
-    if (distance <= 20) return 'Incredible! Only 0.01s away.';
-    if (distance <= 75) return 'So close!';
-    return 'Nice try!';
+    return GameCopy.feedback(milliseconds);
   }
 }
 

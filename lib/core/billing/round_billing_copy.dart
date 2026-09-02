@@ -1,24 +1,42 @@
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
 /// Billing and round-payment copy.
 class RoundBillingCopy {
   RoundBillingCopy._();
 
-  static const chargedEveryRound = 'Charged to your mobile number.';
+  static String get chargedEveryRound => AppLanguage.pick(
+    'Gharama itatozwa kwenye namba yako ya simu.',
+    'Charged to your mobile number.',
+  );
 
-  static const preparingRoundCharge = 'Charging this round to your number…';
+  static String get preparingRoundCharge => AppLanguage.pick(
+    'Inatoza raundi hii kwenye namba yako…',
+    'Charging this round to your number…',
+  );
 
-  static const waitingForPayment =
-      'Confirm the payment on your phone. We will update you automatically.';
+  static String get waitingForPayment => AppLanguage.pick(
+    'Thibitisha malipo kwenye simu yako. Tutakujulisha kiotomatiki.',
+    'Confirm the payment on your phone. We will update you automatically.',
+  );
 
-  static const loadingTarget = 'Payment confirmed. Setting up your round…';
+  static String get loadingTarget => AppLanguage.pick(
+    'Malipo yamethibitishwa. Inaandaa raundi yako…',
+    'Payment confirmed. Setting up your round…',
+  );
 
-  static const playReadyHint = 'When you are ready, tap Start round.';
+  static String get playReadyHint => AppLanguage.pick(
+    'Ukiwa tayari, gusa Anza raundi.',
+    'When you are ready, tap Start round.',
+  );
 
-  static const chargeRoundFirst =
-      'Tap Start round again when payment is confirmed.';
+  static String get chargeRoundFirst => AppLanguage.pick(
+    'Gusa Anza raundi tena malipo yakithibitishwa.',
+    'Tap Start round again when payment is confirmed.',
+  );
 
-  static const loginRequired = 'Log in to play a round.';
+  static String get loginRequired =>
+      AppLanguage.pick('Ingia ili kucheza raundi.', 'Log in to play a round.');
 
   static String messageForPhase(RoundPreparePhase phase) {
     switch (phase) {

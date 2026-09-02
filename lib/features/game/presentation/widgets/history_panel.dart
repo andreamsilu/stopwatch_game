@@ -84,7 +84,7 @@ class _HistoryPanelState extends ConsumerState<HistoryPanel> {
               child: FilledButton.icon(
                 onPressed: widget.onPlayAgain,
                 icon: const Icon(Icons.replay_rounded),
-                label: const Text(GameCopy.playAgain),
+                label: Text(GameCopy.playAgain),
               ),
             ),
           ],
@@ -120,7 +120,7 @@ class _HistoryMessage extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: onRetry,
-            child: const Text(GameCopy.historyRetry),
+            child: Text(GameCopy.historyRetry),
           ),
         ],
       ],
