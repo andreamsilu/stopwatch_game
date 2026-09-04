@@ -31,25 +31,31 @@ bool _allowGameToasts(GameState state) => !state.isRunning;
 
 void _showGameInfo(BuildContext context, GameState state, String message) {
   if (!_allowGameToasts(state)) return;
-  _showGameResponse(context, title: GameCopy.updateTitle, message: message);
+  _showGameResponse(context, message);
 }
 
-void _showGameResponse(
-  BuildContext context, {
-  required String title,
-  required String message,
-}) {
+void _showGameResponse(BuildContext context, String message) {
   showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: Text(GameCopy.close),
-        ),
-      ],
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 12, 16),
+      content: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12, right: 44, bottom: 12),
+            child: Text(message),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              tooltip: GameCopy.close,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              icon: const Icon(Icons.close),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -102,12 +108,12 @@ void _showGameError(
     return;
   }
   if (!_allowGameToasts(state)) return;
-  _showGameResponse(context, title: GameCopy.errorTitle, message: message);
+  _showGameResponse(context, message);
 }
 
 void _showGameSuccess(BuildContext context, GameState state, String message) {
   if (!_allowGameToasts(state)) return;
-  _showGameResponse(context, title: GameCopy.successTitle, message: message);
+  _showGameResponse(context, message);
 }
 
 Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {

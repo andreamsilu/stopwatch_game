@@ -1,6 +1,6 @@
-# Stopwatch Challenge — API Documentation
+# Gandisha Ushinde — API Documentation
 
-This document describes the HTTP API contract required by the **Stopwatch Challenge** Flutter client (`stopwatch_game`). The mobile/web app currently uses local stubs for auth and round scoring; backend implementations should follow this spec so the client can replace its `TODO` integration points without changing game UX.
+This document describes the HTTP API contract required by the **Gandisha Ushinde** Flutter client (`stopwatch_game`). The mobile/web app currently uses local stubs for auth and round scoring; backend implementations should follow this spec so the client can replace its `TODO` integration points without changing game UX.
 
 ---
 
@@ -21,7 +21,7 @@ This document describes the HTTP API contract required by the **Stopwatch Challe
 
 ## Overview
 
-**Stopwatch Challenge** is a precision timing game: the player must start a stopwatch and stop as close as possible to a **target time**. Outcomes, prizes, and target assignment must be **authoritative on the server**—the client only displays results returned by the API and collects anti-automation telemetry.
+**Gandisha Ushinde** is a precision timing game: the player must start a stopwatch and stop as close as possible to a **target time**. Outcomes, prizes, and target assignment must be **authoritative on the server**—the client only displays results returned by the API and collects anti-automation telemetry.
 
 | Concern | Owner |
 |--------|--------|

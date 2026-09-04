@@ -1,11 +1,11 @@
 {
-    "name": "Stopwatch Challenge",
-    "short_name": "Stopwatch",
+    "name": "Gandisha Ushinde",
+    "short_name": "Gandisha",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#F2F6FB",
     "theme_color": "#00377D",
-    "description": "Stop the timer as close as you can to the target time.",
+    "description": "Gandisha Ushinde — stop the timer as close as you can to the target time.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

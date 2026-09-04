@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "stopwatch_game" "\0"
+            VALUE "CompanyName", "Gandisha Ushinde" "\0"
+            VALUE "FileDescription", "Gandisha Ushinde" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "stopwatch_game" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Gandisha Ushinde. All rights reserved." "\0"
             VALUE "OriginalFilename", "stopwatch_game.exe" "\0"
-            VALUE "ProductName", "stopwatch_game" "\0"
+            VALUE "ProductName", "Gandisha Ushinde" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -533,7 +533,7 @@ class _ChallengeVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: 'Mchezaji akisherehekea ushindi wa Changamoto ya Kipima Muda',
+      label: 'Mchezaji akisherehekea ushindi wa Gandisha Ushinde',
       child: AspectRatio(
         aspectRatio: compact ? 16 / 10 : 3 / 2,
         child: Container(
@@ -807,7 +807,7 @@ class _StopwatchMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Nembo ya Changamoto ya Kipima Muda',
+      label: 'Nembo ya Gandisha Ushinde',
       image: true,
       child: SizedBox.square(
         dimension: size,

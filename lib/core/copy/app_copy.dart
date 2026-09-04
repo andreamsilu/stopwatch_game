@@ -1,4 +1,4 @@
-/// User-facing copy for Stopwatch Challenge.
+/// User-facing copy for Gandisha Ushinde.
 class AppCopy {
   AppCopy._();
 }
@@ -18,8 +18,7 @@ class AppLanguage {
 class AuthCopy {
   AuthCopy._();
 
-  static String get welcomeTitle =>
-      AppLanguage.pick('Changamoto ya Kipima Muda', 'Stopwatch Challenge');
+  static String get welcomeTitle => 'Gandisha Ushinde';
   static String get welcomeSubtitle => AppLanguage.pick(
     'Unaweza kusimamisha saa katika sekunde 10.00 kamili?',
     'Think you can stop the clock at exactly 10.00 seconds?',
@@ -69,8 +68,8 @@ class AuthCopy {
   static String get contactSupport =>
       AppLanguage.pick('Wasiliana na Msaada', 'Contact Support');
   static String copyright(int year) => AppLanguage.pick(
-    '© $year Chrono Precision. Haki zote zimehifadhiwa.',
-    '© $year Chrono Precision. All rights reserved.',
+    '© $year Gandisha Ushinde. Haki zote zimehifadhiwa.',
+    '© $year Gandisha Ushinde. All rights reserved.',
   );
 }
 
@@ -80,11 +79,10 @@ class GameCopy {
   static String _t(String swahili, String english) =>
       AppLanguage.pick(swahili, english);
 
-  static String get appName =>
-      _t('Changamoto ya Kipima Muda', 'Stopwatch Challenge');
+  static String get appName => 'Gandisha Ushinde';
   static String footerCopyright(int year) => _t(
-    '© $year Changamoto ya Kipima Muda. Cheza kwa usahihi.',
-    '© $year Stopwatch Challenge. Play with precision.',
+    '© $year Gandisha Ushinde. Cheza kwa usahihi.',
+    '© $year Gandisha Ushinde. Play with precision.',
   );
   static String get termsOfService =>
       _t('Masharti ya Huduma', 'Terms of Service');
