@@ -274,11 +274,7 @@ class GameCopy {
   );
 
   static String get language => _t('Lugha', 'Language');
-  static String get updateTitle => _t('Taarifa', 'Update');
   static String get close => _t('FUNGA', 'CLOSE');
-  static String get errorTitle =>
-      _t('Hitilafu imetokea', 'Something went wrong');
-  static String get successTitle => _t('Imefanikiwa', 'Success');
   static String get leaveConfirmTitle =>
       _t('Uondoke kwenye raundi hii?', 'Leave this round?');
   static String get leaveConfirmBody => _t(
