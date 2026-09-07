@@ -40,7 +40,7 @@ class GameService {
 
   Future<void> requestSubscriptionRegistration({required String msisdn}) async {
     await _api.post(
-      Uri.parse(ApiConfig.users),
+      Uri.parse(ApiConfig.appRegister),
       body: SubscriptionStatusRequest(msisdn: msisdn).toJson(),
     );
   }
@@ -62,11 +62,18 @@ class GameService {
       }
 
       final subscription = await getSubscriptionStatus(msisdn: msisdn);
+      if (isCancelled?.call() ?? false) {
+        throw StateError('Subscription status polling was cancelled.');
+      }
       if (subscription.isActive) return subscription;
-      if (DateTime.now().isAfter(deadline)) return null;
 
       final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) return null;
       await Future<void>.delayed(remaining < interval ? remaining : interval);
+      if (isCancelled?.call() ?? false) {
+        throw StateError('Subscription status polling was cancelled.');
+      }
+      if (!DateTime.now().isBefore(deadline)) return null;
     }
   }
 

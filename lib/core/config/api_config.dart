@@ -17,6 +17,7 @@ class ApiConfig {
   static String get authLogout => '$baseUrl$apiPrefix/auth/logout';
   static String get subscriptionStatus =>
       '$baseUrl$apiPrefix/app/subscription-status';
+  static String get appRegister => '$baseUrl$apiPrefix/app/register';
   static String get targetTime => '$baseUrl$apiPrefix/game/target-time';
   static String get gameStart => '$baseUrl$apiPrefix/game/start';
   static String get gameStop => '$baseUrl$apiPrefix/game/stop';

@@ -8,7 +8,10 @@ class SubscriptionStatusResponse {
   factory SubscriptionStatusResponse.fromJson(Map<String, dynamic> json) {
     return SubscriptionStatusResponse(
       msisdn: json['msisdn'] as String? ?? '',
-      status: json['status'] as String? ?? '',
+      // The current API calls this field `activityStatus`. Keep the legacy
+      // fallback so older backend deployments remain compatible.
+      status:
+          json['activityStatus'] as String? ?? json['status'] as String? ?? '',
       subscribed: json['subscribed'] as bool? ?? false,
     );
   }
