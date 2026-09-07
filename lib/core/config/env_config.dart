@@ -107,6 +107,20 @@ class EnvConfig {
     return Duration(milliseconds: ms.clamp(5000, 600000));
   }
 
+  static Duration get subscriptionPollInterval {
+    final ms =
+        int.tryParse(_optional('SUBSCRIPTION_POLL_INTERVAL_MS', '3000')) ??
+        3000;
+    return Duration(milliseconds: ms.clamp(1000, 30000));
+  }
+
+  static Duration get subscriptionPollTimeout {
+    final ms =
+        int.tryParse(_optional('SUBSCRIPTION_POLL_TIMEOUT_MS', '180000')) ??
+        180000;
+    return Duration(milliseconds: ms.clamp(10000, 600000));
+  }
+
   /// Maximum delay between billing status polls after backoff (see [billingPollBackoffMultiplier]).
   static Duration get billingPollBackoffMax {
     final ms =

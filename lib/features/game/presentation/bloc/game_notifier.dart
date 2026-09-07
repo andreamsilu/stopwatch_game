@@ -418,7 +418,7 @@ class GameController extends StateNotifier<GameState> {
       (s) => s.copyWith(
         isSubmitting: true,
         isLoadingTarget: false,
-        preparePhase: RoundPreparePhase.idle,
+        preparePhase: RoundPreparePhase.checkingSubscription,
         statusMessage: RoundBillingCopy.checkingSubscription,
         clearRoundError: true,
         clearPendingBilling: true,
@@ -446,15 +446,35 @@ class GameController extends StateNotifier<GameState> {
       if (!subscription.subscribed) {
         _patchState(
           (s) => s.copyWith(
-            isSubmitting: false,
-            isLoadingTarget: false,
-            preparePhase: RoundPreparePhase.idle,
-            roundErrorMessage: RoundBillingCopy.registrationRequired,
-            clearPendingBilling: true,
-            clearStatusMessage: true,
+            preparePhase: RoundPreparePhase.awaitingSubscription,
+            statusMessage: RoundBillingCopy.awaitingSubscriptionConfirmation,
           ),
         );
-        return;
+
+        await _gameService.requestSubscriptionRegistration(
+          msisdn: _effectiveMsisdn,
+        );
+        if (!_isActiveRoundOp(operationId)) return;
+
+        final activated = await _gameService.waitForSubscriptionActivation(
+          msisdn: _effectiveMsisdn,
+          isCancelled: () => !_isActiveRoundOp(operationId),
+        );
+        if (!_isActiveRoundOp(operationId)) return;
+        if (activated == null) {
+          _patchState(
+            (s) => s.copyWith(
+              isSubmitting: false,
+              isLoadingTarget: false,
+              preparePhase: RoundPreparePhase.idle,
+              roundErrorMessage:
+                  RoundBillingCopy.subscriptionConfirmationTimedOut,
+              clearPendingBilling: true,
+              clearStatusMessage: true,
+            ),
+          );
+          return;
+        }
       }
 
       _patchState(

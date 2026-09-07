@@ -244,6 +244,14 @@ Response:
 No JWT is required. When HMAC is enabled, the request includes `X-TIMESTAMP`,
 `X-NONCE`, and `X-SIGNATURE`.
 
+When `subscribed` is `false`, the client calls `POST /api/v1/users` with the
+same `msisdn` to request registration. It then repeats the subscription-status
+POST every `SUBSCRIPTION_POLL_INTERVAL_MS` (default 3 seconds) while instructing
+the user to reply `1` to the SMS on their phone. Billing starts only after a
+status response returns `subscribed: true`. Waiting stops after
+`SUBSCRIPTION_POLL_TIMEOUT_MS` (default 3 minutes) or when the round is
+cancelled.
+
 ### Fetch target time (live)
 
 Used when opening or resetting the play board (`GameController.openRoundBoard`, `onResetPressed`).

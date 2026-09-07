@@ -20,9 +20,14 @@ class RoundBillingCopy {
     'Checking your subscription status…',
   );
 
-  static String get registrationRequired => AppLanguage.pick(
-    'Usajili wako haujawezeshwa. Tafadhali jisajili kwanza kabla ya kucheza.',
-    'Your subscription is not active. Please register first before playing.',
+  static String get awaitingSubscriptionConfirmation => AppLanguage.pick(
+    'Angalia SMS kwenye simu yako na ujibu 1 kuthibitisha usajili. Tunasubiri uthibitisho…',
+    'Check the SMS on your phone and reply 1 to confirm registration. Waiting for confirmation…',
+  );
+
+  static String get subscriptionConfirmationTimedOut => AppLanguage.pick(
+    'Usajili haujathibitishwa. Tafadhali jibu 1 kwenye SMS, kisha ujaribu tena.',
+    'Registration was not confirmed. Please reply 1 to the SMS, then try again.',
   );
 
   static String get waitingForPayment => AppLanguage.pick(
@@ -50,6 +55,10 @@ class RoundBillingCopy {
 
   static String messageForPhase(RoundPreparePhase phase) {
     switch (phase) {
+      case RoundPreparePhase.checkingSubscription:
+        return checkingSubscription;
+      case RoundPreparePhase.awaitingSubscription:
+        return awaitingSubscriptionConfirmation;
       case RoundPreparePhase.charging:
         return preparingRoundCharge;
       case RoundPreparePhase.awaitingPayment:

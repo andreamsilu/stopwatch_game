@@ -38,6 +38,38 @@ class GameService {
     );
   }
 
+  Future<void> requestSubscriptionRegistration({required String msisdn}) async {
+    await _api.post(
+      Uri.parse(ApiConfig.users),
+      body: SubscriptionStatusRequest(msisdn: msisdn).toJson(),
+    );
+  }
+
+  Future<SubscriptionStatusResponse?> waitForSubscriptionActivation({
+    required String msisdn,
+    bool Function()? isCancelled,
+    Duration? pollInterval,
+    Duration? timeout,
+  }) async {
+    final interval = pollInterval ?? EnvConfig.subscriptionPollInterval;
+    final deadline = DateTime.now().add(
+      timeout ?? EnvConfig.subscriptionPollTimeout,
+    );
+
+    while (true) {
+      if (isCancelled?.call() ?? false) {
+        throw StateError('Subscription status polling was cancelled.');
+      }
+
+      final subscription = await getSubscriptionStatus(msisdn: msisdn);
+      if (subscription.subscribed) return subscription;
+      if (DateTime.now().isAfter(deadline)) return null;
+
+      final remaining = deadline.difference(DateTime.now());
+      await Future<void>.delayed(remaining < interval ? remaining : interval);
+    }
+  }
+
   Future<BillingTransactionResponse> enqueueBilling({required String msisdn}) =>
       _postBillingTransaction(msisdn: msisdn);
 

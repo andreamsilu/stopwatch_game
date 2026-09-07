@@ -6,11 +6,17 @@ import 'package:stopwatch_game/features/game/data/models/subscription_status_res
 import 'package:stopwatch_game/features/game/presentation/bloc/game_notifier.dart';
 
 class _BillingSpyGameService extends GameService {
-  _BillingSpyGameService({this.subscribed = false});
+  _BillingSpyGameService({
+    this.subscribed = false,
+    this.activatesAfterRegistration = false,
+  });
 
   final bool subscribed;
+  final bool activatesAfterRegistration;
   int enqueueCalls = 0;
   int subscriptionChecks = 0;
+  int registrationCalls = 0;
+  int activationPolls = 0;
 
   @override
   Future<SubscriptionStatusResponse> getSubscriptionStatus({
@@ -25,6 +31,27 @@ class _BillingSpyGameService extends GameService {
   }
 
   @override
+  Future<void> requestSubscriptionRegistration({required String msisdn}) async {
+    registrationCalls++;
+  }
+
+  @override
+  Future<SubscriptionStatusResponse?> waitForSubscriptionActivation({
+    required String msisdn,
+    bool Function()? isCancelled,
+    Duration? pollInterval,
+    Duration? timeout,
+  }) async {
+    activationPolls++;
+    if (!activatesAfterRegistration) return null;
+    return SubscriptionStatusResponse(
+      msisdn: msisdn,
+      status: 'active',
+      subscribed: true,
+    );
+  }
+
+  @override
   Future<BillingTransactionResponse> enqueueBilling({required String msisdn}) {
     enqueueCalls++;
     throw StateError('Billing must not run for an inactive subscription.');
@@ -32,7 +59,7 @@ class _BillingSpyGameService extends GameService {
 }
 
 void main() {
-  test('inactive subscription is rejected before billing', () async {
+  test('unconfirmed registration times out before billing', () async {
     final gameService = _BillingSpyGameService();
     final controller = GameController(
       msisdn: '255676589824',
@@ -44,10 +71,12 @@ void main() {
     await controller.openRoundBoard();
 
     expect(gameService.subscriptionChecks, 1);
+    expect(gameService.registrationCalls, 1);
+    expect(gameService.activationPolls, 1);
     expect(gameService.enqueueCalls, 0);
     expect(
       controller.state.roundErrorMessage,
-      RoundBillingCopy.registrationRequired,
+      RoundBillingCopy.subscriptionConfirmationTimedOut,
     );
     expect(controller.state.isSubmitting, isFalse);
   });
@@ -64,6 +93,30 @@ void main() {
     await controller.openRoundBoard();
 
     expect(gameService.subscriptionChecks, 1);
+    expect(gameService.registrationCalls, 0);
+    expect(gameService.activationPolls, 0);
     expect(gameService.enqueueCalls, 1);
   });
+
+  test(
+    'inactive subscriber is registered and billed after confirmation',
+    () async {
+      final gameService = _BillingSpyGameService(
+        activatesAfterRegistration: true,
+      );
+      final controller = GameController(
+        msisdn: '255676589824',
+        isSubscribed: true,
+        gameService: gameService,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.openRoundBoard();
+
+      expect(gameService.subscriptionChecks, 1);
+      expect(gameService.registrationCalls, 1);
+      expect(gameService.activationPolls, 1);
+      expect(gameService.enqueueCalls, 1);
+    },
+  );
 }
