@@ -25,6 +25,11 @@ class RoundBillingCopy {
     'Check the SMS on your phone and reply 1 to confirm registration. Waiting for confirmation…',
   );
 
+  static String get registrationRequested => AppLanguage.pick(
+    'Jibu 1 kwenye SMS kuthibitisha usajili, kisha gusa Anza raundi tena.',
+    'Reply 1 to the SMS to activate your account, then tap Start round again.',
+  );
+
   static String get subscriptionConfirmationTimedOut => AppLanguage.pick(
     'Usajili haujathibitishwa. Tafadhali jibu 1 kwenye SMS, kisha ujaribu tena.',
     'Registration was not confirmed. Please reply 1 to the SMS, then try again.',

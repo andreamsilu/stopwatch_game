@@ -431,25 +431,16 @@ class GameController extends StateNotifier<GameState> {
         );
         if (!_isActiveRoundOp(operationId)) return;
 
-        final activated = await _gameService.waitForSubscriptionActivation(
-          msisdn: _effectiveMsisdn,
-          isCancelled: () => !_isActiveRoundOp(operationId),
+        _patchState(
+          (s) => s.copyWith(
+            isSubmitting: false,
+            isLoadingTarget: false,
+            preparePhase: RoundPreparePhase.idle,
+            statusMessage: RoundBillingCopy.registrationRequested,
+            clearPendingBilling: true,
+          ),
         );
-        if (!_isActiveRoundOp(operationId)) return;
-        if (activated == null) {
-          _patchState(
-            (s) => s.copyWith(
-              isSubmitting: false,
-              isLoadingTarget: false,
-              preparePhase: RoundPreparePhase.idle,
-              roundErrorMessage:
-                  RoundBillingCopy.subscriptionConfirmationTimedOut,
-              clearPendingBilling: true,
-              clearStatusMessage: true,
-            ),
-          );
-          return;
-        }
+        return;
       }
 
       _patchState(
