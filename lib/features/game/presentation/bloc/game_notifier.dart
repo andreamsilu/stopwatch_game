@@ -75,6 +75,8 @@ class GameController extends StateNotifier<GameState> {
   }
 
   Future<void> openRoundBoard() async {
+    if (state.isSubmitting || state.isPreparingRound) return;
+
     _beginInteractionSession();
     _activeSession = null;
     state = state.copyWith(
