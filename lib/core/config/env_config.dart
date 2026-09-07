@@ -56,6 +56,10 @@ class EnvConfig {
   }
 
   static String get apiBaseUrl {
+    // Web requests stay on the app's origin so the hosting reverse proxy can
+    // forward /api/** to the backend without CORS or mixed-content issues.
+    if (kIsWeb) return Uri.base.origin;
+
     final raw = _required('API_BASE_URL');
     return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
   }

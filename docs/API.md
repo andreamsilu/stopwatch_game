@@ -29,28 +29,30 @@ This document describes the HTTP API contract required by the **Gandisha Ushinde
 | Stopwatch UI, pointer samples, session metrics | **Client** |
 | User registration (`msisdn`, `username`) | **Server** |
 
-**Base URL (configured backend):**
+**Base URL:**
 
-Set `API_BASE_URL` in the project `.env` file. The application does not contain
-a fallback host.
+Web builds use their own origin and send requests to `/api/v1/**`; Nginx
+forwards those requests to the backend. Native and desktop builds use
+`API_BASE_URL` from the project `.env` file.
 
 **Interactive API reference (Swagger UI):**
 
-`${API_BASE_URL}/swagger-ui/index.html`
+`${API_BASE_URL}/swagger-ui/index.html` (backend host)
 
 OpenAPI: `GET /v3/api-docs` on the same host.
 
 | Environment | Base URL |
 |-------------|----------|
-| **Current (development)** | Value of `API_BASE_URL` in `.env` |
+| **Web** | Current frontend origin (through `/api/` proxy) |
+| **Native/desktop** | Value of `API_BASE_URL` in `.env` |
 
 All endpoints below are relative to this base URL. Example — register user:
 
 ```
-POST ${API_BASE_URL}/api/v1/users
+POST /api/v1/users
 ```
 
-> **Note:** This host uses plain HTTP. Use HTTPS with a proper domain before production release.
+> **Note:** Terminate HTTPS at Nginx before a production release.
 
 ---
 

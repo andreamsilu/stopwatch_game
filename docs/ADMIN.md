@@ -91,6 +91,9 @@ location / {
 }
 ```
 
+Web API requests are same-origin and require an `/api/` reverse proxy. A full
+example is available in `deploy/nginx-stopwatch-game.conf`.
+
 Without an SPA fallback, opening `/admin` directly after deployment can return
 the hosting server's 404 page even though in-app navigation works.
 
