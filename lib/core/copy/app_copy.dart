@@ -298,8 +298,8 @@ class GameCopy {
   static String get readyForChallenge =>
       _t('Uko tayari kujaribu bahati yako?', 'Ready for the challenge?');
   static String get payRoundInstruction => _t(
-    'Cheza raundi na usimamishe kipima muda karibu iwezekanavyo na sekunde 10.00.',
-    'Pay for a round and stop the timer as close to 10.00 seconds as you can.',
+    'Cheza raundi na usimamishe kipima muda karibu iwezekanavyo na muda wa lengo.',
+    'Pay for a round and stop the timer as close to the target time as you can.',
   );
   static String get waitingForPayment =>
       _t('Inasubiri uthibitisho wa malipo', 'Waiting for payment confirmation');

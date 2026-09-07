@@ -10,10 +10,10 @@ void main() {
     Widget panel(String time, {bool running = true}) => MaterialApp(
       home: Scaffold(
         body: RoundPlayPanel(
-          targetTimeLabel: '00:10.000',
+          targetTimeLabel: '00:08.250',
           currentTimeLabel: time,
           elapsed: const Duration(seconds: 2),
-          targetTime: const Duration(seconds: 10),
+          targetTime: const Duration(milliseconds: 8250),
           isRunning: running,
           isBusy: false,
           isSubmitting: false,
@@ -40,6 +40,7 @@ void main() {
 
     await tester.pumpWidget(panel('00:02.000'));
     expect(find.text('00:02.000'), findsOneWidget);
+    expect(find.text('8.250'), findsOneWidget);
     await tester.pumpWidget(panel('00:02.250'));
     expect(find.text('00:02.250'), findsOneWidget);
     expect(find.text('00:02.000'), findsNothing);

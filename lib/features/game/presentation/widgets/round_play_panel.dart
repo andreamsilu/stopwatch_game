@@ -126,6 +126,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 220),
                       child: _StateHeader(
+                        targetTimeLabel: widget.targetTimeLabel,
                         key: ValueKey<String>(
                           _stateKey(isPreparing, hasTarget),
                         ),
@@ -229,11 +230,13 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
 class _StateHeader extends StatelessWidget {
   const _StateHeader({
     super.key,
+    required this.targetTimeLabel,
     required this.isRunning,
     required this.isPreparing,
     required this.hasTarget,
   });
 
+  final String targetTimeLabel;
   final bool isRunning;
   final bool isPreparing;
   final bool hasTarget;
@@ -241,18 +244,18 @@ class _StateHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isRunning) {
-      return const TargetTimeBadge(targetTimeLabel: '00:10.000');
+      return TargetTimeBadge(targetTimeLabel: targetTimeLabel);
     }
 
     if (isPreparing) {
-      return const TargetTimeBadge(targetTimeLabel: '00:10.000');
+      return const SizedBox.shrink();
     }
 
     if (hasTarget) {
       return Column(
         children: [
           Text(
-            GameCopy.targetTenSeconds,
+            GameCopy.targetTimeBadge,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.primary,
@@ -266,7 +269,7 @@ class _StateHeader extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 8),
-          const TargetTimeBadge(targetTimeLabel: '00:10.000'),
+          TargetTimeBadge(targetTimeLabel: targetTimeLabel),
         ],
       );
     }
@@ -288,7 +291,6 @@ class _StateHeader extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
-        const TargetTimeBadge(targetTimeLabel: '00:10.000'),
       ],
     );
   }
@@ -343,7 +345,7 @@ class _PaymentLoadingOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const TargetTimeBadge(targetTimeLabel: '00:10.000'),
+
                   const SizedBox(height: 24),
                   OutlinedButton.icon(
                     onPressed: onCancel,

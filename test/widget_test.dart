@@ -23,7 +23,7 @@ void main() {
     expect(app.locale, const Locale('sw'));
     expect(find.text('Cheza'), findsWidgets);
     expect(find.text('Uko tayari kujaribu bahati yako?'), findsOneWidget);
-    expect(find.textContaining('10.00'), findsWidgets);
+    expect(find.textContaining('10.00'), findsNothing);
     expect(find.text('Cheza raundi'), findsOneWidget);
     expect(find.text('Namba ya simu'), findsNothing);
 

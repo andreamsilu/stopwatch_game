@@ -78,7 +78,10 @@ class TargetTimeBadge extends StatelessWidget {
   }
 
   static String _secondsDisplay(String value) {
-    final seconds = double.tryParse(value.split(':').last);
-    return seconds?.toStringAsFixed(2) ?? value;
+    final parts = value.split(':');
+    final seconds = double.tryParse(parts.last);
+    final minutes = parts.length == 2 ? int.tryParse(parts.first) : 0;
+    if (seconds == null || minutes == null) return value;
+    return (minutes * 60 + seconds).toStringAsFixed(3);
   }
 }
