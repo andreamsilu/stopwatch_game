@@ -20,12 +20,10 @@ import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_pha
 class GameController extends StateNotifier<GameState> {
   GameController({
     required String msisdn,
-    required bool isSubscribed,
     GameService? gameService,
     StopwatchApi? api,
     InteractionTelemetryService? telemetryService,
   }) : _msisdn = msisdn,
-       _isSubscribed = isSubscribed,
        _gameService = gameService ?? GameService.create(api: api),
        _telemetry =
            telemetryService ??
@@ -37,7 +35,6 @@ class GameController extends StateNotifier<GameState> {
   }
 
   final String _msisdn;
-  final bool _isSubscribed;
   final GameService _gameService;
   final InteractionTelemetryService _telemetry;
 
@@ -78,14 +75,6 @@ class GameController extends StateNotifier<GameState> {
   }
 
   Future<void> openRoundBoard() async {
-    if (!_isSubscribed) {
-      state = state.copyWith(
-        selectedTab: GameTab.play,
-        roundErrorMessage: RoundBillingCopy.loginRequired,
-      );
-      return;
-    }
-
     _beginInteractionSession();
     _activeSession = null;
     state = state.copyWith(
@@ -127,12 +116,6 @@ class GameController extends StateNotifier<GameState> {
 
   /// New paid round: charge subscription fee, then allocate target time.
   Future<void> prepareNewPaidRound() async {
-    if (!_isSubscribed) {
-      _patchState(
-        (s) => s.copyWith(roundErrorMessage: RoundBillingCopy.loginRequired),
-      );
-      return;
-    }
     if (state.isSubmitting || state.isPreparingRound) return;
 
     await cancelRound();
@@ -158,16 +141,6 @@ class GameController extends StateNotifier<GameState> {
       return;
     }
     if (state.canStartRound) return;
-
-    if (!_isSubscribed) {
-      _patchState(
-        (s) => s.copyWith(
-          selectedTab: GameTab.play,
-          roundErrorMessage: RoundBillingCopy.loginRequired,
-        ),
-      );
-      return;
-    }
 
     await _chargeAndPrepareRound();
   }
@@ -443,7 +416,7 @@ class GameController extends StateNotifier<GameState> {
         msisdn: _effectiveMsisdn,
       );
       if (!_isActiveRoundOp(operationId)) return;
-      if (!subscription.subscribed) {
+      if (!subscription.isActive) {
         _patchState(
           (s) => s.copyWith(
             preparePhase: RoundPreparePhase.awaitingSubscription,

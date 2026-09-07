@@ -16,4 +16,7 @@ class SubscriptionStatusResponse {
   final String msisdn;
   final String status;
   final bool subscribed;
+
+  /// Both fields must confirm activation; inconsistent responses fail closed.
+  bool get isActive => subscribed && status.trim().toUpperCase() == 'ACTIVE';
 }

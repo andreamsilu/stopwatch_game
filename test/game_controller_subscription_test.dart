@@ -8,10 +8,12 @@ import 'package:stopwatch_game/features/game/presentation/bloc/game_notifier.dar
 class _BillingSpyGameService extends GameService {
   _BillingSpyGameService({
     this.subscribed = false,
+    this.status,
     this.activatesAfterRegistration = false,
   });
 
   final bool subscribed;
+  final String? status;
   final bool activatesAfterRegistration;
   int enqueueCalls = 0;
   int subscriptionChecks = 0;
@@ -25,7 +27,7 @@ class _BillingSpyGameService extends GameService {
     subscriptionChecks++;
     return SubscriptionStatusResponse(
       msisdn: msisdn,
-      status: subscribed ? 'active' : 'inactive',
+      status: status ?? (subscribed ? 'active' : 'inactive'),
       subscribed: subscribed,
     );
   }
@@ -59,11 +61,13 @@ class _BillingSpyGameService extends GameService {
 }
 
 void main() {
-  test('unconfirmed registration times out before billing', () async {
-    final gameService = _BillingSpyGameService();
+  test('INACTIVE status always calls registration before billing', () async {
+    final gameService = _BillingSpyGameService(
+      subscribed: true,
+      status: 'INACTIVE',
+    );
     final controller = GameController(
       msisdn: '255676589824',
-      isSubscribed: true,
       gameService: gameService,
     );
     addTearDown(controller.dispose);
@@ -85,7 +89,6 @@ void main() {
     final gameService = _BillingSpyGameService(subscribed: true);
     final controller = GameController(
       msisdn: '255676589824',
-      isSubscribed: true,
       gameService: gameService,
     );
     addTearDown(controller.dispose);
@@ -106,7 +109,6 @@ void main() {
       );
       final controller = GameController(
         msisdn: '255676589824',
-        isSubscribed: true,
         gameService: gameService,
       );
       addTearDown(controller.dispose);

@@ -11,11 +11,9 @@ import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 final gameControllerProvider = StateNotifierProvider<GameController, GameState>(
   (ref) {
     final msisdn = ref.read(playerMsisdnProvider);
-    final isSubscribed = ref.read(subscriptionActiveProvider);
     final api = ref.watch(stopwatchApiProvider);
     return GameController(
       msisdn: msisdn,
-      isSubscribed: isSubscribed,
       api: api,
       telemetryService: ref.watch(interactionTelemetryProvider),
     );

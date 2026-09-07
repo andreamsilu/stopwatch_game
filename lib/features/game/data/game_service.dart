@@ -62,7 +62,7 @@ class GameService {
       }
 
       final subscription = await getSubscriptionStatus(msisdn: msisdn);
-      if (subscription.subscribed) return subscription;
+      if (subscription.isActive) return subscription;
       if (DateTime.now().isAfter(deadline)) return null;
 
       final remaining = deadline.difference(DateTime.now());
