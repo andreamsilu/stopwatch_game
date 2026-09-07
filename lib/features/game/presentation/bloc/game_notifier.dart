@@ -21,13 +21,11 @@ class GameController extends StateNotifier<GameState> {
   GameController({
     required String msisdn,
     required bool isSubscribed,
-    Future<bool> Function()? subscriptionStatusChecker,
     GameService? gameService,
     StopwatchApi? api,
     InteractionTelemetryService? telemetryService,
   }) : _msisdn = msisdn,
        _isSubscribed = isSubscribed,
-       _subscriptionStatusChecker = subscriptionStatusChecker,
        _gameService = gameService ?? GameService.create(api: api),
        _telemetry =
            telemetryService ??
@@ -40,7 +38,6 @@ class GameController extends StateNotifier<GameState> {
 
   final String _msisdn;
   final bool _isSubscribed;
-  final Future<bool> Function()? _subscriptionStatusChecker;
   final GameService _gameService;
   final InteractionTelemetryService _telemetry;
 
@@ -442,10 +439,11 @@ class GameController extends StateNotifier<GameState> {
         return;
       }
 
-      final subscriptionIsActive =
-          await _subscriptionStatusChecker?.call() ?? _isSubscribed;
+      final subscription = await _gameService.getSubscriptionStatus(
+        msisdn: _effectiveMsisdn,
+      );
       if (!_isActiveRoundOp(operationId)) return;
-      if (!subscriptionIsActive) {
+      if (!subscription.subscribed) {
         _patchState(
           (s) => s.copyWith(
             isSubmitting: false,

@@ -16,19 +16,6 @@ final gameControllerProvider = StateNotifierProvider<GameController, GameState>(
     return GameController(
       msisdn: msisdn,
       isSubscribed: isSubscribed,
-      subscriptionStatusChecker: () async {
-        final currentUser = ref.read(playerUserProvider);
-        if (currentUser == null) return false;
-
-        final refreshedUser = await ref
-            .read(authServiceProvider)
-            .getUserById(id: currentUser.id);
-        ref.read(playerUserProvider.notifier).state = refreshedUser;
-
-        final isActive = refreshedUser.status.trim().toLowerCase() == 'active';
-        ref.read(subscriptionActiveProvider.notifier).state = isActive;
-        return isActive;
-      },
       api: api,
       telemetryService: ref.watch(interactionTelemetryProvider),
     );

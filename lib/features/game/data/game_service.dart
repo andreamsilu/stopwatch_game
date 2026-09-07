@@ -10,6 +10,8 @@ import 'package:stopwatch_game/features/game/data/models/game_history_response.d
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
 import 'package:stopwatch_game/features/game/data/models/start_game_request.dart';
 import 'package:stopwatch_game/features/game/data/models/stop_game_request.dart';
+import 'package:stopwatch_game/features/game/data/models/subscription_status_request.dart';
+import 'package:stopwatch_game/features/game/data/models/subscription_status_response.dart';
 import 'package:stopwatch_game/features/game/data/models/target_time_request.dart';
 import 'package:stopwatch_game/features/game/data/models/target_time_response.dart';
 
@@ -22,6 +24,19 @@ class GameService {
   factory GameService.create({StopwatchApi? api}) => GameService(api: api);
 
   final StopwatchApi _api;
+
+  Future<SubscriptionStatusResponse> getSubscriptionStatus({
+    required String msisdn,
+  }) async {
+    final response = await _api.post(
+      Uri.parse(ApiConfig.subscriptionStatus),
+      body: SubscriptionStatusRequest(msisdn: msisdn).toJson(),
+    );
+    return response.parse(
+      SubscriptionStatusResponse.fromJson,
+      context: 'POST /app/subscription-status',
+    );
+  }
 
   Future<BillingTransactionResponse> enqueueBilling({required String msisdn}) =>
       _postBillingTransaction(msisdn: msisdn);

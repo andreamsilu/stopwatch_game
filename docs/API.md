@@ -214,6 +214,36 @@ Server sets `channelSource=APP` and `status=active` for new users. **Sign-in nev
 
 ## Game rounds
 
+### Check subscription status (live)
+
+Called immediately before every payment attempt. Billing proceeds only when
+`subscribed` is `true`.
+
+```http
+POST /api/v1/app/subscription-status
+```
+
+Request:
+
+```json
+{
+  "msisdn": "255676589824"
+}
+```
+
+Response:
+
+```json
+{
+  "msisdn": "255676589824",
+  "status": "active",
+  "subscribed": true
+}
+```
+
+No JWT is required. When HMAC is enabled, the request includes `X-TIMESTAMP`,
+`X-NONCE`, and `X-SIGNATURE`.
+
 ### Fetch target time (live)
 
 Used when opening or resetting the play board (`GameController.openRoundBoard`, `onResetPressed`).
