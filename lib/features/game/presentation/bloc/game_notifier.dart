@@ -21,11 +21,13 @@ class GameController extends StateNotifier<GameState> {
   GameController({
     required String msisdn,
     required bool isSubscribed,
+    Future<bool> Function()? subscriptionStatusChecker,
     GameService? gameService,
     StopwatchApi? api,
     InteractionTelemetryService? telemetryService,
   }) : _msisdn = msisdn,
        _isSubscribed = isSubscribed,
+       _subscriptionStatusChecker = subscriptionStatusChecker,
        _gameService = gameService ?? GameService.create(api: api),
        _telemetry =
            telemetryService ??
@@ -38,6 +40,7 @@ class GameController extends StateNotifier<GameState> {
 
   final String _msisdn;
   final bool _isSubscribed;
+  final Future<bool> Function()? _subscriptionStatusChecker;
   final GameService _gameService;
   final InteractionTelemetryService _telemetry;
 
@@ -417,9 +420,9 @@ class GameController extends StateNotifier<GameState> {
     _patchState(
       (s) => s.copyWith(
         isSubmitting: true,
-        isLoadingTarget: true,
-        preparePhase: RoundPreparePhase.charging,
-        statusMessage: RoundBillingCopy.preparingRoundCharge,
+        isLoadingTarget: false,
+        preparePhase: RoundPreparePhase.idle,
+        statusMessage: RoundBillingCopy.checkingSubscription,
         clearRoundError: true,
         clearPendingBilling: true,
       ),
@@ -438,6 +441,31 @@ class GameController extends StateNotifier<GameState> {
         );
         return;
       }
+
+      final subscriptionIsActive =
+          await _subscriptionStatusChecker?.call() ?? _isSubscribed;
+      if (!_isActiveRoundOp(operationId)) return;
+      if (!subscriptionIsActive) {
+        _patchState(
+          (s) => s.copyWith(
+            isSubmitting: false,
+            isLoadingTarget: false,
+            preparePhase: RoundPreparePhase.idle,
+            roundErrorMessage: RoundBillingCopy.registrationRequired,
+            clearPendingBilling: true,
+            clearStatusMessage: true,
+          ),
+        );
+        return;
+      }
+
+      _patchState(
+        (s) => s.copyWith(
+          isLoadingTarget: true,
+          preparePhase: RoundPreparePhase.charging,
+          statusMessage: RoundBillingCopy.preparingRoundCharge,
+        ),
+      );
 
       final billing = await _gameService.enqueueBilling(
         msisdn: _effectiveMsisdn,

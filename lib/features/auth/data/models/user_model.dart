@@ -19,7 +19,8 @@ class UserModel {
       msisdn: msisdn,
       username: username is String && username.isNotEmpty ? username : msisdn,
       channelSource: json['channelSource'] as String? ?? 'APP',
-      status: json['status'] as String? ?? 'active',
+      // Fail closed: a missing backend status must never authorize billing.
+      status: json['status'] as String? ?? 'inactive',
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
       lastLoginAt: json['lastLoginAt'] as String?,
