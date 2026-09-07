@@ -137,9 +137,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                     SizedBox(height: widget.isRunning ? 4 : 6),
                     _MinimalStopwatch(
                       diameter: diameter,
-                      timeText: widget.isRunning
-                          ? GameCopy.timing
-                          : widget.currentTimeLabel,
+                      timeText: widget.currentTimeLabel,
                       isInactive: !widget.isRunning && !hasTarget,
                     ),
                     SizedBox(height: isMobile ? 7 : 10),

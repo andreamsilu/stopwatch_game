@@ -5,6 +5,7 @@ import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
 import 'package:stopwatch_game/features/game/data/models/subscription_status_response.dart';
+import 'package:stopwatch_game/features/game/data/models/target_time_response.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_notifier.dart';
 
 class _BillingSpyGameService extends GameService {
@@ -15,7 +16,7 @@ class _BillingSpyGameService extends GameService {
     this.activation,
   });
 
-  final bool subscribed;
+  bool subscribed;
   final String? status;
   final bool activatesAfterRegistration;
   final Completer<SubscriptionStatusResponse?>? activation;
@@ -70,7 +71,72 @@ class _BillingSpyGameService extends GameService {
   }
 }
 
+class _SuccessfulRoundService extends _BillingSpyGameService {
+  BillingTransactionResponse transaction(String requestId) =>
+      BillingTransactionResponse(
+        id: enqueueCalls,
+        msisdn: '255676589824',
+        requestId: requestId,
+        billingType: 'play',
+        amount: 100,
+        status: 'success',
+      );
+
+  @override
+  Future<BillingTransactionResponse> enqueueBilling({
+    required String msisdn,
+  }) async {
+    enqueueCalls++;
+    return transaction('round-$enqueueCalls');
+  }
+
+  @override
+  Future<BillingTransactionResponse> waitForBillingSuccess({
+    required String requestId,
+    bool Function()? isCancelled,
+  }) async => transaction(requestId);
+
+  @override
+  Future<TargetTimeResponse> fetchTargetTime({required String msisdn}) async =>
+      TargetTimeResponse(msisdn: msisdn, targetTimeMs: 10000);
+}
+
 void main() {
+  test(
+    'registered user is billed separately for every subsequent active round',
+    () async {
+      final service = _SuccessfulRoundService();
+      final controller = GameController(
+        msisdn: '255676589824',
+        gameService: service,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.onPlayRoundPressed();
+      expect(service.registrationCalls, 1);
+      expect(service.enqueueCalls, 0);
+
+      // The backend reports activation after the subscriber confirms the SMS.
+      service.subscribed = true;
+      await controller.onPlayRoundPressed();
+      expect(controller.state.billingRequestId, 'round-1');
+      expect(controller.state.canStartRound, isTrue);
+
+      // Repeated Play on an already paid round must not charge twice.
+      await controller.onPlayRoundPressed();
+      expect(service.enqueueCalls, 1);
+
+      await controller.openRoundBoard();
+      expect(controller.state.billingRequestId, 'round-2');
+      await controller.openRoundBoard();
+      expect(controller.state.billingRequestId, 'round-3');
+      expect(service.enqueueCalls, 3);
+      expect(service.subscriptionChecks, 4);
+      expect(service.registrationCalls, 1);
+      expect(service.activationPolls, 0);
+    },
+  );
+
   test('INACTIVE status always calls registration before billing', () async {
     final gameService = _BillingSpyGameService(
       subscribed: true,
