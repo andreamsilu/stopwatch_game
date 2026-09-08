@@ -103,6 +103,38 @@ class _SuccessfulRoundService extends _BillingSpyGameService {
 
 void main() {
   test(
+    'registration stays busy until SMS confirmation and prevents duplicate requests',
+    () async {
+      final activation = Completer<SubscriptionStatusResponse?>();
+      final service = _BillingSpyGameService(activation: activation);
+      final controller = GameController(
+        msisdn: '255676589824',
+        gameService: service,
+      );
+      addTearDown(controller.dispose);
+      final preparation = controller.openRoundBoard();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.isPreparingRound, isTrue);
+      expect(
+        controller.state.statusMessage,
+        RoundBillingCopy.awaitingSubscriptionConfirmation,
+      );
+      await controller.openRoundBoard();
+      expect(service.calls, ['status', 'register', 'poll']);
+      expect(service.enqueueCalls, 0);
+      activation.complete(
+        const SubscriptionStatusResponse(
+          msisdn: '255676589824',
+          status: 'ACTIVE',
+          subscribed: true,
+        ),
+      );
+      await preparation;
+      expect(service.calls, ['status', 'register', 'poll', 'billing']);
+    },
+  );
+
+  test(
     'registered user is billed separately for every subsequent active round',
     () async {
       final service = _SuccessfulRoundService();
@@ -133,7 +165,7 @@ void main() {
       expect(service.enqueueCalls, 3);
       expect(service.subscriptionChecks, 4);
       expect(service.registrationCalls, 1);
-      expect(service.activationPolls, 0);
+      expect(service.activationPolls, 1);
     },
   );
 
@@ -152,11 +184,14 @@ void main() {
 
     expect(gameService.subscriptionChecks, 1);
     expect(gameService.registrationCalls, 1);
-    expect(gameService.activationPolls, 0);
+    expect(
+      gameService.activationPolls,
+      gameService.subscribed && gameService.status == null ? 0 : 1,
+    );
     expect(gameService.enqueueCalls, 0);
     expect(
-      controller.state.statusMessage,
-      RoundBillingCopy.registrationRequested,
+      controller.state.roundErrorMessage,
+      RoundBillingCopy.subscriptionConfirmationTimedOut,
     );
     expect(controller.state.isSubmitting, isFalse);
   });
@@ -173,12 +208,15 @@ void main() {
 
     expect(gameService.subscriptionChecks, 1);
     expect(gameService.registrationCalls, 0);
-    expect(gameService.activationPolls, 0);
+    expect(
+      gameService.activationPolls,
+      gameService.subscribed && gameService.status == null ? 0 : 1,
+    );
     expect(gameService.enqueueCalls, 1);
   });
 
   test(
-    'inactive subscriber registers once without polling or billing',
+    'inactive subscriber registers once and bills after activation',
     () async {
       final gameService = _BillingSpyGameService(
         activatesAfterRegistration: true,
@@ -193,8 +231,11 @@ void main() {
 
       expect(gameService.subscriptionChecks, 1);
       expect(gameService.registrationCalls, 1);
-      expect(gameService.activationPolls, 0);
-      expect(gameService.enqueueCalls, 0);
+      expect(
+        gameService.activationPolls,
+        gameService.subscribed && gameService.status == null ? 0 : 1,
+      );
+      expect(gameService.enqueueCalls, 1);
     },
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 
@@ -7,7 +8,11 @@ void main() {
   testWidgets('elapsed time remains visible and updates while running', (
     tester,
   ) async {
-    Widget panel(String time, {bool running = true}) => MaterialApp(
+    Widget panel(
+      String time, {
+      bool running = true,
+      RoundPreparePhase phase = RoundPreparePhase.idle,
+    }) => MaterialApp(
       home: Scaffold(
         body: RoundPlayPanel(
           targetTimeLabel: '00:08.250',
@@ -18,7 +23,7 @@ void main() {
           isBusy: false,
           isSubmitting: false,
           isLoadingTarget: false,
-          preparePhase: RoundPreparePhase.idle,
+          preparePhase: phase,
           isSoundEnabled: false,
           startButtonVisualOffset: Offset.zero,
           startButtonHitboxOffset: Offset.zero,
@@ -47,6 +52,20 @@ void main() {
     await tester.pumpWidget(panel('00:02.250', running: false));
     await tester.pumpAndSettle();
     expect(find.text('00:02.250'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(
+      panel(
+        '00:00.000',
+        running: false,
+        phase: RoundPreparePhase.awaitingSubscription,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(
+      find.text(RoundBillingCopy.awaitingSubscriptionConfirmation),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
@@ -187,7 +188,10 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
         ),
         if (isPreparing)
           Positioned.fill(
-            child: _PaymentLoadingOverlay(onCancel: widget.onReset),
+            child: _PaymentLoadingOverlay(
+              onCancel: widget.onReset,
+              phase: widget.preparePhase,
+            ),
           ),
       ],
     );
@@ -297,16 +301,17 @@ class _StateHeader extends StatelessWidget {
 }
 
 class _PaymentLoadingOverlay extends StatelessWidget {
-  const _PaymentLoadingOverlay({required this.onCancel});
+  const _PaymentLoadingOverlay({required this.onCancel, required this.phase});
 
   final VoidCallback onCancel;
+  final RoundPreparePhase phase;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: GameCopy.waitingForPayment,
+      label: RoundBillingCopy.messageForPhase(phase),
       child: Material(
         color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
@@ -329,7 +334,7 @@ class _PaymentLoadingOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    GameCopy.confirmPaymentOnPhone,
+                    RoundBillingCopy.messageForPhase(phase),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.primary,
@@ -337,13 +342,14 @@ class _PaymentLoadingOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    GameCopy.waitingForPaymentEllipsis,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF475569),
+                  if (phase == RoundPreparePhase.awaitingPayment)
+                    Text(
+                      GameCopy.waitingForPaymentEllipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF475569),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 20),
 
                   const SizedBox(height: 24),
