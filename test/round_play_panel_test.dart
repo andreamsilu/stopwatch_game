@@ -45,7 +45,7 @@ void main() {
 
     await tester.pumpWidget(panel('00:02.000'));
     expect(find.text('00:02.000'), findsOneWidget);
-    expect(find.text('8.250'), findsOneWidget);
+    expect(find.text('00:08.250'), findsOneWidget);
     await tester.pumpWidget(panel('00:02.250'));
     expect(find.text('00:02.250'), findsOneWidget);
     expect(find.text('00:02.000'), findsNothing);
@@ -53,6 +53,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('00:02.250'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    addTearDown(() => tester.view.resetPhysicalSize());
+    addTearDown(() => tester.view.resetDevicePixelRatio());
+    tester.view.devicePixelRatio = 1;
+    for (final size in [
+      const Size(320, 568),
+      const Size(390, 844),
+      const Size(768, 1024),
+      const Size(1440, 900),
+      const Size(1920, 1080),
+    ]) {
+      tester.view.physicalSize = size;
+      await tester.pumpWidget(panel('00:02.250'));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'Playing at $size');
+      expect(find.text('00:02.250'), findsOneWidget);
+      await tester.pumpWidget(panel('00:02.250', running: false));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'Ready at $size');
+    }
     await tester.pumpWidget(
       panel(
         '00:00.000',

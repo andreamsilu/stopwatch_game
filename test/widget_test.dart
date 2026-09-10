@@ -22,7 +22,7 @@ void main() {
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.locale, const Locale('sw'));
     expect(find.text('Cheza'), findsWidgets);
-    expect(find.text('Uko tayari kujaribu bahati yako?'), findsOneWidget);
+    expect(find.text('Je, unaweza? Simama sahihi!'), findsOneWidget);
     expect(find.textContaining('10.00'), findsNothing);
     expect(find.text('Cheza raundi'), findsOneWidget);
     expect(find.text('Namba ya simu'), findsNothing);
@@ -53,7 +53,7 @@ void main() {
     final englishApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(englishApp.locale, const Locale('en'));
     expect(find.text('Play'), findsWidgets);
-    expect(find.text('Ready for the challenge?'), findsOneWidget);
+    expect(find.text('Can you? Stop precisely!'), findsOneWidget);
     expect(find.text('PAY FOR ROUND'), findsOneWidget);
 
     await tester.ensureVisible(find.text('PAY FOR ROUND'));

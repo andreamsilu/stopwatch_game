@@ -22,7 +22,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFFF2F6FB),
+      scaffoldBackgroundColor: const Color(0xFFEEF1F6),
       fontFamily: GoogleFonts.figtree().fontFamily,
       textTheme: GoogleFonts.figtreeTextTheme(
         const TextTheme(
@@ -33,8 +33,16 @@ class AppTheme {
           headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
           titleLarge: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
           titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-          bodyLarge: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-          bodyMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          bodyLarge: TextStyle(
+            fontSize: 18,
+            height: 1.3,
+            fontWeight: FontWeight.w400,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 18,
+            height: 1.3,
+            fontWeight: FontWeight.w400,
+          ),
           bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -80,7 +88,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFFF8FAFC),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 16,
+        ),
         hintStyle: const TextStyle(color: Color(0xFF64748B)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

@@ -1,3 +1,4 @@
+import 'package:stopwatch_game/core/theme/showcase_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -492,8 +493,9 @@ class GamePage extends ConsumerWidget {
                                   alignment: Alignment.topCenter,
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(
-                                      maxWidth: isLargeDesktop
-                                          ? 1100
+                                      maxWidth:
+                                          gameState.selectedTab == GameTab.play
+                                          ? ShowcaseStyle(context).contentWidth
                                           : double.infinity,
                                     ),
                                     child: Column(
@@ -681,32 +683,7 @@ class _GamePanelShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = screenWidth < 420;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.background.withValues(alpha: 0.96),
-            AppColors.secondary.withValues(alpha: 0.08),
-            AppColors.background.withValues(alpha: 0.96),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.24)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.14),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(isSmallMobile ? 2 : 8),
-      child: child,
-    );
+    return child;
   }
 }
 

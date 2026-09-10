@@ -10,5 +10,5 @@ class AppColors {
 
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onAccent = Color(0xFF1E1E1E);
-  static const Color onBackground = Color(0xFF0F172A);
+  static const Color onBackground = Color(0xFF00377D);
 }

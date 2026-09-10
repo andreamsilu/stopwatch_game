@@ -10,7 +10,7 @@ class ExperienceBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFF0F4FA),
+      color: const Color(0xFFEEF1F6),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -45,7 +45,7 @@ class _ChallengeBackdropPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(
       Offset.zero & size,
-      Paint()..color = const Color(0xFFF0F4FA),
+      Paint()..color = const Color(0xFFEEF1F6),
     );
     _paintRightContour(canvas, size);
     _paintLeftBands(canvas, size);
