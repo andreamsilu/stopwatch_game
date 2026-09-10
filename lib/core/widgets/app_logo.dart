@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:stopwatch_game/core/copy/app_copy.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-/// Brand mark from [images/logo.png].
+/// Original Yas vector logo shared with the Next.js stopwatch.
 class AppLogo extends StatelessWidget {
   const AppLogo({
     this.size = 64,
     super.key,
   });
 
-  static const assetPath = 'images/logo.png';
+  static const assetPath = 'assets/brand/yas-logo.svg';
 
   final double size;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: GameCopy.appName,
+      label: 'Yas',
       image: true,
-      child: Image.asset(
+      child: SvgPicture.asset(
         assetPath,
         width: size,
         height: size,
         fit: BoxFit.contain,
-        filterQuality: FilterQuality.medium,
+        excludeFromSemantics: true,
       ),
     );
   }

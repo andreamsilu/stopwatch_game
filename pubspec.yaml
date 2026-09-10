@@ -43,6 +43,7 @@ dependencies:
   confetti: ^0.8.0
   audioplayers: ^6.6.0
   google_fonts: ^8.1.0
+  flutter_svg: ^2.2.1
   http: ^1.2.2
   flutter_dotenv: ^5.2.1
   crypto: ^3.0.6
@@ -75,6 +76,7 @@ flutter:
   assets:
     - .env
     - images/logo.png
+    - assets/brand/yas-logo.svg
     - images/hero.png
     - assets/win-clap.mp3
     - assets/lose-music.mp3
