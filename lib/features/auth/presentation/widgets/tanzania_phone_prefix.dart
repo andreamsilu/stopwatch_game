@@ -12,12 +12,11 @@ class TanzaniaPhonePrefix extends StatelessWidget {
     final flagWidth = size.toDouble();
     final flagHeight = (size * 0.72).clamp(14.0, 20.0);
 
-    return SizedBox(
-      width: 100,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(width: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: CustomPaint(

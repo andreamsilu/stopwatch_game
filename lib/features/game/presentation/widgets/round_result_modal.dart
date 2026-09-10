@@ -59,7 +59,7 @@ class RoundResultModal extends StatelessWidget {
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: AppColors.primary,
                   fontSize: 58,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),

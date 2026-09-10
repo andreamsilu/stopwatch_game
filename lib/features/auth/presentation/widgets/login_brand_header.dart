@@ -11,11 +11,7 @@ class LoginBrandHeader extends StatelessWidget {
       children: [
         Text(
           'ChronoPrecision',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 30,
-            letterSpacing: 0.2,
-          ),
+          style: Theme.of(context).textTheme.headlineMedium,
         ),
         const Spacer(),
         Semantics(

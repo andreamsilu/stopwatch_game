@@ -474,7 +474,7 @@ class _HomepageHero extends StatelessWidget {
               '▶  ANZA KUCHEZA',
               style: TextStyle(
                 fontSize: 19,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 letterSpacing: 0.3,
               ),
             ),

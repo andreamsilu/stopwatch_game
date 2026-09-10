@@ -12,10 +12,10 @@ class HowToPlayStepsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bodyStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      height: 1.4,
+    final bodyStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      height: 1.3,
       color: AppColors.onBackground.withValues(alpha: 0.82),
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
     );
     final highlightStyle = bodyStyle?.copyWith(
       color: _highlight,

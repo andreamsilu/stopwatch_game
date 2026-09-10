@@ -26,13 +26,56 @@ class AppTheme {
       fontFamily: GoogleFonts.figtree().fontFamily,
       textTheme: GoogleFonts.figtreeTextTheme(
         const TextTheme(
-          displayLarge: TextStyle(fontSize: 46, fontWeight: FontWeight.w700),
-          displayMedium: TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
-          displaySmall: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
-          headlineMedium: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-          titleLarge: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
-          titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          displayLarge: TextStyle(
+            fontSize: 56,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 36,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+          ),
+          displaySmall: TextStyle(
+            fontSize: 30,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+          ),
+          headlineLarge: TextStyle(
+            fontSize: 36,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 30,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+          ),
+          headlineSmall: TextStyle(
+            fontSize: 24,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 24,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 18,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
+          ),
+          titleSmall: TextStyle(
+            fontSize: 16,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
+          ),
           bodyLarge: TextStyle(
             fontSize: 18,
             height: 1.3,
@@ -43,9 +86,26 @@ class AppTheme {
             height: 1.3,
             fontWeight: FontWeight.w400,
           ),
-          bodySmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          bodySmall: TextStyle(
+            fontSize: 14,
+            height: 1.3,
+            fontWeight: FontWeight.w400,
+          ),
+          labelLarge: TextStyle(
+            fontSize: 16,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
+          ),
+          labelMedium: TextStyle(
+            fontSize: 14,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+          ),
+          labelSmall: TextStyle(
+            fontSize: 12,
+            height: 1.2,
+            fontWeight: FontWeight.w500,
+          ),
         ).apply(
           bodyColor: AppColors.onBackground,
           displayColor: AppColors.onBackground,
@@ -55,7 +115,11 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           elevation: 0,
           minimumSize: const Size(48, 50),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          textStyle: GoogleFonts.figtree(
+            fontSize: 16,
+            height: 1.1,
+            fontWeight: FontWeight.w700,
+          ),
           backgroundColor: AppColors.accent,
           foregroundColor: AppColors.onAccent,
           disabledBackgroundColor: const Color(0xFFD1D5DB),
@@ -68,7 +132,11 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 50),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          textStyle: GoogleFonts.figtree(
+            fontSize: 16,
+            height: 1.1,
+            fontWeight: FontWeight.w700,
+          ),
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
           shape: RoundedRectangleBorder(
@@ -79,10 +147,32 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 46),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.figtree(
+            fontSize: 14,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          textStyle: GoogleFonts.figtree(
+            fontSize: 16,
+            height: 1.1,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      appBarTheme: AppBarTheme(
+        titleTextStyle: GoogleFonts.figtree(
+          fontSize: 24,
+          height: 1.2,
+          fontWeight: FontWeight.w800,
+          fontStyle: FontStyle.italic,
+          color: AppColors.primary,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -116,6 +206,18 @@ class AppTheme {
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.background,
+        titleTextStyle: GoogleFonts.figtree(
+          fontSize: 24,
+          height: 1.2,
+          fontWeight: FontWeight.w800,
+          fontStyle: FontStyle.italic,
+          color: AppColors.primary,
+        ),
+        contentTextStyle: GoogleFonts.figtree(
+          fontSize: 18,
+          height: 1.3,
+          color: AppColors.primary,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(

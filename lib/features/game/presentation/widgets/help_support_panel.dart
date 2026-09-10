@@ -77,7 +77,7 @@ class _YasCustomerCare extends StatelessWidget {
                         GameCopy.customerCareTitle,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -198,7 +198,7 @@ class _CareChannel extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: const Color(0xFF3D69A6),
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
               letterSpacing: 1.5,
             ),
           ),
@@ -211,7 +211,7 @@ class _CareChannel extends StatelessWidget {
               maxLines: 1,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: AppColors.primary,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 fontSize: 18,
               ),
             ),
@@ -293,7 +293,7 @@ class _QuestionsAndAnswers extends StatelessWidget {
                         GameCopy.faqTitle,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
