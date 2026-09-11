@@ -24,7 +24,7 @@ void main() {
     expect(find.text('Cheza'), findsWidgets);
     expect(find.text('Je, unaweza? Simama sahihi!'), findsOneWidget);
     expect(find.textContaining('10.00'), findsNothing);
-    expect(find.text('Cheza raundi'), findsOneWidget);
+    expect(find.widgetWithText(ElevatedButton, 'Cheza'), findsOneWidget);
     expect(find.text('Namba ya simu'), findsNothing);
 
     await tester.tap(find.text('Msaada'));

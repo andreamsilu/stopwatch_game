@@ -230,7 +230,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                           textStyle: style.actionStyle,
                         ),
                         icon: const Icon(Icons.restart_alt),
-                        label: Text(AppLanguage.pick('ANZA UPYA', 'RESET')),
+                        label: Text(AppLanguage.pick('ANZISHA UPYA', 'RESET')),
                       ),
                     ),
                   ),

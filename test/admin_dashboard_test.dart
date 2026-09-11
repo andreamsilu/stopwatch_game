@@ -27,10 +27,28 @@ void main() {
     await _signInAsDummyAdmin(tester);
 
     expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('OVERVIEW'), findsOneWidget);
+    expect(find.text('OPERATIONS'), findsOneWidget);
+    expect(find.text('ADMINISTRATION'), findsOneWidget);
     expect(find.text('Session Trace'), findsNothing);
     expect(find.textContaining('Demo mode'), findsWidgets);
     expect(find.text('Active users'), findsOneWidget);
     expect(find.text('Recent activity'), findsOneWidget);
+
+    await tester.tap(find.text('Game settings'));
+    await tester.pump();
+    expect(find.text('Stopwatch configuration'), findsOneWidget);
+    expect(find.text('API integration pending'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Near-win tolerance (± ms)'),
+      '80',
+    );
+    await tester.tap(find.text('Dashboard'));
+    await tester.pump();
+    await tester.tap(find.text('Game settings'));
+    await tester.pump();
+    expect(find.text('80'), findsOneWidget);
+    expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('Play Evidence'));
     await tester.pump();
@@ -120,6 +138,31 @@ void main() {
     await tester.tap(find.text('Play Evidence'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Play-access evidence register'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(700, 500);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open admin navigation'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Security'),
+      150,
+      scrollable: find
+          .descendant(
+            of: find.byType(Drawer),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Security')),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Security'));
+    await tester.pumpAndSettle();
+    expect(find.text('Access and integrity events'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
