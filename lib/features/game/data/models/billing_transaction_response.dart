@@ -10,6 +10,7 @@ class BillingTransactionResponse {
     this.ackDescription,
     this.callbackStatusCode,
     this.callbackDescription,
+    this.portalMessage,
     this.ackReceivedTime,
     this.callbackReceivedTime,
     this.createdAt,
@@ -28,6 +29,7 @@ class BillingTransactionResponse {
       ackDescription: json['ackDescription'] as String?,
       callbackStatusCode: json['callbackStatusCode'] as String?,
       callbackDescription: json['callbackDescription'] as String?,
+      portalMessage: json['portalMessage'] as String?,
       ackReceivedTime: json['ackReceivedTime'] as String?,
       callbackReceivedTime: json['callbackReceivedTime'] as String?,
       createdAt: json['createdAt'] as String?,
@@ -45,6 +47,7 @@ class BillingTransactionResponse {
   final String? ackDescription;
   final String? callbackStatusCode;
   final String? callbackDescription;
+  final String? portalMessage;
   final String? ackReceivedTime;
   final String? callbackReceivedTime;
   final String? createdAt;
@@ -58,9 +61,10 @@ class BillingTransactionResponse {
 
   bool get isBillingTerminal => isBillingSuccess || isBillingFailed;
 
-  /// Best available user-facing text from the billing API.
+  /// Prefer the portal copy intended for players over provider diagnostics.
   String? get userMessage {
     for (final value in [
+      portalMessage,
       callbackDescription,
       ackDescription,
       status,
