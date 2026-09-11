@@ -175,8 +175,7 @@ class GameCopy {
   static String get learnTipsLink => _t('Jifunze Mbinu →', 'Learn Tips →');
 
   static String get howToPlayStep1Prefix => _t('Gusa ', 'Tap ');
-  static String get howToPlayStep1Highlight =>
-      _t('Cheza', 'Pay for round');
+  static String get howToPlayStep1Highlight => _t('Cheza', 'Pay for round');
   static String get howToPlayStep1Suffix =>
       _t(' kisha uthibitishe kwenye simu yako', ' and confirm on your phone');
   static String get howToPlayStep2Prefix => _t('Gusa ', 'Tap ');

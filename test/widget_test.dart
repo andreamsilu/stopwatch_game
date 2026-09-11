@@ -22,7 +22,7 @@ void main() {
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.locale, const Locale('sw'));
     expect(find.text('Cheza'), findsWidgets);
-    expect(find.text('GANDISHAUSHINDE'), findsOneWidget);
+    expect(find.text('GandishaUshinde'), findsOneWidget);
     expect(find.textContaining('10.00'), findsNothing);
     expect(find.widgetWithText(ElevatedButton, 'Cheza'), findsOneWidget);
     expect(find.text('Namba ya simu'), findsNothing);

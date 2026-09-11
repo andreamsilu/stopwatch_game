@@ -95,9 +95,9 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
               Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(text: AppLanguage.pick('GANDISHA', 'Can you? ')),
+                    TextSpan(text: AppLanguage.pick('Gandisha', 'Can you? ')),
                     TextSpan(
-                      text: AppLanguage.pick('USHINDE', 'Stop precisely!'),
+                      text: AppLanguage.pick('Ushinde', 'Stop precisely!'),
                       style: TextStyle(color: AppColors.accent),
                     ),
                   ],
@@ -222,7 +222,7 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                           textStyle: style.actionStyle,
                         ),
                         icon: const Icon(Icons.restart_alt),
-                        label: Text(AppLanguage.pick('ANZISHA UPYA', 'RESET')),
+                        label: Text(AppLanguage.pick('Anzisha Upya', 'RESET')),
                       ),
                     ),
                   ),
