@@ -1,3 +1,4 @@
+import 'package:stopwatch_game/features/game/presentation/widgets/game_message_dialog.dart';
 import 'package:stopwatch_game/core/theme/showcase_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -38,26 +39,8 @@ void _showGameInfo(BuildContext context, GameState state, String message) {
 void _showGameResponse(BuildContext context, String message) {
   showDialog<void>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      contentPadding: const EdgeInsets.fromLTRB(24, 16, 12, 16),
-      content: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 12, right: 44, bottom: 12),
-            child: Text(message),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              tooltip: GameCopy.close,
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              icon: const Icon(Icons.close),
-            ),
-          ),
-        ],
-      ),
-    ),
+    barrierColor: AppColors.primary.withValues(alpha: 0.58),
+    builder: (_) => GameMessageDialog(message: message),
   );
 }
 
