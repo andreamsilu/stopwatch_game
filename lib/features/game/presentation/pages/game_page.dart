@@ -409,10 +409,6 @@ class GamePage extends ConsumerWidget {
                     !isMobile &&
                     constraints.maxHeight >= 720 &&
                     gameState.selectedTab == GameTab.play;
-                final desktopPlayHeight =
-                    (constraints.maxHeight - (verticalPadding * 2) - 70 - 6)
-                        .clamp(360.0, double.infinity)
-                        .toDouble();
 
                 return Align(
                   alignment: Alignment.topCenter,
@@ -441,195 +437,214 @@ class GamePage extends ConsumerWidget {
                             ),
                           if (!useDrawerNav) const SizedBox(height: 6),
                           Expanded(
-                            child: RefreshIndicator(
-                              onRefresh: () async {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (dialogContext) => AlertDialog(
-                                    title: Text(GameCopy.refreshConfirmTitle),
-                                    content: Text(GameCopy.refreshConfirmBody),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.of(
-                                          dialogContext,
-                                        ).pop(false),
-                                        child: Text(
-                                          GameCopy.refreshConfirmCancel,
-                                        ),
+                            child: LayoutBuilder(
+                              builder: (context, contentConstraints) => RefreshIndicator(
+                                onRefresh: () async {
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (dialogContext) => AlertDialog(
+                                      title: Text(GameCopy.refreshConfirmTitle),
+                                      content: Text(
+                                        GameCopy.refreshConfirmBody,
                                       ),
-                                      FilledButton(
-                                        onPressed: () => Navigator.of(
-                                          dialogContext,
-                                        ).pop(true),
-                                        child: Text(
-                                          GameCopy.refreshConfirmAction,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed != true || !context.mounted) {
-                                  return;
-                                }
-                                final before = ref.read(gameControllerProvider);
-                                _showGameInfo(
-                                  context,
-                                  before,
-                                  GameCopy.refreshingRound,
-                                );
-                                await controller.onPullToRefresh();
-                                if (!context.mounted) return;
-                                _showGameSuccess(
-                                  context,
-                                  ref.read(gameControllerProvider),
-                                  GameCopy.roundRefreshed,
-                                );
-                              },
-                              child: SingleChildScrollView(
-                                physics: isDesktopPlay
-                                    ? const NeverScrollableScrollPhysics()
-                                    : const AlwaysScrollableScrollPhysics(),
-                                child: Align(
-                                  alignment: Alignment.topCenter,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          gameState.selectedTab == GameTab.play
-                                          ? ShowcaseStyle(context).contentWidth
-                                          : double.infinity,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        AnimatedSwitcher(
-                                          duration: const Duration(
-                                            milliseconds: 220,
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(false),
+                                          child: Text(
+                                            GameCopy.refreshConfirmCancel,
                                           ),
-                                          switchInCurve: Curves.easeOutCubic,
-                                          switchOutCurve: Curves.easeInCubic,
-                                          transitionBuilder:
-                                              (child, animation) {
-                                                return FadeTransition(
-                                                  opacity: animation,
-                                                  child: SlideTransition(
-                                                    position: Tween<Offset>(
-                                                      begin: const Offset(
-                                                        0,
-                                                        0.02,
-                                                      ),
-                                                      end: Offset.zero,
-                                                    ).animate(animation),
-                                                    child: child,
-                                                  ),
-                                                );
-                                              },
-                                          child: SizedBox(
-                                            height: isDesktopPlay
-                                                ? desktopPlayHeight
-                                                : null,
-                                            child: _GamePanelShell(
-                                              child: _GameBody(
-                                                key: ValueKey<GameTab>(
-                                                  gameState.selectedTab,
-                                                ),
-                                                state: gameState,
-                                                onOpenPlay: () => controller
-                                                    .selectTab(GameTab.play),
-                                                onPlayAgain: () async {
-                                                  controller
-                                                      .dismissResultDialog();
-                                                  _showGameInfo(
-                                                    context,
-                                                    ref.read(
-                                                      gameControllerProvider,
+                                        ),
+                                        FilledButton(
+                                          onPressed: () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(true),
+                                          child: Text(
+                                            GameCopy.refreshConfirmAction,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirmed != true || !context.mounted) {
+                                    return;
+                                  }
+                                  final before = ref.read(
+                                    gameControllerProvider,
+                                  );
+                                  _showGameInfo(
+                                    context,
+                                    before,
+                                    GameCopy.refreshingRound,
+                                  );
+                                  await controller.onPullToRefresh();
+                                  if (!context.mounted) return;
+                                  _showGameSuccess(
+                                    context,
+                                    ref.read(gameControllerProvider),
+                                    GameCopy.roundRefreshed,
+                                  );
+                                },
+                                child: SingleChildScrollView(
+                                  physics: isDesktopPlay
+                                      ? const NeverScrollableScrollPhysics()
+                                      : const AlwaysScrollableScrollPhysics(),
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth:
+                                            gameState.selectedTab ==
+                                                GameTab.play
+                                            ? ShowcaseStyle(
+                                                context,
+                                              ).contentWidth
+                                            : double.infinity,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          AnimatedSwitcher(
+                                            duration: const Duration(
+                                              milliseconds: 220,
+                                            ),
+                                            switchInCurve: Curves.easeOutCubic,
+                                            switchOutCurve: Curves.easeInCubic,
+                                            transitionBuilder:
+                                                (child, animation) {
+                                                  return FadeTransition(
+                                                    opacity: animation,
+                                                    child: SlideTransition(
+                                                      position: Tween<Offset>(
+                                                        begin: const Offset(
+                                                          0,
+                                                          0.02,
+                                                        ),
+                                                        end: Offset.zero,
+                                                      ).animate(animation),
+                                                      child: child,
                                                     ),
-                                                    GameCopy.startingNewRound,
-                                                  );
-                                                  await controller
-                                                      .prepareNewPaidRound();
-                                                },
-                                                onViewHistory: () {
-                                                  controller
-                                                      .dismissResultDialog();
-                                                  controller.cancelRound();
-                                                  controller.selectTab(
-                                                    GameTab.history,
                                                   );
                                                 },
-                                                onResetRound: () {
-                                                  controller.onResetPressed();
-                                                },
-                                                onToggleSound: controller
-                                                    .toggleSoundEnabled,
-                                                onStartControlPointerDown:
-                                                    controller
-                                                        .onStartControlPointerDown,
-                                                onStartControlPointerMove:
-                                                    controller
-                                                        .onStartControlPointerMove,
-                                                onStartControlPointerUp:
-                                                    controller
-                                                        .onStartControlPointerUp,
-                                                onPlayRound: () async {
-                                                  AppSnackBar.dismiss();
-                                                  if (!isAuthenticated) {
-                                                    if (!await authenticate()) {
-                                                      return;
-                                                    }
-                                                    await ref
-                                                        .read(
-                                                          gameControllerProvider
-                                                              .notifier,
-                                                        )
-                                                        .onPlayRoundPressed();
-                                                    return;
-                                                  }
-                                                  if (gameState.latestResult !=
-                                                      null) {
+                                            child: SizedBox(
+                                              height: isDesktopPlay
+                                                  ? contentConstraints.maxHeight
+                                                  : null,
+                                              child: _GamePanelShell(
+                                                child: _GameBody(
+                                                  key: ValueKey<GameTab>(
+                                                    gameState.selectedTab,
+                                                  ),
+                                                  state: gameState,
+                                                  onOpenPlay: () => controller
+                                                      .selectTab(GameTab.play),
+                                                  onPlayAgain: () async {
                                                     controller
                                                         .dismissResultDialog();
-                                                  }
-                                                  await controller
-                                                      .onPlayRoundPressed();
-                                                },
-                                                onStartOrStopRound: () async {
-                                                  if (gameState
-                                                      .isStopwatchControlDisabled) {
-                                                    return;
-                                                  }
-                                                  if (gameState.isRunning) {
+                                                    _showGameInfo(
+                                                      context,
+                                                      ref.read(
+                                                        gameControllerProvider,
+                                                      ),
+                                                      GameCopy.startingNewRound,
+                                                    );
                                                     await controller
-                                                        .onStopPressed();
-                                                  } else {
+                                                        .prepareNewPaidRound();
+                                                  },
+                                                  onViewHistory: () {
+                                                    controller
+                                                        .dismissResultDialog();
+                                                    controller.cancelRound();
+                                                    controller.selectTab(
+                                                      GameTab.history,
+                                                    );
+                                                  },
+                                                  onResetRound: () {
+                                                    controller.onResetPressed();
+                                                  },
+                                                  onToggleSound: controller
+                                                      .toggleSoundEnabled,
+                                                  onStartControlPointerDown:
+                                                      controller
+                                                          .onStartControlPointerDown,
+                                                  onStartControlPointerMove:
+                                                      controller
+                                                          .onStartControlPointerMove,
+                                                  onStartControlPointerUp:
+                                                      controller
+                                                          .onStartControlPointerUp,
+                                                  onPlayRound: () async {
                                                     AppSnackBar.dismiss();
+                                                    if (!isAuthenticated) {
+                                                      if (!await authenticate()) {
+                                                        return;
+                                                      }
+                                                      await ref
+                                                          .read(
+                                                            gameControllerProvider
+                                                                .notifier,
+                                                          )
+                                                          .onPlayRoundPressed();
+                                                      return;
+                                                    }
+                                                    if (gameState
+                                                            .latestResult !=
+                                                        null) {
+                                                      controller
+                                                          .dismissResultDialog();
+                                                    }
                                                     await controller
-                                                        .onStartPressed();
-                                                  }
-                                                },
-                                                hasBillingForRound: gameState
-                                                    .hasBillingForRound,
+                                                        .onPlayRoundPressed();
+                                                  },
+                                                  onStartOrStopRound: () async {
+                                                    if (gameState
+                                                        .isStopwatchControlDisabled) {
+                                                      return;
+                                                    }
+                                                    if (gameState.isRunning) {
+                                                      await controller
+                                                          .onStopPressed();
+                                                    } else {
+                                                      AppSnackBar.dismiss();
+                                                      await controller
+                                                          .onStartPressed();
+                                                    }
+                                                  },
+                                                  hasBillingForRound: gameState
+                                                      .hasBillingForRound,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        if (!isDesktopPlay) ...[
-                                          const SizedBox(height: 12),
-                                          AppFooter(
-                                            onTerms: () => controller.selectTab(
-                                              GameTab.support,
-                                            ),
-                                            onPrivacy: () => controller
-                                                .selectTab(GameTab.support),
-                                            onContactSupport: () => controller
-                                                .selectTab(GameTab.support),
-                                          ),
-                                          SizedBox(height: isMobile ? 8 : 12),
                                         ],
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isMobile ? 24 : 32),
+                          Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: ShowcaseStyle(context).contentWidth,
+                              ),
+                              child: AppFooter(
+                                onTerms: gameState.isRunning
+                                    ? null
+                                    : () =>
+                                          controller.selectTab(GameTab.support),
+                                onPrivacy: gameState.isRunning
+                                    ? null
+                                    : () =>
+                                          controller.selectTab(GameTab.support),
+                                onContactSupport: gameState.isRunning
+                                    ? null
+                                    : () =>
+                                          controller.selectTab(GameTab.support),
                               ),
                             ),
                           ),

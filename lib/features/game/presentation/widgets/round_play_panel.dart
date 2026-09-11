@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:stopwatch_game/core/theme/showcase_style.dart';
-import 'package:stopwatch_game/core/widgets/app_logo.dart';
 
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
@@ -93,19 +92,12 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
           child: Column(
             children: [
               SizedBox(height: style.gap),
-              AppLogo(size: (style.size.height * .06).clamp(36.0, 48.0)),
-              SizedBox(height: style.gap),
               Text.rich(
                 TextSpan(
                   children: [
+                    TextSpan(text: AppLanguage.pick('GANDISHA', 'Can you? ')),
                     TextSpan(
-                      text: AppLanguage.pick('Je, unaweza? ', 'Can you? '),
-                    ),
-                    TextSpan(
-                      text: AppLanguage.pick(
-                        'Simama sahihi!',
-                        'Stop precisely!',
-                      ),
+                      text: AppLanguage.pick('USHINDE', 'Stop precisely!'),
                       style: TextStyle(color: AppColors.accent),
                     ),
                   ],
