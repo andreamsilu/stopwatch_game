@@ -98,7 +98,7 @@ class GameCopy {
   static String get homeWinLine =>
       _t('Aliyekaribia zaidi hushinda raundi.', 'Closest stop wins the round.');
   static String get play => _t('Cheza', 'Play');
-  static String get payForRound => _t('Cheza', 'Pay for round');
+  static String get payForRound => _t('Cheza', 'Play');
   static String get goToPlayRound => _t('Nenda kucheza', 'Go to play');
 
   static String get startRound => _t('Anza raundi', 'Start round');
@@ -175,7 +175,7 @@ class GameCopy {
   static String get learnTipsLink => _t('Jifunze Mbinu →', 'Learn Tips →');
 
   static String get howToPlayStep1Prefix => _t('Gusa ', 'Tap ');
-  static String get howToPlayStep1Highlight => _t('Cheza', 'Pay for round');
+  static String get howToPlayStep1Highlight => _t('Cheza', 'Play');
   static String get howToPlayStep1Suffix =>
       _t(' kisha uthibitishe kwenye simu yako', ' and confirm on your phone');
   static String get howToPlayStep2Prefix => _t('Gusa ', 'Tap ');
@@ -310,7 +310,7 @@ class GameCopy {
   );
   static String get cancelWaiting => _t('GHAIRI KUSUBIRI', 'CANCEL WAITING');
   static String get tryAgainUpper => _t('JARIBU TENA', 'TRY AGAIN');
-  static String get payForRoundUpper => _t('Cheza', 'PAY FOR ROUND');
+  static String get payForRoundUpper => _t('Cheza', 'Play');
   static String get stopUpper => _t('SIMAMISHA', 'STOP');
   static String get startRoundUpper => _t('ANZA RAUNDI', 'START ROUND');
   static String get yourTimeUpper => _t('MUDA WAKO', 'YOUR TIME');
