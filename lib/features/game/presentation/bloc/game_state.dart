@@ -13,6 +13,7 @@ class RoundResultData {
     required this.prizeLabel,
     required this.prizeCoins,
     required this.isPrizeAwarded,
+    this.winningMessage,
   });
 
   final String outcomeLabel;
@@ -23,6 +24,7 @@ class RoundResultData {
   final String prizeLabel;
   final int prizeCoins;
   final bool isPrizeAwarded;
+  final String? winningMessage;
 }
 
 class GameState {

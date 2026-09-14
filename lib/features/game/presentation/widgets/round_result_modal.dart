@@ -21,7 +21,7 @@ class RoundResultModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final yourTime = _formatTime(result.finalTimeLabel);
     final target = _formatTime(result.targetTimeLabel);
-    final difference = _formatDifference(result.differenceMs);
+    final winningMessage = result.winningMessage?.trim();
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -64,27 +64,18 @@ class RoundResultModal extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 28,
-                runSpacing: 12,
-                children: [
-                  _ResultMetric(label: GameCopy.targetUpper, value: target),
-                  _ResultMetric(
-                    label: GameCopy.differenceUpper,
-                    value: difference,
+              _ResultMetric(label: GameCopy.targetUpper, value: target),
+              if (winningMessage != null && winningMessage.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text(
+                  winningMessage,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                _feedback(result.differenceMs),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
                 ),
-              ),
+              ],
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -121,16 +112,6 @@ class RoundResultModal extends StatelessWidget {
   static String _formatTime(String value) {
     final seconds = double.tryParse(value.split(':').last);
     return seconds?.toStringAsFixed(3) ?? value;
-  }
-
-  static String _formatDifference(int milliseconds) {
-    final seconds = milliseconds / 1000;
-    final sign = seconds >= 0 ? '+' : '';
-    return GameCopy.differenceSeconds(seconds, sign);
-  }
-
-  static String _feedback(int milliseconds) {
-    return GameCopy.feedback(milliseconds);
   }
 }
 
