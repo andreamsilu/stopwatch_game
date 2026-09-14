@@ -5,7 +5,7 @@ class GameSessionResult {
     required this.winner,
     required this.prizeAmount,
     this.message,
-    this.winningMessage,
+    this.portalMessage,
     this.deltaLabel,
     this.prizeLabel,
     this.createdAt,
@@ -18,7 +18,7 @@ class GameSessionResult {
       winner: json['winner'] as bool,
       prizeAmount: (json['prizeAmount'] as num).toInt(),
       message: json['message'] as String?,
-      winningMessage: json['winningMessage'] as String?,
+      portalMessage: json['portalMessage'] as String?,
       deltaLabel: json['deltaLabel'] as String?,
       prizeLabel: json['prizeLabel'] as String?,
       createdAt: json['createdAt'] as String?,
@@ -30,7 +30,7 @@ class GameSessionResult {
   final bool winner;
   final int prizeAmount;
   final String? message;
-  final String? winningMessage;
+  final String? portalMessage;
   final String? deltaLabel;
   final String? prizeLabel;
   final String? createdAt;

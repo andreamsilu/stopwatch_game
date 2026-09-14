@@ -22,7 +22,7 @@ class GameSessionMapper {
       prizeLabel: '',
       prizeCoins: result.prizeAmount,
       isPrizeAwarded: isWin && result.prizeAmount > 0,
-      winningMessage: result.winningMessage,
+      portalMessage: result.portalMessage,
     );
   }
 

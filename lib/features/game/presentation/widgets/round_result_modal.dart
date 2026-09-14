@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
-import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 
 class RoundResultModal extends StatelessWidget {
@@ -21,7 +20,7 @@ class RoundResultModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final yourTime = _formatTime(result.finalTimeLabel);
     final target = _formatTime(result.targetTimeLabel);
-    final winningMessage = result.winningMessage?.trim();
+    final portalMessage = result.portalMessage?.trim();
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -40,39 +39,54 @@ class RoundResultModal extends StatelessWidget {
                     Navigator.of(context).pop();
                     onClose();
                   },
-                  tooltip: GameCopy.closeResultDialog,
                   icon: const Icon(Icons.close_rounded),
                 ),
               ),
-              Text(
-                GameCopy.yourTimeUpper,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.4,
-                ),
+              const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cards = [
+                    _TimeCard(icon: Icons.flag_outlined, value: target),
+                    _TimeCard(icon: Icons.timer_outlined, value: yourTime),
+                  ];
+                  if (constraints.maxWidth < 320 ||
+                      MediaQuery.textScalerOf(context).scale(36) > 48) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        cards[0],
+                        const SizedBox(height: 12),
+                        cards[1],
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: cards[0]),
+                      const SizedBox(width: 12),
+                      Expanded(child: cards[1]),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 6),
-              Text(
-                yourTime,
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontSize: 58,
-                  fontWeight: FontWeight.w800,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(height: 18),
-              _ResultMetric(label: GameCopy.targetUpper, value: target),
-              if (winningMessage != null && winningMessage.isNotEmpty) ...[
+              if (portalMessage != null && portalMessage.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                Text(
-                  winningMessage,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    portalMessage,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.primary,
+                      fontSize: 22,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -80,7 +94,7 @@ class RoundResultModal extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: () async {
                     Navigator.of(context).pop();
                     await onPlayAgain();
@@ -89,18 +103,16 @@ class RoundResultModal extends StatelessWidget {
                     backgroundColor: AppColors.accent,
                     foregroundColor: AppColors.onAccent,
                   ),
-                  icon: const Icon(Icons.replay_rounded),
-                  label: Text(GameCopy.playAgain),
+                  child: const Icon(Icons.replay_rounded),
                 ),
               ),
               const SizedBox(height: 8),
-              Text(GameCopy.paidRoundHint),
-              TextButton(
+              IconButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   onViewHistory();
                 },
-                child: Text(GameCopy.viewHistory),
+                icon: const Icon(Icons.history_rounded),
               ),
             ],
           ),
@@ -115,34 +127,39 @@ class RoundResultModal extends StatelessWidget {
   }
 }
 
-class _ResultMetric extends StatelessWidget {
-  const _ResultMetric({required this.label, required this.value});
+class _TimeCard extends StatelessWidget {
+  const _TimeCard({required this.icon, required this.value});
 
-  final String label;
+  final IconData icon;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFDCE5F0)),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 30),
+          const SizedBox(height: 12),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                color: AppColors.primary,
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
