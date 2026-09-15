@@ -68,7 +68,7 @@ POST /api/v1/users
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes (JSON bodies) | `application/json` |
-| `Authorization` | Yes (game + billing) | `Bearer <access_token>` from `POST /api/v1/auth/verify-otp` |
+| `Authorization` | Yes (game + billing) | `Bearer <access_token>` from `POST /api/v1/auth/login` |
 | `X-TIMESTAMP` | When HMAC enabled | ISO-8601 UTC, e.g. `2026-05-19T14:00:00.000Z` |
 | `X-NONCE` | When HMAC enabled | Unique per request (UUID) |
 | `X-SIGNATURE` | When HMAC enabled | Lowercase hex HMAC-SHA256 of signing payload |
@@ -93,26 +93,15 @@ POST /api/v1/users
 
 ---
 
-## Auth (OTP + JWT)
+## Auth (direct login + JWT)
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `POST` | `/api/v1/auth/login` | Log in — body `{ "msisdn" }` |
-| `POST` | `/api/v1/auth/verify-otp` | Verify OTP — body `{ "msisdn", "otp" }` → JWT + `user` |
-| `POST` | `/api/v1/auth/logout` | Revoke JWT — `204 No Content` |
+The client signs in with `POST /api/v1/auth/login` and body `{ "msisdn" }`.
+The server should return `accessToken`, `tokenType`, `expiresInSeconds`, and `user`.
+The client stores the session and continues to the game. It does not call an OTP
+verification endpoint or display OTP entry/resend controls. If login returns
+`OTP_REQUIRED`, login stops with an error; the backend must support direct login.
 
-**Verify OTP response:** `accessToken`, `tokenType`, `expiresInSeconds`, `user` (same shape as `POST /users`).
-
-**Login response**
-
-- `status: "OTP_REQUIRED"` — show OTP step; fields include `msisdn`, `expiresInSeconds`, `message` (e.g. `"OTP sent"`).
-- Any other `status` — client shows `message` / body text; if the body includes `accessToken` + `user`, treat as signed in without OTP.
-
-**Client flow:** `auth/login` → (if `OTP_REQUIRED`) `auth/verify-otp` → store Bearer token → game.
-
-Stub/dev: `auth/login` may include `otp` in the JSON response for testing.
-
----
+`POST /api/v1/auth/logout` revokes the session.
 
 ## Users
 
@@ -208,7 +197,7 @@ curl -X 'POST' \
 |-----------|-----------|
 | Login phone input | `msisdn` |
 
-Server sets `channelSource=APP` and `status=active` for new users. **Sign-in never calls `POST /users`.** Store JWT and `user.id` after `auth/verify-otp`.
+Server sets `channelSource=APP` and `status=active` for new users. **Sign-in never calls `POST /users`.** Store JWT and `user.id` after `auth/login`.
 
 ---
 
@@ -878,7 +867,7 @@ METHOD + requestURI + body + timestamp + nonce
 - `body` — exact bytes sent; empty string for GET
 - `X-SIGNATURE` — `HMAC-SHA256(payload, secret)` as lowercase hex
 
-**Excluded from HMAC** (even when enabled): `/api/v1/auth/login`, `/api/v1/auth/verify-otp`, billing/disbursement callbacks, `/actuator/**`, Swagger/OpenAPI.
+**Excluded from HMAC** (even when enabled): `/api/v1/auth/login`, billing/disbursement callbacks, `/actuator/**`, Swagger/OpenAPI.
 
 **Troubleshooting:** `401 Missing HMAC headers` → enable signing in `.env`; `Invalid request signature` → wrong secret or body/path mismatch; `Timestamp outside allowed window` → sync device clock.
 

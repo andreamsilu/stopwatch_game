@@ -28,9 +28,8 @@ void main() {
     );
   });
 
-  test('isExcluded skips auth login and verify-otp', () {
+  test('isExcluded skips auth login', () {
     expect(StopwatchHmac.isExcluded('/api/v1/auth/login'), isTrue);
-    expect(StopwatchHmac.isExcluded('/api/v1/auth/verify-otp'), isTrue);
     expect(StopwatchHmac.isExcluded('/api/v1/billing/transactions'), isFalse);
   });
 

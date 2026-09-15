@@ -2,71 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/constants/game_constants.dart';
-import 'package:stopwatch_game/features/auth/presentation/bloc/login_state.dart';
-import 'package:stopwatch_game/features/auth/presentation/widgets/otp_input_boxes.dart';
 import 'package:stopwatch_game/features/auth/presentation/widgets/tanzania_phone_prefix.dart';
 
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({
-    required this.step,
     required this.phoneValue,
-    required this.otpCode,
     required this.isSubmitting,
-    required this.isResendingOtp,
     required this.canSubmitPhone,
-    required this.canVerifyOtp,
     required this.infoMessage,
     required this.onPhoneChanged,
-    required this.onOtpChanged,
     required this.onSubmitPhone,
-    required this.onVerifyOtp,
-    required this.onResendOtp,
-    required this.onBackToPhone,
     super.key,
   });
 
-  final LoginStep step;
   final String phoneValue;
-  final String otpCode;
   final bool isSubmitting;
-  final bool isResendingOtp;
   final bool canSubmitPhone;
-  final bool canVerifyOtp;
   final String? infoMessage;
   final ValueChanged<String> onPhoneChanged;
-  final ValueChanged<String> onOtpChanged;
   final Future<void> Function() onSubmitPhone;
-  final Future<void> Function() onVerifyOtp;
-  final Future<void> Function() onResendOtp;
-  final VoidCallback onBackToPhone;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      child: step == LoginStep.phone
-          ? _PhoneStep(
-              key: const ValueKey('phone'),
-              phoneValue: phoneValue,
-              isSubmitting: isSubmitting,
-              canSubmitPhone: canSubmitPhone,
-              infoMessage: infoMessage,
-              onPhoneChanged: onPhoneChanged,
-              onSubmitPhone: onSubmitPhone,
-            )
-          : _OtpStep(
-              key: const ValueKey('otp'),
-              otpCode: otpCode,
-              isSubmitting: isSubmitting,
-              isResendingOtp: isResendingOtp,
-              canVerifyOtp: canVerifyOtp,
-              onOtpChanged: onOtpChanged,
-              onVerifyOtp: onVerifyOtp,
-              onResendOtp: onResendOtp,
-              onBackToPhone: onBackToPhone,
-            ),
+    return _PhoneStep(
+      phoneValue: phoneValue,
+      isSubmitting: isSubmitting,
+      canSubmitPhone: canSubmitPhone,
+      infoMessage: infoMessage,
+      onPhoneChanged: onPhoneChanged,
+      onSubmitPhone: onSubmitPhone,
     );
   }
 }
@@ -75,7 +39,6 @@ class _LoginCardSpacing {
   static const padding = EdgeInsets.fromLTRB(26, 28, 26, 26);
   static const section = 24.0;
   static const block = 16.0;
-  static const tight = 12.0;
 }
 
 class _CardShell extends StatelessWidget {
@@ -162,7 +125,6 @@ class _PhoneStep extends StatelessWidget {
     required this.infoMessage,
     required this.onPhoneChanged,
     required this.onSubmitPhone,
-    super.key,
   });
 
   final String phoneValue;
@@ -218,93 +180,6 @@ class _PhoneStep extends StatelessWidget {
             enabled: canSubmitPhone,
             loading: isSubmitting,
             onPressed: () => onSubmitPhone(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OtpStep extends StatelessWidget {
-  const _OtpStep({
-    required this.otpCode,
-    required this.isSubmitting,
-    required this.isResendingOtp,
-    required this.canVerifyOtp,
-    required this.onOtpChanged,
-    required this.onVerifyOtp,
-    required this.onResendOtp,
-    required this.onBackToPhone,
-    super.key,
-  });
-
-  final String otpCode;
-  final bool isSubmitting;
-  final bool isResendingOtp;
-  final bool canVerifyOtp;
-  final ValueChanged<String> onOtpChanged;
-  final Future<void> Function() onVerifyOtp;
-  final Future<void> Function() onResendOtp;
-  final VoidCallback onBackToPhone;
-
-  @override
-  Widget build(BuildContext context) {
-    return _CardShell(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: isSubmitting ? null : onBackToPhone,
-              icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: Text(AuthCopy.changeNumber),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          ),
-          const SizedBox(height: _LoginCardSpacing.tight),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: OtpInputBoxes(
-              value: otpCode,
-              enabled: !isSubmitting,
-              onChanged: onOtpChanged,
-              onCompleted: canVerifyOtp ? () => onVerifyOtp() : null,
-            ),
-          ),
-          const SizedBox(height: _LoginCardSpacing.section + 4),
-          _PrimaryButton(
-            label: AuthCopy.verifyButton,
-            enabled: canVerifyOtp,
-            loading: isSubmitting,
-            onPressed: () => onVerifyOtp(),
-          ),
-          const SizedBox(height: _LoginCardSpacing.tight),
-          Center(
-            child: TextButton(
-              onPressed: isSubmitting || isResendingOtp
-                  ? null
-                  : () => onResendOtp(),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-              ),
-              child: isResendingOtp
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(AuthCopy.resendCode),
-            ),
           ),
         ],
       ),

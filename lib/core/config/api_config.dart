@@ -12,8 +12,6 @@ class ApiConfig {
 
   static String get authLogin => '$baseUrl$apiPrefix/auth/login';
 
-  static String get authVerifyOtp => '$baseUrl$apiPrefix/auth/verify-otp';
-
   static String get authLogout => '$baseUrl$apiPrefix/auth/logout';
   static String get subscriptionStatus =>
       '$baseUrl$apiPrefix/app/subscription-status';

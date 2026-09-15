@@ -77,7 +77,6 @@ class HomePage extends ConsumerWidget {
         builder: (context, ref, _) {
           final loginState = ref.watch(loginProvider);
           final loginNotifier = ref.read(loginProvider.notifier);
-          final isOtpStep = loginState.step == LoginStep.otp;
 
           return BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
@@ -113,9 +112,7 @@ class HomePage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        isOtpStep
-                            ? AuthCopy.verifyTitle
-                            : 'Uko tayari kucheza?',
+                        'Uko tayari kucheza?',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
@@ -125,9 +122,7 @@ class HomePage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        isOtpStep
-                            ? AuthCopy.verifySubtitle(loginState.maskedPhone)
-                            : 'Weka namba yako ya simu ili uendelee.',
+                        'Weka namba yako ya simu ili uendelee.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF52657A),
@@ -136,32 +131,14 @@ class HomePage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 18),
                       LoginFormCard(
-                        step: loginState.step,
                         phoneValue: loginState.phoneNumber,
-                        otpCode: loginState.otpCode,
                         isSubmitting: loginState.isSubmitting,
-                        isResendingOtp: loginState.isResendingOtp,
                         canSubmitPhone: loginState.canSubmitPhone,
-                        canVerifyOtp: loginState.canVerifyOtp,
                         infoMessage: loginState.infoMessage,
                         onPhoneChanged: loginNotifier.updatePhoneNumber,
-                        onOtpChanged: loginNotifier.updateOtpCode,
                         onSubmitPhone: () async {
                           final authenticated = await loginNotifier
                               .submitPhone();
-                          if (authenticated && dialogContext.mounted) {
-                            await finishAuth(dialogContext);
-                          }
-                        },
-                        onResendOtp: () async {
-                          final authenticated = await loginNotifier.resendOtp();
-                          if (authenticated && dialogContext.mounted) {
-                            await finishAuth(dialogContext);
-                          }
-                        },
-                        onBackToPhone: loginNotifier.backToPhone,
-                        onVerifyOtp: () async {
-                          final authenticated = await loginNotifier.verifyOtp();
                           if (authenticated && dialogContext.mounted) {
                             await finishAuth(dialogContext);
                           }
@@ -190,13 +167,6 @@ class HomePage extends ConsumerWidget {
           next.errorMessage!.isNotEmpty &&
           next.errorMessage != previous?.errorMessage) {
         AppSnackBar.showError(context, next.errorMessage!);
-      }
-
-      if (next.infoMessage != null &&
-          next.infoMessage!.isNotEmpty &&
-          next.infoMessage != previous?.infoMessage &&
-          next.step == LoginStep.otp) {
-        AppSnackBar.showInfo(context, next.infoMessage!);
       }
     });
 

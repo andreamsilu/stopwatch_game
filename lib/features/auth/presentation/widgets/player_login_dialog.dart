@@ -34,7 +34,6 @@ Future<bool> showPlayerLoginDialog(
       builder: (context, ref, _) {
         final loginState = ref.watch(loginProvider);
         final loginNotifier = ref.read(loginProvider.notifier);
-        final isOtpStep = loginState.step == LoginStep.otp;
 
         ref.listen<LoginState>(loginProvider, (previous, next) {
           if (!dialogContext.mounted) return;
@@ -42,12 +41,6 @@ Future<bool> showPlayerLoginDialog(
               next.errorMessage!.isNotEmpty &&
               next.errorMessage != previous?.errorMessage) {
             AppSnackBar.showError(dialogContext, next.errorMessage!);
-          }
-          if (next.infoMessage != null &&
-              next.infoMessage!.isNotEmpty &&
-              next.infoMessage != previous?.infoMessage &&
-              next.step == LoginStep.otp) {
-            AppSnackBar.showInfo(dialogContext, next.infoMessage!);
           }
         });
 
@@ -85,7 +78,7 @@ Future<bool> showPlayerLoginDialog(
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      isOtpStep ? AuthCopy.verifyTitle : AuthCopy.readyToPlay,
+                      AuthCopy.readyToPlay,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
@@ -95,9 +88,7 @@ Future<bool> showPlayerLoginDialog(
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      isOtpStep
-                          ? AuthCopy.verifySubtitle(loginState.maskedPhone)
-                          : AuthCopy.enterMobileNumber,
+                      AuthCopy.enterMobileNumber,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: const Color(0xFF52657A),
@@ -106,31 +97,13 @@ Future<bool> showPlayerLoginDialog(
                     ),
                     const SizedBox(height: 18),
                     LoginFormCard(
-                      step: loginState.step,
                       phoneValue: loginState.phoneNumber,
-                      otpCode: loginState.otpCode,
                       isSubmitting: loginState.isSubmitting,
-                      isResendingOtp: loginState.isResendingOtp,
                       canSubmitPhone: loginState.canSubmitPhone,
-                      canVerifyOtp: loginState.canVerifyOtp,
                       infoMessage: loginState.infoMessage,
                       onPhoneChanged: loginNotifier.updatePhoneNumber,
-                      onOtpChanged: loginNotifier.updateOtpCode,
                       onSubmitPhone: () async {
                         if (await loginNotifier.submitPhone() &&
-                            dialogContext.mounted) {
-                          await finishAuth(dialogContext);
-                        }
-                      },
-                      onResendOtp: () async {
-                        if (await loginNotifier.resendOtp() &&
-                            dialogContext.mounted) {
-                          await finishAuth(dialogContext);
-                        }
-                      },
-                      onBackToPhone: loginNotifier.backToPhone,
-                      onVerifyOtp: () async {
-                        if (await loginNotifier.verifyOtp() &&
                             dialogContext.mounted) {
                           await finishAuth(dialogContext);
                         }

@@ -1,6 +1,6 @@
 import 'package:stopwatch_game/features/auth/data/models/user_model.dart';
 
-/// Response from `POST /api/v1/auth/verify-otp`.
+/// Response from `POST /api/v1/auth/login`.
 class AuthSession {
   const AuthSession({
     required this.accessToken,
