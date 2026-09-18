@@ -9,6 +9,7 @@ import 'package:stopwatch_game/core/services/game_feedback_service.dart';
 import 'package:stopwatch_game/core/services/interaction_telemetry_service.dart';
 import 'package:stopwatch_game/core/api/api_messages.dart';
 import 'package:stopwatch_game/core/config/env_config.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
 import 'package:stopwatch_game/features/game/data/game_session_mapper.dart';
@@ -88,7 +89,7 @@ class GameController extends StateNotifier<GameState> {
       clearRoundError: true,
     );
     _track('game.play_opened');
-    await _chargeAndPrepareRound();
+    await _chargeAndPrepareRound(useCredit: false);
   }
 
   /// Clears the current round UI without charging (subscription already active).
@@ -135,7 +136,7 @@ class GameController extends StateNotifier<GameState> {
         clearRoundError: true,
       ),
     );
-    await _chargeAndPrepareRound();
+    await _chargeAndPrepareRound(useCredit: false);
   }
 
   /// Charge this round and load target time (Play). Does not start the stopwatch.
@@ -145,7 +146,19 @@ class GameController extends StateNotifier<GameState> {
     }
     if (state.canStartRound) return;
 
-    await _chargeAndPrepareRound();
+    await _chargeAndPrepareRound(useCredit: false);
+  }
+
+  Future<void> onPlayWithCreditsPressed() async {
+    if (state.isRunning ||
+        state.isSubmitting ||
+        state.isPreparingRound ||
+        state.isLoadingCredits) {
+      return;
+    }
+    if (state.canStartRound) return;
+
+    await _chargeAndPrepareRound(useCredit: true);
   }
 
   /// Start or stop the stopwatch (Start round / Stop). Requires billing first.
@@ -328,7 +341,7 @@ class GameController extends StateNotifier<GameState> {
       try {
         session = await submitStart();
       } on ApiException catch (error) {
-        if (!_isPendingBillingConflict(error)) rethrow;
+        if (!_isBillingStartConflict(error)) rethrow;
         await Future<void>.delayed(EnvConfig.billingPollInterval);
         await _gameService.waitForBillingSuccess(requestId: billingRequestId);
         session = await submitStart();
@@ -350,11 +363,7 @@ class GameController extends StateNotifier<GameState> {
     }
   }
 
-  bool _isPendingBillingConflict(ApiException error) {
-    if (error.statusCode != 409) return false;
-    final message = error.message.toLowerCase();
-    return message.contains('billing') && message.contains('pending');
-  }
+  bool _isBillingStartConflict(ApiException error) => error.statusCode == 409;
 
   Future<void> refreshCredits({bool selectCredit = true}) async {
     if (_effectiveMsisdn.trim().isEmpty || state.isLoadingCredits) return;
@@ -387,21 +396,12 @@ class GameController extends StateNotifier<GameState> {
     if (wallet.credits <= 0 && wallet.renewalCredits <= 0) return null;
     final preference = preferredSource ?? state.selectedCreditSource;
     if (preference != null) {
-      final matches = wallet.eligibleForSource(
-        preference,
-        requiredAmount: EnvConfig.playCreditRequiredAmount,
-      );
+      final matches = wallet.eligibleForSource(preference);
       if (matches.isNotEmpty) return matches.first;
     }
-    final interaction = wallet.eligibleForSource(
-      PlayCreditSource.interaction,
-      requiredAmount: EnvConfig.playCreditRequiredAmount,
-    );
+    final interaction = wallet.eligibleForSource(PlayCreditSource.interaction);
     if (interaction.isNotEmpty) return interaction.first;
-    final renewal = wallet.eligibleForSource(
-      PlayCreditSource.renewal,
-      requiredAmount: EnvConfig.playCreditRequiredAmount,
-    );
+    final renewal = wallet.eligibleForSource(PlayCreditSource.renewal);
     return renewal.isEmpty ? null : renewal.first;
   }
 
@@ -409,11 +409,7 @@ class GameController extends StateNotifier<GameState> {
     if (state.isRunning || state.isSubmitting || state.isPreparingRound) return;
     if (!state.hasEligibleCredit(source)) return;
     final matches = state.availablePlayCredits
-        .where(
-          (credit) =>
-              credit.source == source &&
-              credit.amount >= EnvConfig.playCreditRequiredAmount,
-        )
+        .where((credit) => credit.source == source)
         .toList(growable: false);
     if (matches.isEmpty) return;
     _patchState(
@@ -481,7 +477,7 @@ class GameController extends StateNotifier<GameState> {
     );
   }
 
-  Future<void> _chargeAndPrepareRound() async {
+  Future<void> _chargeAndPrepareRound({required bool useCredit}) async {
     final operationId = _beginRoundOperation();
 
     _patchState(
@@ -492,6 +488,7 @@ class GameController extends StateNotifier<GameState> {
         statusMessage: RoundBillingCopy.checkingSubscription,
         clearRoundError: true,
         clearPendingBilling: true,
+        clearPlayCredit: !useCredit,
       ),
     );
 
@@ -509,9 +506,21 @@ class GameController extends StateNotifier<GameState> {
         return;
       }
 
-      await refreshCredits();
+      await refreshCredits(selectCredit: useCredit);
       if (!_isActiveRoundOp(operationId)) return;
-      if (state.playCreditId != null) {
+      if (useCredit) {
+        if (state.playCreditId == null) {
+          _patchState(
+            (s) => s.copyWith(
+              isSubmitting: false,
+              isLoadingTarget: false,
+              preparePhase: RoundPreparePhase.idle,
+              roundErrorMessage: GameCopy.noCreditsAvailable,
+              clearStatusMessage: true,
+            ),
+          );
+          return;
+        }
         _patchState(
           (s) => s.copyWith(
             preparePhase: RoundPreparePhase.loadingTarget,

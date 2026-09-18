@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
@@ -139,12 +138,12 @@ class GameState {
         ? interactionCredits
         : renewalCredits;
     return count > 0 &&
-        availablePlayCredits.any(
-          (credit) =>
-              credit.source == source &&
-              credit.amount >= EnvConfig.playCreditRequiredAmount,
-        );
+        availablePlayCredits.any((credit) => credit.source == source);
   }
+
+  bool get hasUsableCredits =>
+      hasEligibleCredit(PlayCreditSource.interaction) ||
+      hasEligibleCredit(PlayCreditSource.renewal);
 
   bool get canStartRound =>
       (hasBillingForRound || hasPlayCreditForRound) &&

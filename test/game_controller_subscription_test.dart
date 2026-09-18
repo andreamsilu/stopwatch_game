@@ -137,10 +137,7 @@ class _EventuallyConsistentStartService extends _SuccessfulRoundService {
   }) async {
     startCalls++;
     if (startCalls == 1) {
-      throw ApiException(
-        'Billing must be successful before starting a game (status=pending)',
-        statusCode: 409,
-      );
+      throw ApiException('Conflict', statusCode: 409);
     }
     return GameStartResponse(
       id: 100,
@@ -154,6 +151,19 @@ class _EventuallyConsistentStartService extends _SuccessfulRoundService {
       status: 'started',
     );
   }
+}
+
+class _CreditRoundService extends _SuccessfulRoundService {
+  @override
+  Future<CreditsWallet> getCredits({required String msisdn}) async =>
+      CreditsWallet(
+        msisdn: msisdn,
+        credits: 1,
+        renewalCredits: 0,
+        availablePlayCredits: const [
+          PlayCredit(id: 42, amount: 1, source: PlayCreditSource.interaction),
+        ],
+      );
 }
 
 void main() {
@@ -303,21 +313,53 @@ void main() {
     },
   );
 
-  test('start reconfirms billing and retries a pending 409 once', () async {
-    final gameService = _EventuallyConsistentStartService()..subscribed = true;
-    final controller = GameController(
+  test(
+    'start reconfirms billing and retries a message-less 409 once',
+    () async {
+      final gameService = _EventuallyConsistentStartService()
+        ..subscribed = true;
+      final controller = GameController(
+        msisdn: '255676589824',
+        gameService: gameService,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.onPlayRoundPressed();
+      await controller.onStartPressed();
+
+      expect(gameService.startCalls, 2);
+      expect(gameService.waitCalls, 3);
+      expect(controller.state.isRunning, isTrue);
+      expect(controller.state.sessionRef, 'round-1');
+      expect(controller.state.roundErrorMessage, isNull);
+    },
+  );
+
+  test('credits require the explicit credit play action', () async {
+    final paidService = _CreditRoundService()..subscribed = true;
+    final paidController = GameController(
       msisdn: '255676589824',
-      gameService: gameService,
+      gameService: paidService,
     );
-    addTearDown(controller.dispose);
+    addTearDown(paidController.dispose);
 
-    await controller.onPlayRoundPressed();
-    await controller.onStartPressed();
+    await paidController.onPlayRoundPressed();
+    expect(paidService.enqueueCalls, 1);
+    expect(paidController.state.billingRequestId, 'round-1');
+    expect(paidController.state.playCreditId, isNull);
 
-    expect(gameService.startCalls, 2);
-    expect(gameService.waitCalls, 3);
-    expect(controller.state.isRunning, isTrue);
-    expect(controller.state.sessionRef, 'round-1');
-    expect(controller.state.roundErrorMessage, isNull);
+    final creditService = _CreditRoundService()..subscribed = true;
+    final creditController = GameController(
+      msisdn: '255676589824',
+      gameService: creditService,
+    );
+    addTearDown(creditController.dispose);
+
+    await creditController.refreshCredits(selectCredit: false);
+    expect(creditController.state.hasUsableCredits, isTrue);
+    await creditController.onPlayWithCreditsPressed();
+    expect(creditService.enqueueCalls, 0);
+    expect(creditController.state.playCreditId, 42);
+    expect(creditController.state.canStartRound, isTrue);
   });
 }

@@ -34,12 +34,14 @@ class RoundPlayPanel extends StatefulWidget {
     required this.onStartControlPointerUp,
     required this.hasBillingForRound,
     required this.onPlayRound,
+    required this.onPlayWithCredits,
     required this.onStartOrStopRound,
     required this.totalWins,
     required this.result,
     required this.onPlayAgain,
     required this.onViewHistory,
     required this.totalCredits,
+    required this.hasUsableCredits,
     required this.isLoadingCredits,
     required this.onRefreshCredits,
     super.key,
@@ -68,12 +70,14 @@ class RoundPlayPanel extends StatefulWidget {
   onStartControlPointerUp;
   final bool hasBillingForRound;
   final Future<void> Function() onPlayRound;
+  final Future<void> Function() onPlayWithCredits;
   final Future<void> Function() onStartOrStopRound;
   final int totalWins;
   final RoundResultData? result;
   final Future<void> Function() onPlayAgain;
   final VoidCallback onViewHistory;
   final int totalCredits;
+  final bool hasUsableCredits;
   final bool isLoadingCredits;
   final Future<void> Function() onRefreshCredits;
 
@@ -222,6 +226,22 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                 ),
               ),
               SizedBox(height: style.gap),
+              if (!hasTarget &&
+                  !widget.isRunning &&
+                  widget.hasUsableCredits) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: style.buttonHeight,
+                  child: OutlinedButton.icon(
+                    onPressed: widget.isBusy || widget.isLoadingCredits
+                        ? null
+                        : widget.onPlayWithCredits,
+                    icon: const Icon(Icons.confirmation_number_outlined),
+                    label: Text(GameCopy.useCreditsToPlay),
+                  ),
+                ),
+                SizedBox(height: style.gap),
+              ],
               Row(
                 children: [
                   Expanded(

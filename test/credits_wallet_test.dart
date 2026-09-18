@@ -47,18 +47,8 @@ void main() {
     expect(wallet.forSource(PlayCreditSource.interaction).single.id, 42);
     expect(wallet.forSource(PlayCreditSource.renewal).single.id, 15);
     expect(
-      wallet
-          .eligibleForSource(PlayCreditSource.interaction, requiredAmount: 100)
-          .single
-          .id,
+      wallet.eligibleForSource(PlayCreditSource.interaction).single.id,
       42,
-    );
-    expect(
-      wallet.eligibleForSource(
-        PlayCreditSource.interaction,
-        requiredAmount: 101,
-      ),
-      isEmpty,
     );
   });
 

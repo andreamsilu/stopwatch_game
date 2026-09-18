@@ -75,16 +75,10 @@ class CreditsWallet {
   int countForSource(PlayCreditSource source) =>
       source == PlayCreditSource.interaction ? credits : renewalCredits;
 
-  List<PlayCredit> eligibleForSource(
-    PlayCreditSource source, {
-    required double requiredAmount,
-  }) {
+  List<PlayCredit> eligibleForSource(PlayCreditSource source) {
     if (countForSource(source) <= 0) return const [];
     return availablePlayCredits
-        .where(
-          (credit) =>
-              credit.source == source && credit.amount >= requiredAmount,
-        )
+        .where((credit) => credit.source == source)
         .toList(growable: false);
   }
 }

@@ -95,15 +95,6 @@ class EnvConfig {
     }
   }
 
-  /// Minimum wallet amount required for one credit-funded play.
-  static double get playCreditRequiredAmount {
-    final value = double.tryParse(
-      _optional('PLAY_CREDIT_REQUIRED_AMOUNT', '100'),
-    );
-    if (value == null || !value.isFinite || value <= 0) return 100;
-    return value;
-  }
-
   static Duration get billingPollInterval {
     final ms =
         int.tryParse(_optional('BILLING_POLL_INTERVAL_MS', '2000')) ?? 2000;

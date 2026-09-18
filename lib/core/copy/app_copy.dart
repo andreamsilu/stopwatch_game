@@ -101,6 +101,10 @@ class GameCopy {
   static String get payForRound => _t('Cheza', 'Play');
   static String get playCredits => _t('Salio la michezo', 'Play credits');
   static String creditBadge(int count) => _t('Salio $count', 'Credits $count');
+  static String get useCreditsToPlay =>
+      _t('Tumia salio kucheza', 'Use credits to play');
+  static String get noCreditsAvailable =>
+      _t('Huna salio la kucheza.', 'You do not have a credit to play.');
   static String get refreshCredits =>
       _t('Onyesha upya salio', 'Refresh credits');
   static String get goToPlayRound => _t('Nenda kucheza', 'Go to play');

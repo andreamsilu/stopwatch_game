@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
+import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 
@@ -11,6 +12,9 @@ void main() {
     Widget panel(
       String time, {
       bool running = true,
+      int credits = 3,
+      bool hasUsableCredits = true,
+      Duration target = const Duration(milliseconds: 8250),
       RoundPreparePhase phase = RoundPreparePhase.idle,
     }) => MaterialApp(
       home: Scaffold(
@@ -18,7 +22,7 @@ void main() {
           targetTimeLabel: '00:08.250',
           currentTimeLabel: time,
           elapsed: const Duration(seconds: 2),
-          targetTime: const Duration(milliseconds: 8250),
+          targetTime: target,
           isRunning: running,
           isBusy: false,
           isSubmitting: false,
@@ -34,12 +38,14 @@ void main() {
           onStartControlPointerUp: (_, {isTrusted}) {},
           hasBillingForRound: true,
           onPlayRound: () async {},
+          onPlayWithCredits: () async {},
           onStartOrStopRound: () async {},
           totalWins: 0,
           result: null,
           onPlayAgain: () async {},
           onViewHistory: () {},
-          totalCredits: 3,
+          totalCredits: credits,
+          hasUsableCredits: hasUsableCredits,
           isLoadingCredits: false,
           onRefreshCredits: () async {},
         ),
@@ -89,5 +95,20 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(
+      panel(
+        '00:00.000',
+        running: false,
+        credits: 0,
+        hasUsableCredits: false,
+        target: Duration.zero,
+      ),
+    );
+    expect(find.text(GameCopy.useCreditsToPlay), findsNothing);
+    await tester.pumpWidget(
+      panel('00:00.000', running: false, credits: 1, target: Duration.zero),
+    );
+    expect(find.text(GameCopy.useCreditsToPlay), findsOneWidget);
   });
 }

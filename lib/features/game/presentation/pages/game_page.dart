@@ -121,11 +121,27 @@ Future<void> performLogoutFromGame(BuildContext context, WidgetRef ref) async {
   Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
 }
 
-class GamePage extends ConsumerWidget {
+class GamePage extends ConsumerStatefulWidget {
   const GamePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GamePage> createState() => _GamePageState();
+}
+
+class _GamePageState extends ConsumerState<GamePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !ref.read(subscriptionActiveProvider)) return;
+      ref
+          .read(gameControllerProvider.notifier)
+          .refreshCredits(selectCredit: false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(appLocaleProvider);
     final useDrawerNav =
         MediaQuery.of(context).size.width < GameConstants.mobileBreakpoint;
@@ -138,6 +154,9 @@ class GamePage extends ConsumerWidget {
       final authenticated = await showPlayerLoginDialog(context, ref);
       if (!authenticated || !context.mounted) return false;
       ref.invalidate(gameControllerProvider);
+      await ref
+          .read(gameControllerProvider.notifier)
+          .refreshCredits(selectCredit: false);
       return true;
     }
 
@@ -575,6 +594,11 @@ class GamePage extends ConsumerWidget {
                                                     await controller
                                                         .onPlayRoundPressed();
                                                   },
+                                                  onPlayWithCredits: () async {
+                                                    AppSnackBar.dismiss();
+                                                    await controller
+                                                        .onPlayWithCreditsPressed();
+                                                  },
                                                   onStartOrStopRound: () async {
                                                     if (gameState
                                                         .isStopwatchControlDisabled) {
@@ -598,6 +622,8 @@ class GamePage extends ConsumerWidget {
                                                       gameState
                                                           .interactionCredits +
                                                       gameState.renewalCredits,
+                                                  hasUsableCredits: gameState
+                                                      .hasUsableCredits,
                                                   isLoadingCredits: gameState
                                                       .isLoadingCredits,
                                                   onRefreshCredits: () =>
@@ -705,8 +731,10 @@ class _GameBody extends StatelessWidget {
     required this.onStartControlPointerUp,
     required this.hasBillingForRound,
     required this.onPlayRound,
+    required this.onPlayWithCredits,
     required this.onStartOrStopRound,
     required this.totalCredits,
+    required this.hasUsableCredits,
     required this.isLoadingCredits,
     required this.onRefreshCredits,
   });
@@ -723,9 +751,11 @@ class _GameBody extends StatelessWidget {
   final void Function(Offset position, {bool? isTrusted})
   onStartControlPointerUp;
   final Future<void> Function() onPlayRound;
+  final Future<void> Function() onPlayWithCredits;
   final bool hasBillingForRound;
   final Future<void> Function() onStartOrStopRound;
   final int totalCredits;
+  final bool hasUsableCredits;
   final bool isLoadingCredits;
   final Future<void> Function() onRefreshCredits;
   @override
@@ -754,12 +784,14 @@ class _GameBody extends StatelessWidget {
           onStartControlPointerUp: onStartControlPointerUp,
           hasBillingForRound: hasBillingForRound,
           onPlayRound: onPlayRound,
+          onPlayWithCredits: onPlayWithCredits,
           onStartOrStopRound: onStartOrStopRound,
           totalWins: state.totalWins,
           result: state.latestResult,
           onPlayAgain: onPlayAgain,
           onViewHistory: onViewHistory,
           totalCredits: totalCredits,
+          hasUsableCredits: hasUsableCredits,
           isLoadingCredits: isLoadingCredits,
           onRefreshCredits: onRefreshCredits,
         );
