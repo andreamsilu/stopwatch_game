@@ -46,6 +46,20 @@ void main() {
     expect(wallet.renewalCredits, 2);
     expect(wallet.forSource(PlayCreditSource.interaction).single.id, 42);
     expect(wallet.forSource(PlayCreditSource.renewal).single.id, 15);
+    expect(
+      wallet
+          .eligibleForSource(PlayCreditSource.interaction, requiredAmount: 100)
+          .single
+          .id,
+      42,
+    );
+    expect(
+      wallet.eligibleForSource(
+        PlayCreditSource.interaction,
+        requiredAmount: 101,
+      ),
+      isEmpty,
+    );
   });
 
   test('start request emits mutually exclusive billing and credit shapes', () {
