@@ -54,11 +54,11 @@ void main() {
     expect(englishApp.locale, const Locale('en'));
     expect(find.text('Play'), findsWidgets);
     expect(find.text('Can you? Stop precisely!'), findsOneWidget);
-    expect(find.text('PAY FOR ROUND'), findsOneWidget);
+    expect(find.widgetWithText(ElevatedButton, 'Play'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('PAY FOR ROUND'));
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Play'));
     await tester.pump();
-    await tester.tap(find.text('PAY FOR ROUND'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Play'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

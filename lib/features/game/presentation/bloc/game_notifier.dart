@@ -313,7 +313,7 @@ class GameController extends StateNotifier<GameState> {
     final billingRequestId = state.billingRequestId;
     if (playCreditId == null && billingRequestId == null) return;
 
-    final session = await _gameService.startGameSession(
+    Future<GameStartResponse> submitStart() => _gameService.startGameSession(
       msisdn: _effectiveMsisdn,
       billingRequestId: playCreditId == null ? billingRequestId : null,
       playCreditId: playCreditId,
@@ -321,6 +321,21 @@ class GameController extends StateNotifier<GameState> {
       clientReference: playCreditId == null ? null : state.interactionSessionId,
       channel: EnvConfig.gameChannel,
     );
+
+    GameStartResponse session;
+    if (playCreditId == null) {
+      await _gameService.waitForBillingSuccess(requestId: billingRequestId!);
+      try {
+        session = await submitStart();
+      } on ApiException catch (error) {
+        if (!_isPendingBillingConflict(error)) rethrow;
+        await Future<void>.delayed(EnvConfig.billingPollInterval);
+        await _gameService.waitForBillingSuccess(requestId: billingRequestId);
+        session = await submitStart();
+      }
+    } else {
+      session = await submitStart();
+    }
     _activeSession = session;
     _patchState(
       (s) => s.copyWith(
@@ -333,6 +348,12 @@ class GameController extends StateNotifier<GameState> {
     if (playCreditId != null) {
       unawaited(refreshCredits(selectCredit: false));
     }
+  }
+
+  bool _isPendingBillingConflict(ApiException error) {
+    if (error.statusCode != 409) return false;
+    final message = error.message.toLowerCase();
+    return message.contains('billing') && message.contains('pending');
   }
 
   Future<void> refreshCredits({bool selectCredit = true}) async {
@@ -363,6 +384,7 @@ class GameController extends StateNotifier<GameState> {
     CreditsWallet wallet, {
     PlayCreditSource? preferredSource,
   }) {
+    if (wallet.credits <= 0 && wallet.renewalCredits <= 0) return null;
     final preference = preferredSource ?? state.selectedCreditSource;
     if (preference != null) {
       final matches = wallet.eligibleForSource(

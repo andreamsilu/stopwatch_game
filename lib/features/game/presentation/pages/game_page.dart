@@ -563,15 +563,7 @@ class GamePage extends ConsumerWidget {
                                                   onPlayRound: () async {
                                                     AppSnackBar.dismiss();
                                                     if (!isAuthenticated) {
-                                                      if (!await authenticate()) {
-                                                        return;
-                                                      }
-                                                      await ref
-                                                          .read(
-                                                            gameControllerProvider
-                                                                .notifier,
-                                                          )
-                                                          .onPlayRoundPressed();
+                                                      await authenticate();
                                                       return;
                                                     }
                                                     if (gameState

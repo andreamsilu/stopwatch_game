@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
+import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
 import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
+import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
 import 'package:stopwatch_game/features/game/data/models/subscription_status_response.dart';
 import 'package:stopwatch_game/features/game/data/models/target_time_response.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_notifier.dart';
@@ -111,7 +113,59 @@ class _SuccessfulRoundService extends _BillingSpyGameService {
       TargetTimeResponse(msisdn: msisdn, targetTimeMs: 10000);
 }
 
+class _EventuallyConsistentStartService extends _SuccessfulRoundService {
+  int waitCalls = 0;
+  int startCalls = 0;
+
+  @override
+  Future<BillingTransactionResponse> waitForBillingSuccess({
+    required String requestId,
+    bool Function()? isCancelled,
+  }) async {
+    waitCalls++;
+    return transaction(requestId);
+  }
+
+  @override
+  Future<GameStartResponse> startGameSession({
+    required String msisdn,
+    String? billingRequestId,
+    int? playCreditId,
+    PlayCreditSource? creditSource,
+    String? clientReference,
+    String? channel,
+  }) async {
+    startCalls++;
+    if (startCalls == 1) {
+      throw ApiException(
+        'Billing must be successful before starting a game (status=pending)',
+        statusCode: 409,
+      );
+    }
+    return GameStartResponse(
+      id: 100,
+      sessionRef: billingRequestId!,
+      billingRequestId: billingRequestId,
+      entrySource: 'billing',
+      msisdn: msisdn,
+      channel: channel ?? 'WEB',
+      entryFee: 100,
+      targetTimeMs: 10000,
+      status: 'started',
+    );
+  }
+}
+
 void main() {
+  setUpAll(() async {
+    await EnvConfig.load(
+      overrides: {
+        'STOPWATCH_SECURITY_HMAC_ENABLED': 'false',
+        'BILLING_POLL_INTERVAL_MS': '500',
+      },
+    );
+  });
+
   test(
     'registration stays busy until SMS confirmation and prevents duplicate requests',
     () async {
@@ -248,4 +302,22 @@ void main() {
       expect(gameService.enqueueCalls, 1);
     },
   );
+
+  test('start reconfirms billing and retries a pending 409 once', () async {
+    final gameService = _EventuallyConsistentStartService()..subscribed = true;
+    final controller = GameController(
+      msisdn: '255676589824',
+      gameService: gameService,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.onPlayRoundPressed();
+    await controller.onStartPressed();
+
+    expect(gameService.startCalls, 2);
+    expect(gameService.waitCalls, 3);
+    expect(controller.state.isRunning, isTrue);
+    expect(controller.state.sessionRef, 'round-1');
+    expect(controller.state.roundErrorMessage, isNull);
+  });
 }
