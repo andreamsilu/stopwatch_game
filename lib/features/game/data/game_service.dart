@@ -7,6 +7,7 @@ import 'package:stopwatch_game/core/config/env_config.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_request.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
 import 'package:stopwatch_game/features/game/data/models/game_history_response.dart';
+import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
 import 'package:stopwatch_game/features/game/data/models/start_game_request.dart';
 import 'package:stopwatch_game/features/game/data/models/stop_game_request.dart';
@@ -153,13 +154,27 @@ class GameService {
   Future<TargetTimeResponse> fetchTargetTime({required String msisdn}) =>
       _postTargetTime(msisdn);
 
+  Future<CreditsWallet> getCredits({required String msisdn}) async {
+    final response = await _api.get(Uri.parse(ApiConfig.userCredits(msisdn)));
+    return response.parse(
+      CreditsWallet.fromJson,
+      context: 'GET /users/credits',
+    );
+  }
+
   Future<GameStartResponse> startGameSession({
     required String msisdn,
-    required String billingRequestId,
+    String? billingRequestId,
+    int? playCreditId,
+    PlayCreditSource? creditSource,
+    String? clientReference,
     String? channel,
   }) => _postGameStart(
     msisdn: msisdn,
     billingRequestId: billingRequestId,
+    playCreditId: playCreditId,
+    creditSource: creditSource,
+    clientReference: clientReference,
     channel: channel ?? EnvConfig.gameChannel,
   );
 
@@ -221,16 +236,37 @@ class GameService {
 
   Future<GameStartResponse> _postGameStart({
     required String msisdn,
-    required String billingRequestId,
+    String? billingRequestId,
+    int? playCreditId,
+    PlayCreditSource? creditSource,
+    String? clientReference,
     required String channel,
   }) async {
+    if (billingRequestId == null &&
+        (playCreditId == null ||
+            creditSource == null ||
+            clientReference == null)) {
+      throw ArgumentError(
+        'Start requires billingRequestId or complete play-credit fields.',
+      );
+    }
     final response = await _api.post(
       Uri.parse(ApiConfig.gameStart),
-      body: StartGameRequest(
-        msisdn: msisdn,
-        billingRequestId: billingRequestId,
-        channel: channel,
-      ).toJson(),
+      body: billingRequestId != null
+          ? StartGameRequest.billing(
+              msisdn: msisdn,
+              channel: channel,
+              billingRequestId: billingRequestId,
+            ).toJson()
+          : StartGameRequest.credit(
+              msisdn: msisdn,
+              channel: channel,
+              entrySource: creditSource == PlayCreditSource.interaction
+                  ? 'credit'
+                  : 'renewal_credit',
+              playCreditId: playCreditId!,
+              clientReference: clientReference!,
+            ).toJson(),
     );
     return response.parse(
       GameStartResponse.fromJson,

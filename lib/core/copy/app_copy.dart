@@ -99,6 +99,13 @@ class GameCopy {
       _t('Aliyekaribia zaidi hushinda raundi.', 'Closest stop wins the round.');
   static String get play => _t('Cheza', 'Play');
   static String get payForRound => _t('Cheza', 'Play');
+  static String get playCredits => _t('Salio la michezo', 'Play credits');
+  static String interactionCreditBadge(int count) =>
+      _t('Zawadi $count', 'Interaction $count');
+  static String renewalCreditBadge(int count) =>
+      _t('Usajili $count', 'Renewal $count');
+  static String get refreshCredits =>
+      _t('Onyesha upya salio', 'Refresh credits');
   static String get goToPlayRound => _t('Nenda kucheza', 'Go to play');
 
   static String get startRound => _t('Anza raundi', 'Start round');

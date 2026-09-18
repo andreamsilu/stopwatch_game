@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
 import 'package:stopwatch_game/features/game/data/models/billing_transaction_response.dart';
+import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/features/game/data/models/subscription_status_response.dart';
 import 'package:stopwatch_game/features/game/data/models/target_time_response.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_notifier.dart';
@@ -25,6 +26,15 @@ class _BillingSpyGameService extends GameService {
   int subscriptionChecks = 0;
   int registrationCalls = 0;
   int activationPolls = 0;
+
+  @override
+  Future<CreditsWallet> getCredits({required String msisdn}) async =>
+      CreditsWallet(
+        msisdn: msisdn,
+        credits: 0,
+        renewalCredits: 0,
+        availablePlayCredits: const [],
+      );
 
   @override
   Future<SubscriptionStatusResponse> getSubscriptionStatus({

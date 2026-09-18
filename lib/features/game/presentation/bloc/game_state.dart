@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:stopwatch_game/core/config/env_config.dart';
+import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 
 enum GameTab { play, history, howToPlay, support }
@@ -51,6 +53,12 @@ class GameState {
     required this.totalWins,
     required this.roundsPlayed,
     required this.bestDifferenceAbsMs,
+    required this.interactionCredits,
+    required this.renewalCredits,
+    required this.availablePlayCredits,
+    required this.selectedCreditSource,
+    required this.playCreditId,
+    required this.isLoadingCredits,
   });
 
   const GameState.initial()
@@ -75,7 +83,13 @@ class GameState {
       latestResult = null,
       totalWins = 0,
       roundsPlayed = 0,
-      bestDifferenceAbsMs = null;
+      bestDifferenceAbsMs = null,
+      interactionCredits = 0,
+      renewalCredits = 0,
+      availablePlayCredits = const [],
+      selectedCreditSource = null,
+      playCreditId = null,
+      isLoadingCredits = false;
 
   final GameTab selectedTab;
   final Duration elapsed;
@@ -99,6 +113,12 @@ class GameState {
   final int totalWins;
   final int roundsPlayed;
   final int? bestDifferenceAbsMs;
+  final int interactionCredits;
+  final int renewalCredits;
+  final List<PlayCredit> availablePlayCredits;
+  final PlayCreditSource? selectedCreditSource;
+  final int? playCreditId;
+  final bool isLoadingCredits;
 
   String get formattedTime {
     final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -112,8 +132,22 @@ class GameState {
   bool get hasBillingForRound =>
       billingRequestId != null && billingRequestId!.isNotEmpty;
 
+  bool get hasPlayCreditForRound => playCreditId != null;
+
+  bool hasEligibleCredit(PlayCreditSource source) {
+    final count = source == PlayCreditSource.interaction
+        ? interactionCredits
+        : renewalCredits;
+    return count > 0 &&
+        availablePlayCredits.any(
+          (credit) =>
+              credit.source == source &&
+              credit.amount >= EnvConfig.playCreditRequiredAmount,
+        );
+  }
+
   bool get canStartRound =>
-      hasBillingForRound &&
+      (hasBillingForRound || hasPlayCreditForRound) &&
       !isLoadingTarget &&
       preparePhase == RoundPreparePhase.idle;
 
@@ -122,7 +156,10 @@ class GameState {
 
   /// Play (charge round) before billing is complete.
   bool get canTapPlayRound =>
-      !hasBillingForRound && !isSubmitting && !isPreparingRound;
+      !hasBillingForRound &&
+      !hasPlayCreditForRound &&
+      !isSubmitting &&
+      !isPreparingRound;
 
   /// Start/stop control is active while running or when start can be tapped.
   bool get canControlStopwatch => isRunning || canTapStartRound;
@@ -186,6 +223,13 @@ class GameState {
     int? roundsPlayed,
     int? bestDifferenceAbsMs,
     bool clearBestDifference = false,
+    int? interactionCredits,
+    int? renewalCredits,
+    List<PlayCredit>? availablePlayCredits,
+    PlayCreditSource? selectedCreditSource,
+    int? playCreditId,
+    bool clearPlayCredit = false,
+    bool? isLoadingCredits,
   }) {
     return GameState(
       selectedTab: selectedTab ?? this.selectedTab,
@@ -228,6 +272,16 @@ class GameState {
       bestDifferenceAbsMs: clearBestDifference
           ? null
           : (bestDifferenceAbsMs ?? this.bestDifferenceAbsMs),
+      interactionCredits: interactionCredits ?? this.interactionCredits,
+      renewalCredits: renewalCredits ?? this.renewalCredits,
+      availablePlayCredits: availablePlayCredits ?? this.availablePlayCredits,
+      selectedCreditSource: clearPlayCredit || clearActiveSession
+          ? null
+          : (selectedCreditSource ?? this.selectedCreditSource),
+      playCreditId: clearPlayCredit || clearActiveSession
+          ? null
+          : (playCreditId ?? this.playCreditId),
+      isLoadingCredits: isLoadingCredits ?? this.isLoadingCredits,
     );
   }
 }

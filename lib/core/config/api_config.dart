@@ -8,6 +8,11 @@ class ApiConfig {
 
   static String get users => '$baseUrl$apiPrefix/users';
 
+  static String userCredits(String msisdn) {
+    final query = Uri(queryParameters: {'msisdn': msisdn});
+    return '$users/credits?${query.query}';
+  }
+
   static String userById(int id) => '$users/$id';
 
   static String get authLogin => '$baseUrl$apiPrefix/auth/login';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
+import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/round_play_panel.dart';
 
@@ -39,6 +40,14 @@ void main() {
           result: null,
           onPlayAgain: () async {},
           onViewHistory: () {},
+          interactionCredits: 1,
+          renewalCredits: 2,
+          selectedCreditSource: PlayCreditSource.interaction,
+          interactionCreditAvailable: true,
+          renewalCreditAvailable: true,
+          isLoadingCredits: false,
+          onCreditSourceSelected: (_) {},
+          onRefreshCredits: () async {},
         ),
       ),
     );

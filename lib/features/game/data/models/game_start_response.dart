@@ -4,7 +4,11 @@ class GameStartResponse {
   const GameStartResponse({
     required this.id,
     required this.sessionRef,
-    required this.billingRequestId,
+    this.billingRequestId,
+    this.entrySource,
+    this.playCreditId,
+    this.renewalRequestId,
+    this.clientReference,
     required this.msisdn,
     required this.channel,
     required this.entryFee,
@@ -20,7 +24,11 @@ class GameStartResponse {
     return GameStartResponse(
       id: json['id'] as int,
       sessionRef: json['sessionRef'] as String,
-      billingRequestId: json['billingRequestId'] as String,
+      billingRequestId: json['billingRequestId'] as String?,
+      entrySource: json['entrySource'] as String?,
+      playCreditId: (json['playCreditId'] as num?)?.toInt(),
+      renewalRequestId: json['renewalRequestId'] as String?,
+      clientReference: json['clientReference'] as String?,
       msisdn: json['msisdn'] as String,
       channel: json['channel'] as String,
       entryFee: (json['entryFee'] as num).toInt(),
@@ -36,7 +44,11 @@ class GameStartResponse {
 
   final int id;
   final String sessionRef;
-  final String billingRequestId;
+  final String? billingRequestId;
+  final String? entrySource;
+  final int? playCreditId;
+  final String? renewalRequestId;
+  final String? clientReference;
   final String msisdn;
   final String channel;
   final int entryFee;

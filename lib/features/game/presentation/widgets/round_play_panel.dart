@@ -6,6 +6,7 @@ import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/core/constants/app_colors.dart';
 import 'package:stopwatch_game/core/copy/app_copy.dart';
 import 'package:stopwatch_game/core/services/pointer_event_trust.dart';
+import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/target_time_badge.dart';
@@ -39,6 +40,14 @@ class RoundPlayPanel extends StatefulWidget {
     required this.result,
     required this.onPlayAgain,
     required this.onViewHistory,
+    required this.interactionCredits,
+    required this.renewalCredits,
+    required this.selectedCreditSource,
+    required this.interactionCreditAvailable,
+    required this.renewalCreditAvailable,
+    required this.isLoadingCredits,
+    required this.onCreditSourceSelected,
+    required this.onRefreshCredits,
     super.key,
   });
 
@@ -70,6 +79,14 @@ class RoundPlayPanel extends StatefulWidget {
   final RoundResultData? result;
   final Future<void> Function() onPlayAgain;
   final VoidCallback onViewHistory;
+  final int interactionCredits;
+  final int renewalCredits;
+  final PlayCreditSource? selectedCreditSource;
+  final bool interactionCreditAvailable;
+  final bool renewalCreditAvailable;
+  final bool isLoadingCredits;
+  final ValueChanged<PlayCreditSource> onCreditSourceSelected;
+  final Future<void> Function() onRefreshCredits;
 
   @override
   State<RoundPlayPanel> createState() => _RoundPlayPanelState();
@@ -110,6 +127,17 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
                   height: 1.15,
                   color: AppColors.primary,
                 ),
+              ),
+              SizedBox(height: style.gap),
+              _CreditsWalletBar(
+                interactionCredits: widget.interactionCredits,
+                renewalCredits: widget.renewalCredits,
+                selectedSource: widget.selectedCreditSource,
+                interactionAvailable: widget.interactionCreditAvailable,
+                renewalAvailable: widget.renewalCreditAvailable,
+                isLoading: widget.isLoadingCredits,
+                onSelected: widget.onCreditSourceSelected,
+                onRefresh: widget.onRefreshCredits,
               ),
               SizedBox(height: style.gap),
               Expanded(
@@ -276,6 +304,78 @@ class _RoundPlayPanelState extends State<RoundPlayPanel> {
       ),
     );
     if (leave == true && mounted) widget.onReset();
+  }
+}
+
+class _CreditsWalletBar extends StatelessWidget {
+  const _CreditsWalletBar({
+    required this.interactionCredits,
+    required this.renewalCredits,
+    required this.selectedSource,
+    required this.interactionAvailable,
+    required this.renewalAvailable,
+    required this.isLoading,
+    required this.onSelected,
+    required this.onRefresh,
+  });
+
+  final int interactionCredits;
+  final int renewalCredits;
+  final PlayCreditSource? selectedSource;
+  final bool interactionAvailable;
+  final bool renewalAvailable;
+  final bool isLoading;
+  final ValueChanged<PlayCreditSource> onSelected;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: GameCopy.playCredits,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                ChoiceChip(
+                  avatar: const Icon(Icons.touch_app_outlined, size: 17),
+                  label: Text(
+                    GameCopy.interactionCreditBadge(interactionCredits),
+                  ),
+                  selected: selectedSource == PlayCreditSource.interaction,
+                  onSelected: interactionAvailable && !isLoading
+                      ? (_) => onSelected(PlayCreditSource.interaction)
+                      : null,
+                ),
+                ChoiceChip(
+                  avatar: const Icon(Icons.autorenew_rounded, size: 17),
+                  label: Text(GameCopy.renewalCreditBadge(renewalCredits)),
+                  selected: selectedSource == PlayCreditSource.renewal,
+                  onSelected: renewalAvailable && !isLoading
+                      ? (_) => onSelected(PlayCreditSource.renewal)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: isLoading ? null : onRefresh,
+            tooltip: GameCopy.refreshCredits,
+            icon: isLoading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
+    );
   }
 }
 

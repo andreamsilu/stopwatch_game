@@ -13,6 +13,7 @@ import 'package:stopwatch_game/core/api/stopwatch_api.dart';
 import 'package:stopwatch_game/features/game/data/game_service.dart';
 import 'package:stopwatch_game/features/game/data/game_session_mapper.dart';
 import 'package:stopwatch_game/features/game/data/models/game_start_response.dart';
+import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/core/billing/round_billing_copy.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_state.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
@@ -308,14 +309,16 @@ class GameController extends StateNotifier<GameState> {
   }
 
   Future<void> startGame() async {
+    final playCreditId = state.playCreditId;
     final billingRequestId = state.billingRequestId;
-    if (billingRequestId == null || billingRequestId.isEmpty) {
-      return;
-    }
+    if (playCreditId == null && billingRequestId == null) return;
 
     final session = await _gameService.startGameSession(
       msisdn: _effectiveMsisdn,
-      billingRequestId: billingRequestId,
+      billingRequestId: playCreditId == null ? billingRequestId : null,
+      playCreditId: playCreditId,
+      creditSource: state.selectedCreditSource,
+      clientReference: playCreditId == null ? null : state.interactionSessionId,
       channel: EnvConfig.gameChannel,
     );
     _activeSession = session;
@@ -325,6 +328,76 @@ class GameController extends StateNotifier<GameState> {
         billingRequestId: session.billingRequestId,
         sessionRef: session.sessionRef,
         activeSessionId: session.id,
+      ),
+    );
+    if (playCreditId != null) {
+      unawaited(refreshCredits(selectCredit: false));
+    }
+  }
+
+  Future<void> refreshCredits({bool selectCredit = true}) async {
+    if (_effectiveMsisdn.trim().isEmpty || state.isLoadingCredits) return;
+    _patchState((s) => s.copyWith(isLoadingCredits: true));
+    try {
+      final wallet = await _gameService.getCredits(msisdn: _effectiveMsisdn);
+      if (!mounted) return;
+      final selected = selectCredit ? _chooseCredit(wallet) : null;
+      _patchState(
+        (s) => s.copyWith(
+          interactionCredits: wallet.credits,
+          renewalCredits: wallet.renewalCredits,
+          availablePlayCredits: wallet.availablePlayCredits,
+          selectedCreditSource: selected?.source,
+          playCreditId: selected?.id,
+          clearPlayCredit: selectCredit && selected == null,
+          isLoadingCredits: false,
+        ),
+      );
+    } catch (error) {
+      _patchState((s) => s.copyWith(isLoadingCredits: false));
+      rethrow;
+    }
+  }
+
+  PlayCredit? _chooseCredit(
+    CreditsWallet wallet, {
+    PlayCreditSource? preferredSource,
+  }) {
+    final preference = preferredSource ?? state.selectedCreditSource;
+    if (preference != null) {
+      final matches = wallet.eligibleForSource(
+        preference,
+        requiredAmount: EnvConfig.playCreditRequiredAmount,
+      );
+      if (matches.isNotEmpty) return matches.first;
+    }
+    final interaction = wallet.eligibleForSource(
+      PlayCreditSource.interaction,
+      requiredAmount: EnvConfig.playCreditRequiredAmount,
+    );
+    if (interaction.isNotEmpty) return interaction.first;
+    final renewal = wallet.eligibleForSource(
+      PlayCreditSource.renewal,
+      requiredAmount: EnvConfig.playCreditRequiredAmount,
+    );
+    return renewal.isEmpty ? null : renewal.first;
+  }
+
+  void selectCreditSource(PlayCreditSource source) {
+    if (state.isRunning || state.isSubmitting || state.isPreparingRound) return;
+    if (!state.hasEligibleCredit(source)) return;
+    final matches = state.availablePlayCredits
+        .where(
+          (credit) =>
+              credit.source == source &&
+              credit.amount >= EnvConfig.playCreditRequiredAmount,
+        )
+        .toList(growable: false);
+    if (matches.isEmpty) return;
+    _patchState(
+      (s) => s.copyWith(
+        selectedCreditSource: source,
+        playCreditId: matches.first.id,
       ),
     );
   }
@@ -409,6 +482,33 @@ class GameController extends StateNotifier<GameState> {
             isLoadingTarget: false,
             preparePhase: RoundPreparePhase.idle,
             roundErrorMessage: RoundBillingCopy.loginRequired,
+          ),
+        );
+        return;
+      }
+
+      await refreshCredits();
+      if (!_isActiveRoundOp(operationId)) return;
+      if (state.playCreditId != null) {
+        _patchState(
+          (s) => s.copyWith(
+            preparePhase: RoundPreparePhase.loadingTarget,
+            isLoadingTarget: true,
+            statusMessage: RoundBillingCopy.loadingTarget,
+          ),
+        );
+        final target = await _gameService.fetchTargetTime(
+          msisdn: _effectiveMsisdn,
+        );
+        if (!_isActiveRoundOp(operationId)) return;
+        _patchState(
+          (s) => s.copyWith(
+            targetTime: Duration(milliseconds: target.targetTimeMs),
+            isLoadingTarget: false,
+            isSubmitting: false,
+            preparePhase: RoundPreparePhase.idle,
+            clearRoundError: true,
+            statusMessage: RoundBillingCopy.playReadyHint,
           ),
         );
         return;
