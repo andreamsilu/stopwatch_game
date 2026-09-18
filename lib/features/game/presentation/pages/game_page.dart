@@ -19,7 +19,6 @@ import 'package:stopwatch_game/features/auth/presentation/widgets/player_login_d
 import 'package:stopwatch_game/features/game/presentation/bloc/game_controller.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/round_prepare_phase.dart';
 import 'package:stopwatch_game/features/game/presentation/bloc/game_history_provider.dart';
-import 'package:stopwatch_game/features/game/data/models/credits_wallet.dart';
 import 'package:stopwatch_game/core/widgets/app_logo.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/game_header_bar.dart';
 import 'package:stopwatch_game/features/game/presentation/widgets/logged_in_user_bar.dart';
@@ -603,30 +602,12 @@ class GamePage extends ConsumerWidget {
                                                           .hasBillingForRound ||
                                                       gameState
                                                           .hasPlayCreditForRound,
-                                                  interactionCredits: gameState
-                                                      .interactionCredits,
-                                                  renewalCredits:
+                                                  totalCredits:
+                                                      gameState
+                                                          .interactionCredits +
                                                       gameState.renewalCredits,
-                                                  selectedCreditSource:
-                                                      gameState
-                                                          .selectedCreditSource,
-                                                  interactionCreditAvailable:
-                                                      gameState
-                                                          .hasEligibleCredit(
-                                                            PlayCreditSource
-                                                                .interaction,
-                                                          ),
-                                                  renewalCreditAvailable:
-                                                      gameState
-                                                          .hasEligibleCredit(
-                                                            PlayCreditSource
-                                                                .renewal,
-                                                          ),
                                                   isLoadingCredits: gameState
                                                       .isLoadingCredits,
-                                                  onCreditSourceSelected:
-                                                      controller
-                                                          .selectCreditSource,
                                                   onRefreshCredits: () =>
                                                       controller
                                                           .refreshCredits(),
@@ -733,13 +714,8 @@ class _GameBody extends StatelessWidget {
     required this.hasBillingForRound,
     required this.onPlayRound,
     required this.onStartOrStopRound,
-    required this.interactionCredits,
-    required this.renewalCredits,
-    required this.selectedCreditSource,
-    required this.interactionCreditAvailable,
-    required this.renewalCreditAvailable,
+    required this.totalCredits,
     required this.isLoadingCredits,
-    required this.onCreditSourceSelected,
     required this.onRefreshCredits,
   });
 
@@ -757,13 +733,8 @@ class _GameBody extends StatelessWidget {
   final Future<void> Function() onPlayRound;
   final bool hasBillingForRound;
   final Future<void> Function() onStartOrStopRound;
-  final int interactionCredits;
-  final int renewalCredits;
-  final PlayCreditSource? selectedCreditSource;
-  final bool interactionCreditAvailable;
-  final bool renewalCreditAvailable;
+  final int totalCredits;
   final bool isLoadingCredits;
-  final ValueChanged<PlayCreditSource> onCreditSourceSelected;
   final Future<void> Function() onRefreshCredits;
   @override
   Widget build(BuildContext context) {
@@ -796,13 +767,8 @@ class _GameBody extends StatelessWidget {
           result: state.latestResult,
           onPlayAgain: onPlayAgain,
           onViewHistory: onViewHistory,
-          interactionCredits: interactionCredits,
-          renewalCredits: renewalCredits,
-          selectedCreditSource: selectedCreditSource,
-          interactionCreditAvailable: interactionCreditAvailable,
-          renewalCreditAvailable: renewalCreditAvailable,
+          totalCredits: totalCredits,
           isLoadingCredits: isLoadingCredits,
-          onCreditSourceSelected: onCreditSourceSelected,
           onRefreshCredits: onRefreshCredits,
         );
       case GameTab.history:
